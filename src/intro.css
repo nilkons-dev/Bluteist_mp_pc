@@ -1,0 +1,131 @@
+/*
+ * Blutheist's launch intro (index.html's #intro, played by public/intro.js, ended by src/intro.ts).
+ * A solid black stage: the eye logo draws itself and opens, then the wordmark rises beneath it letter by
+ * letter. The app is drawn hidden underneath and shows only once the whole show has played; intro.ts then
+ * flies the logo and wordmark onto the app's own.
+ */
+
+#intro {
+  display: none;
+}
+
+html.intro #intro {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: drag;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The dark ground is a layer of its own so the hand-over can fade it by opacity alone. */
+html.intro #intro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #000;
+  /* 99.9%, not 100%: Chromium skips drawing whatever a fully opaque layer covers, and the app is drawn under it. */
+  opacity: 0.999;
+  pointer-events: none;
+}
+/* Until it's handed over the app stays hidden under it. */
+html.intro-wait #root {
+  opacity: 0;
+}
+
+/* Before the glide it is shown under the intro's ground (99.9% opaque), drawn but unseen; intro.ts waits for it. */
+html.intro-wait.intro-warm #root {
+  opacity: 1;
+}
+
+/* intro.ts's probe: a dot under the dark ground, drawn in a frame after the app's first picture. */
+.intro-probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -2;
+  color: #0a0a0a;
+  pointer-events: none;
+}
+
+/* Handed over (intro.ts animates the exit): the app underneath takes clicks and window drags. */
+html.intro:not(.intro-wait) #intro {
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+}
+
+.intro-stack {
+  width: min(84vw, 52vh, 440px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.intro-logo {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  display: block;
+}
+.intro-wrap {
+  width: 100%;
+}
+.intro-wmbox {
+  padding: 18px 7% 10px;
+}
+
+/* The wordmark, cut in slices of one image (public/intro.js): aspect of the artwork, 1346 x 274. */
+#intro .wm {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1346 / 274;
+}
+#intro .wm:not(.on) .l > i,
+#intro .wm:not(.on) .spk {
+  visibility: hidden;
+}
+#intro .l {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  overflow: hidden;
+}
+#intro .l > i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-image: url("./assets/brand/blutheist-letters.png");
+  background-repeat: no-repeat;
+  will-change: transform, filter, opacity;
+  transform-origin: 0 100%;
+}
+#intro .spk {
+  position: absolute;
+  left: 72.9%;
+  top: 0;
+  width: 7.8%;
+  height: 36.1%;
+  background: url("./assets/brand/blutheist-spark.png") center / 100% 100% no-repeat;
+}
+#intro .halo {
+  position: absolute;
+  inset: -70% -10%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.13), transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+}
+#intro .flare {
+  position: absolute;
+  left: 76.7%;
+  top: 18.2%;
+  width: 70%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fff 50%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scaleX(0);
+}

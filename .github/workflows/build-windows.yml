@@ -1,0 +1,52 @@
+# Windows installer (Blutheist-Setup.exe), built on GitHub's hosted Windows runner.
+# Run it by hand: GitHub → Actions → "Build Windows installer" → Run workflow.
+# Pushing a tag that starts with v (e.g. v1.0.0) also attaches the installer to a GitHub Release.
+
+name: Build Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Typecheck + main process + renderer. Accounts are off (src/lib/config.ts), so no Supabase secrets are needed.
+      - name: Build
+        run: npm run build
+
+      - name: Package the installer
+        run: npx electron-builder --win nsis --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Blutheist-Windows
+          path: release/Blutheist-Setup.exe
+          if-no-files-found: error
+
+      - name: Attach to the release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/Blutheist-Setup.exe

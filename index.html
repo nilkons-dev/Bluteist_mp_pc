@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <!-- file: documents don't match CSP 'self', hence the explicit file: sources -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: https: localart:; media-src 'self' blob: https: http://127.0.0.1:* file:; connect-src 'self' https: http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; font-src 'self' data: file:; object-src 'none'; base-uri 'self'"
+    />
+    <title>Blutheist</title>
+    <!-- The launch intro: public/intro.js plays it (not in the miniplayer's window) before the app loads,
+         src/intro.css draws it, src/intro.ts hands over to the app once it has played in full. -->
+    <script src="./intro.js"></script>
+    <link rel="stylesheet" href="/src/intro.css" />
+    <script type="module" src="/src/main.tsx"></script>
+  </head>
+  <body style="background:#0a0a0a">
+    <div id="root"></div>
+    <div id="intro" role="status" aria-label="Opening Blutheist">
+      <div class="intro-stack" id="intro-stack">
+        <svg id="intro-logo" class="intro-logo" viewBox="0 80 1254 1040" aria-hidden="true">
+          <defs>
+            <path id="ig-almond" d="M268 600C420 494 540 466 627 466C714 466 834 494 985 600C834 706 714 734 627 734C540 734 420 706 268 600Z" />
+            <clipPath id="ig-clip"><use href="#ig-almond" /></clipPath>
+          </defs>
+          <circle id="ig-ripple" cx="627" cy="600" r="100" fill="none" stroke="#fff" stroke-width="3" opacity="0" />
+          <path id="ig-body" fill="#fff" opacity="0" d="M627 100C627 250 650 310 740 360C880 435 1010 490 1100 555C1150 590 1190 596 1240 596C1190 596 1150 604 1100 640C1010 705 880 760 740 835C650 885 627 945 627 1100C627 945 604 885 514 835C374 760 244 705 154 640C104 604 64 596 15 596C64 596 104 590 154 555C244 490 374 435 514 360C604 310 627 250 627 100Z" />
+          <path id="ig-outline" fill="none" stroke="#fff" stroke-width="5" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" stroke-linejoin="round" d="M627 100C627 250 650 310 740 360C880 435 1010 490 1100 555C1150 590 1190 596 1240 596C1190 596 1150 604 1100 640C1010 705 880 760 740 835C650 885 627 945 627 1100C627 945 604 885 514 835C374 760 244 705 154 640C104 604 64 596 15 596C64 596 104 590 154 555C244 490 374 435 514 360C604 310 627 250 627 100Z" />
+          <g id="ig-eye" opacity="0">
+            <use href="#ig-almond" fill="#000" />
+            <g clip-path="url(#ig-clip)">
+              <g id="ig-pupilG" transform="translate(0 -320)">
+                <circle cx="627" cy="600" r="155" fill="#fff" />
+                <path fill="#000" d="M627 466C627 540 680 595 750 600C680 605 627 660 627 735C627 660 574 605 505 600C574 595 627 540 627 466Z" />
+              </g>
+            </g>
+          </g>
+        </svg>
+        <div id="intro-wrap" class="intro-wrap"><div class="intro-wmbox"><div class="wm" id="intro-wm"></div></div></div>
+      </div>
+    </div>
+  </body>
+</html>
