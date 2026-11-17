@@ -195,7 +195,7 @@ const api = {
   /** The listener's own queue, set aside while in a room, and taken back (once). */
   roomStash: (snapshot: unknown): Promise<void> => ipcRenderer.invoke("room:stash", snapshot),
   roomUnstash: (): Promise<unknown> => ipcRenderer.invoke("room:unstash"),
-  /** An invite link opened (bytune://room/CODE), once. */
+  /** An invite link opened (blutheist://room/CODE), once. */
   roomTakeInvite: (): Promise<string | null> => ipcRenderer.invoke("room:takeInvite"),
   onRoomState: (cb: (view: RoomView) => void): (() => void) => {
     const listener = (_e: unknown, view: RoomView): void => cb(view);

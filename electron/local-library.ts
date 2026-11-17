@@ -231,7 +231,7 @@ function saveLocalLibrary(lib: LocalLibrary, generation = libraryGeneration): Pr
     checkGeneration(generation);
     return persist.writeData("local-library", lib);
   });
-  writeChain = write.catch((err) => console.warn("[bytune] local-library save failed:", err));
+  writeChain = write.catch((err) => console.warn("[blutheist] local-library save failed:", err));
   // A successful save IS the new on-disk state; keep the read cache hot
   // instead of re-parsing the file on the next local-media request.
   void write.then(() => {

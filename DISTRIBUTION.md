@@ -1,4 +1,4 @@
-# Distributing ByTune for macOS
+# Distributing Blutheist for macOS
 
 This document covers exactly what is needed to turn this repo into a signed,
 notarized, Gatekeeper-clean macOS app — and what remains for the developer to do
@@ -7,21 +7,21 @@ notarized, Gatekeeper-clean macOS app — and what remains for the developer to 
 ## What is already configured
 
 - **Targets**: `dmg` + `zip` for **arm64 and x64** (`npm run dist`), artifact names
-  `ByTune-<version>-<arch>.dmg|.zip` in `release/`.
-- **Bundle**: `com.bytune.music`, category `public.app-category.music`,
+  `Blutheist-<version>-<arch>.dmg|.zip` in `release/`.
+- **Bundle**: `com.blutheist.music`, category `public.app-category.music`,
   dark mode supported, Retina (`NSHighResolutionCapable`), minimum macOS 13
   (the floor of the bundled Electron's binaries — CI fails a build whose
-  `LSMinimumSystemVersion` is lower), `bytune://` URL scheme declared in Info.plist.
+  `LSMinimumSystemVersion` is lower), `blutheist://` URL scheme declared in Info.plist.
 - **Icon**: `build/icon.icns`, generated with the other icons by `npm run icon`.
 - **Hardened Runtime** is enabled (`hardenedRuntime: true`) with a minimal
   entitlements file (`build/entitlements.mac.plist`):
   - `com.apple.security.cs.allow-jit` — required by V8 under Hardened Runtime
   - `com.apple.security.cs.allow-unsigned-executable-memory` — V8 on Intel
   - library validation deliberately **left enabled**; no camera/mic/AppleEvents
-    entitlements — ByTune needs none. User-selected folders (Downloads, Music,
+    entitlements — Blutheist needs none. User-selected folders (Downloads, Music,
     Desktop, Documents) are granted by macOS TCC at pick time via the native
     open panel; no static entitlement is wanted or needed.
-- **Deep links**: `bytune://` registered at runtime (`app.setAsDefaultProtocolClient`)
+- **Deep links**: `blutheist://` registered at runtime (`app.setAsDefaultProtocolClient`)
   and via Info.plist; cold launch is handled by the `open-url` event.
 
 ## What requires Apple credentials (not fabricatable)
@@ -49,9 +49,9 @@ npm ci
 npm run dist         # arm64 + x64 DMG + ZIP, signed + notarized + stapled
 
 # 3. Verify
-spctl -a -t exec -vv release/mac-arm64/ByTune.app
-xcrun stapler validate release/ByTune-<version>-arm64.dmg
-codesign -dv --verbose=4 release/mac-arm64/ByTune.app
+spctl -a -t exec -vv release/mac-arm64/Blutheist.app
+xcrun stapler validate release/Blutheist-<version>-arm64.dmg
+codesign -dv --verbose=4 release/mac-arm64/Blutheist.app
 ```
 
 Without the credentials the same command still produces DMG/ZIP artefacts,
@@ -59,7 +59,7 @@ Without the credentials the same command still produces DMG/ZIP artefacts,
 notarization is skipped with a warning and users allow the app once
 (macOS 15+: System Settings → Privacy & Security → Open Anyway; macOS 13–14:
 right-click → Open). Without that ad-hoc seal, a downloaded copy is rejected
-outright as "ByTune is damaged and can't be opened".
+outright as "Blutheist is damaged and can't be opened".
 
 ## Universal binary (optional)
 
@@ -73,7 +73,7 @@ the cost of download size.
 
 ## Testing the artefact on a clean machine (checklist)
 
-1. Copy `ByTune-<version>-arm64.dmg` to a Mac, open, drag ByTune → Applications.
+1. Copy `Blutheist-<version>-arm64.dmg` to a Mac, open, drag Blutheist → Applications.
 2. Launch from Finder: first-run Gatekeeper prompt (ad-hoc signed, allowed once
    as above — never "damaged") or none (Developer ID signed + notarized).
 3. Onboarding → Continue as guest → search → play → verify audio output.
@@ -85,13 +85,13 @@ the cost of download size.
    opens settings; Import/Export Backup… open native dialogs).
 7. Traffic lights: positioned in the top bar's left reserve; dragging works
    everywhere on the top bar; double-click zooms per System Settings.
-8. Downloads: default `~/Downloads/ByTune`; pick a custom folder; reveal in
-   Finder. Export-compatible downloads land in `~/Music/ByTune` (macOS TCC may
+8. Downloads: default `~/Downloads/Blutheist`; pick a custom folder; reveal in
+   Finder. Export-compatible downloads land in `~/Music/Blutheist` (macOS TCC may
    prompt for Music access — allow or pick another folder; denial must not crash).
 9. Retina: artwork and text crisp at 2×; lyrics sweep smooth.
 10. Sleep the Mac mid-playback; wake; playback resumes without a stuck fade.
 11. Connect/disconnect AirPods mid-track; audio follows the output device.
-12. `bytune://` link handling (cold and warm launch).
+12. `blutheist://` link handling (cold and warm launch).
 13. Restart the app: queue, position, settings, theme and local library restore.
 
 ## What was verified without a Mac (this port's QA)

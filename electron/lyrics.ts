@@ -59,7 +59,7 @@ export interface ProviderResult {
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-const LYRICS_AGENT = "Blutheist (https://github.com/bytune-music)";
+const LYRICS_AGENT = "Blutheist (https://github.com/nilkons-dev/Bluteist_mp_pc)";
 
 async function getText(
   url: string,
@@ -78,13 +78,13 @@ async function getText(
       signal: ctrl.signal,
     });
     if (!res.ok) {
-      console.log(`[bytune][lyrics-net] HTTP ${res.status} ${url.slice(0, 90)}`);
+      console.log(`[blutheist][lyrics-net] HTTP ${res.status} ${url.slice(0, 90)}`);
       onHttpError?.(res.status);
       return null;
     }
     return await res.text();
   } catch (err) {
-    console.log(`[bytune][lyrics-net] FAIL ${url.slice(0, 90)} :: ${err instanceof Error ? err.message : err}`);
+    console.log(`[blutheist][lyrics-net] FAIL ${url.slice(0, 90)} :: ${err instanceof Error ? err.message : err}`);
     onUnreachable?.();
     return null;
   } finally {
@@ -1286,11 +1286,11 @@ async function paxSenixLyrics(id: string): Promise<ProviderResult | null | undef
       }
     }
     console.log(
-      `[bytune][lyrics-net] paxsenix no synced content for ${id}: keys=${Object.keys(json).join(",")} ttmlLen=${(json.ttmlContent ?? "").length}`
+      `[blutheist][lyrics-net] paxsenix no synced content for ${id}: keys=${Object.keys(json).join(",")} ttmlLen=${(json.ttmlContent ?? "").length}`
     );
     return null;
   } catch {
-    console.log(`[bytune][lyrics-net] paxsenix unparseable body: ${body.slice(0, 120)}`);
+    console.log(`[blutheist][lyrics-net] paxsenix unparseable body: ${body.slice(0, 120)}`);
     return null;
   }
 }
@@ -2659,18 +2659,18 @@ export async function fetchLyrics(
   // Temporary diagnostics: what each provider said by the time the pick was made.
   PROVIDERS.forEach(({ name }, i) => {
     if (!settled.has(i)) {
-      console.log(`[bytune][lyrics] ${name}: still running at the deadline`);
+      console.log(`[blutheist][lyrics] ${name}: still running at the deadline`);
       return;
     }
     const r = settled.get(i);
     if (r) {
       const last = r.lines.length ? r.lines[r.lines.length - 1].time : null;
-      console.log(`[bytune][lyrics] ${name}: ${r.lines.length} lines last=${last?.toFixed(1)} plain=${!!r.plainText} word=${r.wordSynced} in ${took.get(i)}ms`);
+      console.log(`[blutheist][lyrics] ${name}: ${r.lines.length} lines last=${last?.toFixed(1)} plain=${!!r.plainText} word=${r.wordSynced} in ${took.get(i)}ms`);
     } else {
-      console.log(`[bytune][lyrics] ${name}: rejected/failed in ${took.get(i)}ms`);
+      console.log(`[blutheist][lyrics] ${name}: rejected/failed in ${took.get(i)}ms`);
     }
   });
-  console.log(`[bytune][lyrics] WINNER: ${pick?.source ?? "none"} lines=${pick?.lines.length ?? 0} plain=${!!pick?.plainText} after ${Date.now() - began}ms`);
+  console.log(`[blutheist][lyrics] WINNER: ${pick?.source ?? "none"} lines=${pick?.lines.length ?? 0} plain=${!!pick?.plainText} after ${Date.now() - began}ms`);
 
   if (!pick) return null;
   if (pick.plainText) return { source: pick.source, wordSynced: false, synced: null, plain: pick.plainText };

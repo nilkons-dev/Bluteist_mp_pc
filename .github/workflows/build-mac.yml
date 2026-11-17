@@ -50,7 +50,7 @@ jobs:
       - name: Build renderer + electron main
         run: npm run build
         env:
-          # ByTune's Supabase project, kept out of the source (scripts/build-main.mjs).
+          # Blutheist's Supabase project, kept out of the source (scripts/build-main.mjs).
           # BYTUNE_RELEASE makes the build fail rather than ship without accounts.
           BYTUNE_SUPABASE_URL: ${{ secrets.BYTUNE_SUPABASE_URL }}
           BYTUNE_SUPABASE_KEY: ${{ secrets.BYTUNE_SUPABASE_KEY }}
@@ -78,7 +78,7 @@ jobs:
 
       - name: Verify signatures and minimum macOS
         # Checks the apps exactly as users receive them. A missing or broken
-        # bundle seal is the "ByTune is damaged" dead end on download, and an
+        # bundle seal is the "Blutheist is damaged" dead end on download, and an
         # LSMinimumSystemVersion below the binaries' real floor lets the app
         # install on Macs where it can never launch.
         run: |
@@ -88,7 +88,7 @@ jobs:
             codesign --verify --deep --strict --verbose=2 "$1"
             codesign -dv "$1" 2>&1 | grep -E "^(Identifier|Signature|Sealed Resources)" || true
             spctl --assess --type execute -vv "$1" 2>&1 || true
-            need=$(vtool -show-build "$1/Contents/MacOS/ByTune" | awk '/minos/ {print $2; exit}')
+            need=$(vtool -show-build "$1/Contents/MacOS/Blutheist" | awk '/minos/ {print $2; exit}')
             have=$(/usr/libexec/PlistBuddy -c "Print :LSMinimumSystemVersion" "$1/Contents/Info.plist")
             echo "binaries need macOS $need, Info.plist declares $have"
             if [ "$(ver "$have")" -lt "$(ver "$need")" ]; then
@@ -100,7 +100,7 @@ jobs:
             echo "== $zip"
             dir=$(mktemp -d)
             ditto -x -k "$zip" "$dir"
-            check "$dir/ByTune.app"
+            check "$dir/Blutheist.app"
           done
           shopt -s nullglob
           for dmg in release/*.dmg; do
@@ -109,7 +109,7 @@ jobs:
             # hdiutil is flaky on these runners; an unmountable DMG is skipped,
             # a mounted one must pass.
             if hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$dmg" >/dev/null; then
-              check "$mnt/ByTune.app"
+              check "$mnt/Blutheist.app"
               hdiutil detach "$mnt" >/dev/null || true
             else
               echo "::warning::could not mount $dmg to verify it"

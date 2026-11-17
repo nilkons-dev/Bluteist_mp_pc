@@ -3,7 +3,7 @@
  *
  * Without a Developer ID certificate electron-builder skips signing and ships
  * Electron's bare per-binary signatures (arm64: linker-signed, x64: none) with
- * no bundle seal. macOS rejects a downloaded copy of that bundle as "ByTune is
+ * no bundle seal. macOS rejects a downloaded copy of that bundle as "Blutheist is
  * damaged and can't be opened. You should move it to the Trash." — a dead end
  * with no Open Anyway button. A complete ad-hoc signature (identity "-") turns
  * it into an ordinary unnotarized app the user can allow once in

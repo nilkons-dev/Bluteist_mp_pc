@@ -24,6 +24,7 @@ import { useDrag, useTrackDrop } from "../lib/dnd";
 import { useSortable, type SortableRowProps } from "../lib/useSortable";
 import { fmtTime, shortTitle, titleSource } from "../lib/format";
 import { FitText } from "./FitText";
+import { Turntable } from "./Turntable";
 import { useArtistImage } from "../lib/artistImage";
 import { monthlyListenersLabel, useArtistAbout } from "../lib/artistAbout";
 import { useLibrary } from "../stores/library";
@@ -468,28 +469,11 @@ function DetailsBody() {
   if (!track) return <StartHere />;
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3">
-      {/* Full-width square artwork, Spotify-panel style — everything scrolls.
-          The cover + title block is a drag source: drop it on a sidebar
-          playlist. The whole header (art, title, artist) shares one drag
-          origin so every pixel behaves the same. */}
+    <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2 space-y-4">
+      {/* The turntable: the record spins while the song plays; the live spectrum and the equalizer switch sit under it.
+          Title and artist are a drag source — drop them on a sidebar playlist. */}
       <div {...detailsDrag.props} className={detailsDrag.dragging ? "opacity-40" : ""}>
-        <Artwork
-          key={track.id}
-          src={track.thumb}
-          className="w-full aspect-square rounded-xl shadow-elev animate-art-in"
-          iconClassName="w-10 h-10"
-          alt=""
-        />
-
-        {/* Title + artist directly under the art. */}
-        <div className="px-0.5 mt-2.5 animate-meta-in" key={`rrmeta-${track.id}`}>
-          <div className="text-[24px] font-extrabold tracking-[-0.5px] text-ink-hi leading-tight [overflow-wrap:anywhere]" title={track.title}>
-            {shortTitle(track.title)}
-          </div>
-          <div className="text-[14px] text-ink-hi/70 mt-1 [overflow-wrap:anywhere]">{track.artist}</div>
-          {titleSource(track.title) && <div className="text-[12.5px] text-ink-hi/45 mt-1">From {titleSource(track.title)}</div>}
-        </div>
+        <Turntable track={track} />
       </div>
 
       <AboutArtistCard track={track} fallbackImage={artistImage ?? track.thumb ?? null} />
@@ -518,19 +502,13 @@ function StartHere() {
   const track = START_SONG;
   const play = (): void => void playSource({ type: "tracks", tracks: [track], label: track.title });
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3">
-      <p className="px-0.5 text-[12.5px] font-semibold text-ink-hi/55 animate-meta-in">Nothing playing yet</p>
-      <div>
-        <Artwork src={track.thumb} className="w-full aspect-square rounded-xl shadow-elev animate-art-in" iconClassName="w-10 h-10" alt="" />
-        <div className="px-0.5 mt-2.5 animate-meta-in">
-          <div className="text-[24px] font-extrabold tracking-[-0.5px] text-ink-hi leading-tight">{track.title}</div>
-          <div className="text-[14px] text-ink-hi/70 mt-1">{track.artist}</div>
-        </div>
-        <div className="flex items-center gap-2 px-0.5 mt-3">
-          <Btn variant="white" icon={Play} onClick={play}>
-            Play
-          </Btn>
-        </div>
+    <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2 space-y-4">
+      <Turntable track={track} />
+      <div className="flex items-center gap-2 px-0.5">
+        <Btn variant="white" icon={Play} onClick={play}>
+          Play
+        </Btn>
+        <span className="text-[12.5px] text-ink-hi/55">Nothing playing yet</span>
       </div>
       <AboutArtistCard track={track} fallbackImage={track.thumb} />
     </div>

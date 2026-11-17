@@ -43,10 +43,10 @@ protocol.registerSchemesAsPrivileged([
 // Library internals (BotGuard VM, parser JIT) can throw asynchronously;
 // log and keep the app alive instead of dying.
 process.on("uncaughtException", (err) => {
-  console.error("[bytune] uncaught exception:", err);
+  console.error("[blutheist] uncaught exception:", err);
 });
 process.on("unhandledRejection", (reason) => {
-  console.error("[bytune] unhandled rejection:", reason);
+  console.error("[blutheist] unhandled rejection:", reason);
 });
 
 let mainWindow: BrowserWindow | null = null;
@@ -66,7 +66,7 @@ let drainStarted = false;
  * re-create the buckets the reset just deleted (and quit would persist them).
  */
 let dataResetActive = false;
-/** A room invite link opened before the page took it (bytune://room/CODE). */
+/** A room invite link opened before the page took it (blutheist://room/CODE). */
 let pendingRoomInvite: string | null = null;
 
 /**
@@ -152,12 +152,12 @@ function menuWiring(): MenuWiring {
     },
     backupExport: (): void => {
       void backupExport(mainWindow).catch((err) =>
-        console.warn("[bytune] menu backup export failed:", err instanceof Error ? err.message : err)
+        console.warn("[blutheist] menu backup export failed:", err instanceof Error ? err.message : err)
       );
     },
     backupImport: (): void => {
       void backupImport(mainWindow).catch((err) =>
-        console.warn("[bytune] menu backup import failed:", err instanceof Error ? err.message : err)
+        console.warn("[blutheist] menu backup import failed:", err instanceof Error ? err.message : err)
       );
     },
     showMainWindow,
@@ -249,7 +249,7 @@ function createTray(): void {
     tray = new Tray(icon);
   } catch (err) {
     // No icon, nothing to hide into: closing the window quits instead (closeAction).
-    console.warn("[bytune] tray icon unavailable:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] tray icon unavailable:", err instanceof Error ? err.message : err);
     return;
   }
   tray.setToolTip("Blutheist");
@@ -281,7 +281,7 @@ function setGlass(on: boolean): void {
       mainWindow.setBackgroundColor(WINDOW_BG);
     }
   } catch (err) {
-    console.warn("[bytune] window glass:", err);
+    console.warn("[blutheist] window glass:", err);
   }
 }
 
@@ -303,7 +303,7 @@ function saveWindowState(): void {
   try {
     persist.writeDataSync("window-state", { ...win.getNormalBounds(), maximized: win.isMaximized() });
   } catch (err) {
-    console.warn("[bytune] window-state save failed:", err);
+    console.warn("[blutheist] window-state save failed:", err);
   }
 }
 
@@ -372,7 +372,7 @@ function createWindow(): void {
     let shownBefore = false;
     win.on("show", () => {
       const ok = applyThumbar();
-      if (isDev) console.log("[bytune] taskbar thumbbar:", ok ? "attached" : "deferred");
+      if (isDev) console.log("[blutheist] taskbar thumbbar:", ok ? "attached" : "deferred");
       if (!ok) setTimeout(applyThumbar, 1500);
       if (shownBefore) {
         for (const delay of [0, 32]) {
@@ -430,13 +430,13 @@ function createWindow(): void {
     try {
       const target = new URL(url);
       if (target.protocol === "http:" || target.protocol === "https:") {
-        void shell.openExternal(target.href).catch((err) => console.warn("[bytune] external browser unavailable:", err.message));
+        void shell.openExternal(target.href).catch((err) => console.warn("[blutheist] external browser unavailable:", err.message));
       }
     } catch { /* malformed URL */ }
     return { action: "deny" };
   });
   void mainWindow.loadURL(pip.rendererUrl()).catch((err) => {
-    console.warn("[bytune] main window load failed:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] main window load failed:", err instanceof Error ? err.message : err);
   });
 
   // A crashed renderer left a blank window with the music stopped. Reload it,
@@ -444,7 +444,7 @@ function createWindow(): void {
   let crashes = 0;
   let crashReset: NodeJS.Timeout | null = null;
   mainWindow.webContents.on("render-process-gone", (_event, details) => {
-    console.warn(`[bytune] renderer gone (${details.reason}, exit ${details.exitCode})`);
+    console.warn(`[blutheist] renderer gone (${details.reason}, exit ${details.exitCode})`);
     if (details.reason === "clean-exit" || !mainWindow || mainWindow.isDestroyed()) return;
     crashes += 1;
     if (crashReset) clearTimeout(crashReset);
@@ -530,7 +530,7 @@ function stripMediaReferer(): void {
     (details) => {
       if (details.statusCode >= 400) {
         console.warn(
-          `[bytune] media request failed: HTTP ${details.statusCode} ${details.error ?? ""} ${details.url.slice(0, 110)}`
+          `[blutheist] media request failed: HTTP ${details.statusCode} ${details.error ?? ""} ${details.url.slice(0, 110)}`
         );
       }
     }
@@ -832,7 +832,7 @@ function registerIpc(): void {
       );
       return "ok";
     } catch (err) {
-      console.warn("[bytune] setTitleBarOverlay failed:", err);
+      console.warn("[blutheist] setTitleBarOverlay failed:", err);
       return "failed";
     }
   });
@@ -1021,7 +1021,7 @@ function registerIpc(): void {
     // The account's display name comes from the server (or one saved here while it couldn't take it goes up).
     await auth.syncDisplayName();
     await sync.syncNowExclusive().catch((err) => {
-      console.error("[bytune] login sync failed (account data not pulled):", err instanceof Error ? err.message : err);
+      console.error("[blutheist] login sync failed (account data not pulled):", err instanceof Error ? err.message : err);
       sync.noteSyncFailure(err);
     });
     mainWindow?.webContents.reload();
@@ -1065,7 +1065,7 @@ function registerIpc(): void {
   ipc.handle("auth:signOut", () => transition.serializeData(async () => {
     await persist.drainWrites();
     await sync.syncNowExclusive().catch((err) => {
-      console.error("[bytune] logout backup failed:", err instanceof Error ? err.message : err);
+      console.error("[blutheist] logout backup failed:", err instanceof Error ? err.message : err);
       sync.noteSyncFailure(err);
     });
     await rooms.leaveRoom().catch(() => undefined);
@@ -1166,13 +1166,13 @@ function queueOpen(paths: string[]): void {
         openedBatches.push(opened);
         if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("files:opened");
       })
-      .catch((err) => console.warn("[bytune] opening files failed:", err instanceof Error ? err.message : err));
+      .catch((err) => console.warn("[blutheist] opening files failed:", err instanceof Error ? err.message : err));
   }, 300);
 }
 
 /** Audio files among launch arguments: Windows hands "Open with" files over this way. */
 const audioArgs = (argv: string[]): string[] =>
-  argv.slice(1).filter((a) => !a.startsWith("-") && !a.startsWith("bytune://") && isKnownAudio(a));
+  argv.slice(1).filter((a) => !a.startsWith("-") && !a.startsWith("blutheist://") && isKnownAudio(a));
 
 const gotLock =
   process.env.BYTUNE_ALLOW_MULTI === "1" || app.requestSingleInstanceLock();
@@ -1181,15 +1181,15 @@ if (!gotLock) {
 } else {
   // Windows shows an app's notifications (a new version) under its Start menu shortcut's ID, which the
   // installer sets to the appId; the media helper (media-helper.cs) speaks for the same one.
-  if (process.platform === "win32") app.setAppUserModelId("com.bytune.music");
+  if (process.platform === "win32") app.setAppUserModelId("com.blutheist.music");
   // Windows: Blutheist's own media session replaces Chromium's (full-size cover
   // in the media flyout); the switch it sets only works before app ready.
   mediaControls.init();
   let oauthReady = false;
   let pendingOAuthUrl: string | undefined;
   const oauthFromUrl = (url: string): void => {
-    // A room invite (bytune://room/CODE) goes to the page, which asks before joining.
-    if (/^bytune:\/\/room\//i.test(url)) {
+    // A room invite (blutheist://room/CODE) goes to the page, which asks before joining.
+    if (/^blutheist:\/\/room\//i.test(url)) {
       const code = roomCodeIn(url);
       if (!code) return;
       pendingRoomInvite = code;
@@ -1204,9 +1204,9 @@ if (!gotLock) {
       pendingOAuthUrl = url;
       return;
     }
-    void auth.handleOAuthCallback(url).catch((err) => console.warn("[bytune] oauth callback:", err.message));
+    void auth.handleOAuthCallback(url).catch((err) => console.warn("[blutheist] oauth callback:", err.message));
   };
-  const bootUrl = process.argv.find((a) => a.startsWith("bytune://"));
+  const bootUrl = process.argv.find((a) => a.startsWith("blutheist://"));
   if (bootUrl) oauthFromUrl(bootUrl);
   queueOpen(audioArgs(process.argv));
   app.on("open-url", (event, url) => {
@@ -1222,7 +1222,7 @@ if (!gotLock) {
     // Opening Blutheist again (Start, a shortcut, an audio file, a link) brings
     // back the running window, from the tray too.
     showMainWindow();
-    const url = argv.find((a) => a.startsWith("bytune://"));
+    const url = argv.find((a) => a.startsWith("blutheist://"));
     if (url) oauthFromUrl(url);
     queueOpen(audioArgs(argv));
   });
@@ -1326,7 +1326,7 @@ if (!gotLock) {
       drainStarted = true;
       event.preventDefault();
       const timeout = setTimeout(() => {
-        console.warn("[bytune] shutdown drain timed out; quitting");
+        console.warn("[blutheist] shutdown drain timed out; quitting");
         app.exit(0);
       }, 3000).unref();
       // Close the window first: its pagehide sends the renderer's pending
@@ -1342,7 +1342,7 @@ if (!gotLock) {
       closed
         .then(() => transition.drainData())
         .then(() => persist.drainWrites())
-        .catch((err) => console.warn("[bytune] shutdown drain failed:", err))
+        .catch((err) => console.warn("[blutheist] shutdown drain failed:", err))
         .finally(() => {
           clearTimeout(timeout);
           app.exit(0);
@@ -1366,7 +1366,7 @@ if (!gotLock) {
     // one-time legacy recovery, and any months it recovers must be announced
     // to the sync engine — which is only possible once that hook is wired.
     stats.initStats();
-    void startStreamProxy().catch((err) => console.warn("[bytune] stream proxy failed:", err));
+    void startStreamProxy().catch((err) => console.warn("[blutheist] stream proxy failed:", err));
     createWindow();
     createTray();
     updates.startUpdates(

@@ -1,4 +1,4 @@
-# ByTune macOS — KNOWN LIMITATIONS
+# Blutheist macOS — KNOWN LIMITATIONS
 
 Everything below is a deliberate, documented limitation — nothing is faked or hidden.
 (Carried over from the Windows-host audit where noted, extended after the real-Mac QA of
@@ -21,8 +21,8 @@ Everything below is a deliberate, documented limitation — nothing is faked or 
 6. **Not Developer ID signed or notarized (credential-gated).** No Apple Developer identity
    exists on the build machine. Up to v1.0.1 electron-builder skipped signing entirely, the
    binaries were only adhoc/linker-signed with no bundle seal, and a downloaded copy was
-   rejected as "ByTune is damaged and can't be opened" (workaround:
-   `xattr -cr /Applications/ByTune.app`). Builds are now ad-hoc signed as a whole bundle
+   rejected as "Blutheist is damaged and can't be opened" (workaround:
+   `xattr -cr /Applications/Blutheist.app`). Builds are now ad-hoc signed as a whole bundle
    (`scripts/after-pack.cjs`), so users allow the app once instead: macOS 15+ via System
    Settings → Privacy & Security → Open Anyway, macOS 13–14 via right-click → Open.
    Keychain-sealed session tokens still work; nothing about playback is affected.
@@ -35,7 +35,7 @@ Everything below is a deliberate, documented limitation — nothing is faked or 
    mirrors; the chain falls through by design and a later track usually gets lyrics. Observed
    live; behaviour matches Windows.
 9. **The app data folder follows the product name.** Data lives in
-   `~/Library/Application Support/ByTune` (not `bytune-macos` as previously documented — docs
+   `~/Library/Application Support/Blutheist` (not `bytune-macos` as previously documented — docs
    corrected on 2026-09-30). Uninstalling the app (drag to Trash) intentionally keeps this data.
 
 ## Verification gaps (environment, not product)
@@ -43,7 +43,7 @@ Everything below is a deliberate, documented limitation — nothing is faked or 
     position state and all action handlers were verified live in the packaged app, but pressing
     physical media keys and *seeing the widget* requires a human (automation lacks the
     Accessibility/Screen Recording TCC grant on this machine).
-11. **Native menu-bar interaction** — the full menu (ByTune/File/Edit/View/Playback/Window) is
+11. **Native menu-bar interaction** — the full menu (Blutheist/File/Edit/View/Playback/Window) is
     built at boot and its template/contract is unit-tested; clicking its items and exercising
     ⌘W/⌘Q as real global keystrokes needs the same TCC grant. The equivalent code paths
     (close-to-hide via the real close handler, quit drain) were verified directly.

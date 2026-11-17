@@ -224,7 +224,7 @@ test("room channels: codes, changes, member ids and the set-aside queue are chec
     await assert.rejects(h.call("room:join", code), /isn't a room code/, JSON.stringify(code));
   }
   await h.call("room:join", " abc-234 ");
-  await h.call("room:join", "bytune://room/HJK789");
+  await h.call("room:join", "blutheist://room/HJK789");
   const good = { baseSeq: 3, track: { id: "dQw4w9WgXcQ" }, positionMs: 1000, playing: true, queue: [], lead: true, note: "played x" };
   for (const bad of [
     null, "x", { ...good, baseSeq: -1 }, { ...good, baseSeq: 1.5 }, { ...good, positionMs: -1 }, { ...good, positionMs: 1e12 },

@@ -533,6 +533,10 @@ let eqCtx: AudioContext | null = null;
 let eqFilters: BiquadFilterNode[] = [];
 let eqLimiter: DynamicsCompressorNode | null = null;
 let eqPreGain: GainNode | null = null;
+/** A read-only tap on the final signal for the now-playing spectrum; it feeds nothing, so playback is untouched. */
+let spectrumAnalyser: AnalyserNode | null = null;
+/** The spectrum wants the Web Audio graph even with the equalizer off (the bands then sit flat at 0 dB). */
+let spectrumWanted = false;
 /** Peak of the current EQ curve in dB (0 with no boost). */
 let eqPeakDb = 0;
 
@@ -603,7 +607,7 @@ function applyEq(): void {
   if (!elements) return;
   const { eqEnabled, eqGains } = useSettings.getState();
   if (!eqCtx) {
-    if (!eqEnabled) return;
+    if (!eqEnabled && !spectrumWanted) return;
     const ctx = new AudioContext();
     eqCtx = ctx;
     // A limiter instead of a fixed preamp: a preamp pulled the whole signal
@@ -631,6 +635,14 @@ function applyEq(): void {
     eqPreGain.connect(eqLimiter);
     eqLimiter.connect(makeup);
     makeup.connect(ctx.destination);
+    // Spectrum tap: reads the same signal the speakers get (local files and streams alike, both come through the
+    // proxy with CORS) and outputs nowhere.
+    spectrumAnalyser = ctx.createAnalyser();
+    spectrumAnalyser.fftSize = 1024;
+    spectrumAnalyser.smoothingTimeConstant = 0.4;
+    spectrumAnalyser.minDecibels = -85;
+    spectrumAnalyser.maxDecibels = -18;
+    makeup.connect(spectrumAnalyser);
     applySink();
   }
   const gains = eqEnabled ? eqGains : [];
@@ -639,6 +651,19 @@ function applyEq(): void {
   eqPeakDb = eqResponsePeakDb(eqCtx, gains);
   refreshVolumes();
   if (eqCtx.state === "suspended") void eqCtx.resume();
+}
+
+/**
+ * The analyser for the now-playing spectrum, building the audio graph the first time it is asked for. Null while the
+ * engine has not started yet (ask again later). Only the meter reads from it: the sound itself is never routed through
+ * anything new beyond the graph the equalizer already uses.
+ */
+export function getSpectrumAnalyser(): AnalyserNode | null {
+  if (!spectrumWanted) {
+    spectrumWanted = true;
+    applyEq();
+  }
+  return spectrumAnalyser;
 }
 
 let labelsUnlocked = false;
@@ -1568,7 +1593,7 @@ function handleFailure(track: Track, err?: unknown): void {
   if (inRoom()) {
     // The room decides what plays: skipping here would skip the song for everyone. This computer sits
     // the song out and plays the room's next one (lib/rooms).
-    console.warn(`[bytune] playback failed for ${track.id} (in a room)`, err);
+    console.warn(`[blutheist] playback failed for ${track.id} (in a room)`, err);
     useUI.getState().toast(`Couldn't play "${shortTitle(track.title)}" on this computer. The room plays on.`, "error");
     stopHere({ until: "next song", song: track.id }, () => usePlayer.getState().setPlaying(false));
     return;
@@ -1586,7 +1611,7 @@ function handleFailure(track: Track, err?: unknown): void {
     ? `Couldn't play "${shortTitle(track.title)}": Blutheist can't play this file's format.`
     : `Couldn't play "${track.title}" — its local file can't be reached on this device. Re-add the folder in Local Music to relink your songs.`;
   if (state.playing && consecutiveFailures <= MAX_SKIPS) {
-    console.warn(`[bytune] playback failed for ${track.id}`, err);
+    console.warn(`[blutheist] playback failed for ${track.id}`, err);
     if (isLocal) {
       // One explainer per failing streak — a whole playlist of unlinked
       // locals must not stack five identical toasts.

@@ -13,9 +13,12 @@ import { askForNewFolder } from "../lib/collection";
 import { useLibrary } from "../stores/library";
 import { useUI, type MenuItem } from "../stores/ui";
 import { HERO_PLAY } from "./CollectionHero";
+import { PlusGlyph } from "./LibraryIcons";
+import { plusFx } from "./libraryFx";
+import "./libraryEye.css";
 
 /** `pill`: Your Library's header button ("Create"); the left panel keeps the small +. */
-export function CreateMenu({ variant = "icon" }: { variant?: "icon" | "pill" }) {
+export function CreateMenu({ variant = "icon" }: { variant?: "icon" | "pill" | "eye" }) {
   const owner = useId();
   const open = useUI((s) => s.contextMenu?.owner === owner);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -76,20 +79,25 @@ export function CreateMenu({ variant = "icon" }: { variant?: "icon" | "pill" }) 
     <div className="relative" ref={ref}>
       <button
         onPointerDown={(e) => e.stopPropagation()}
-        onClick={toggle}
+        onClick={(e) => {
+          if (variant === "eye") plusFx(e.currentTarget);
+          toggle();
+        }}
         title="Create playlist or folder"
         aria-label="Create playlist or folder"
         aria-haspopup="menu"
         aria-expanded={open}
         className={
-          variant === "pill"
+          variant === "eye"
+            ? "lb-sm"
+            : variant === "pill"
             ? HERO_PLAY
             : `p-1.5 rounded-full transition-colors ${
                 open ? "text-ink-hi bg-ink-hi/[0.10]" : "text-ink-hi/55 hover:text-ink-hi hover:bg-ink-hi/[0.06]"
               }`
         }
       >
-        <Plus className={variant === "pill" ? "w-5 h-5" : "w-4 h-4"} />
+        {variant === "eye" ? <PlusGlyph /> : <Plus className={variant === "pill" ? "w-5 h-5" : "w-4 h-4"} />}
         {variant === "pill" && "Create"}
       </button>
     </div>

@@ -81,7 +81,7 @@ function resolveDeviceMarket(): ResolvedMarket {
       override: process.env.BYTUNE_MARKET ?? null,
       isDev: !app.isPackaged,
     });
-    console.log(`[bytune] market: ${marketValue.country} (${marketValue.source})`);
+    console.log(`[blutheist] market: ${marketValue.country} (${marketValue.source})`);
   }
   return marketValue;
 }
@@ -132,10 +132,10 @@ async function createSession(): Promise<any> {
   if (visitorData) {
     try {
       poToken = await getPoToken(visitorData);
-      console.log("[bytune] PO token ready");
+      console.log("[blutheist] PO token ready");
     } catch (err) {
       console.warn(
-        "[bytune] PO token minting failed, continuing without:",
+        "[blutheist] PO token minting failed, continuing without:",
         err instanceof Error ? err.message : err
       );
     }
@@ -154,7 +154,7 @@ async function createSession(): Promise<any> {
   (yt as any).__poToken = poToken;
   (yt as any).__market = market.country;
   console.log(
-    `[bytune] innertube session: gl=${yt.session?.context?.client?.gl ?? "?"} hl=${yt.session?.context?.client?.hl ?? "?"}`
+    `[blutheist] innertube session: gl=${yt.session?.context?.client?.gl ?? "?"} hl=${yt.session?.context?.client?.hl ?? "?"}`
   );
   return yt;
 }
@@ -1209,7 +1209,7 @@ export function resolveStream(
             (f: any) => f?.has_audio && !f?.has_video
           );
           console.log(
-            `[bytune] stream ${client}: playability=${String((info as any)?.playability_status?.status ?? "?")} audio=${audioOnly.length} plainUrl=${audioOnly.filter((f: any) => typeof f.url === "string").length} sig=${audioOnly.filter((f: any) => typeof f.signature_cipher === "string" || typeof f.cipher === "string").length} hls=${sd?.hls_manifest_url ? "y" : "n"}`
+            `[blutheist] stream ${client}: playability=${String((info as any)?.playability_status?.status ?? "?")} audio=${audioOnly.length} plainUrl=${audioOnly.filter((f: any) => typeof f.url === "string").length} sig=${audioOnly.filter((f: any) => typeof f.signature_cipher === "string" || typeof f.cipher === "string").length} hls=${sd?.hls_manifest_url ? "y" : "n"}`
           );
           const picked = await pickAudio(info, yt, maxKbps, mp4Only, pin);
           if (!picked) throw new Error(`no audio format for client ${client}`);
@@ -1235,7 +1235,7 @@ export function resolveStream(
       }
       if (round === 0) {
         console.warn(
-          "[bytune] all clients failed, rebuilding session with a fresh PO token:",
+          "[blutheist] all clients failed, rebuilding session with a fresh PO token:",
           lastErr instanceof Error ? lastErr.message : lastErr
         );
         await resetSession();

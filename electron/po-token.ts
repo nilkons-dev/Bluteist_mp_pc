@@ -105,13 +105,13 @@ async function fetchChallengeFromHomepage(): Promise<ChallengeData | undefined> 
 
     const attMatch = pageHtml.match(/window\.ytAtN\(\s*({[\s\S]*?})\s*\)/);
     if (!attMatch) {
-      console.warn("[bytune] homepage challenge: no ytAtN payload");
+      console.warn("[blutheist] homepage challenge: no ytAtN payload");
       return undefined;
     }
     const attData: any = (parseLooseJSON as any)(attMatch[1]);
     const bgChallenge = attData?.R?.bgChallenge;
     if (!bgChallenge?.program || !bgChallenge?.globalName) {
-      console.warn("[bytune] homepage challenge: missing program/globalName");
+      console.warn("[blutheist] homepage challenge: missing program/globalName");
       return undefined;
     }
 
@@ -121,7 +121,7 @@ async function fetchChallengeFromHomepage(): Promise<ChallengeData | undefined> 
       bgChallenge?.interpreterJavascript?.privateDoNotAccessOrElseSafeScriptWrappedValue;
     if (!interpreterJS) {
       if (!interpreterUrlWrapped) {
-        console.warn("[bytune] homepage challenge: no interpreter available");
+        console.warn("[blutheist] homepage challenge: no interpreter available");
         return undefined;
       }
       const jsRes = await fetch(`https:${interpreterUrlWrapped}`, {
@@ -138,7 +138,7 @@ async function fetchChallengeFromHomepage(): Promise<ChallengeData | undefined> 
       ytcfg,
     };
   } catch (err) {
-    console.warn("[bytune] homepage challenge fetch failed:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] homepage challenge fetch failed:", err instanceof Error ? err.message : err);
     return undefined;
   }
 }
@@ -179,7 +179,7 @@ async function fetchChallengeFromAttGet(): Promise<ChallengeData | undefined> {
       ytcfg: null,
     };
   } catch (err) {
-    console.warn("[bytune] att/get challenge failed:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] att/get challenge failed:", err instanceof Error ? err.message : err);
     return undefined;
   }
 }
@@ -209,7 +209,7 @@ async function mintWithChallenge(challenge: ChallengeData, visitorData: string):
   const webPoSignalOutput: any[] = [];
   const botguardResponse = await botguard.snapshot({ webPoSignalOutput } as any, 20000);
   console.log(
-    `[bytune] BotGuard snapshot: len=${String(botguardResponse ?? "").length} head=${String(botguardResponse ?? "").slice(0, 200)}`
+    `[blutheist] BotGuard snapshot: len=${String(botguardResponse ?? "").length} head=${String(botguardResponse ?? "").slice(0, 200)}`
   );
   if (!botguardResponse) throw new Error("BotGuard snapshot returned nothing");
 
@@ -271,7 +271,7 @@ async function mint(visitorData: string): Promise<MintedToken> {
     if (challenge.ytcfg) {
       // Homepage challenge failed — retry with the /att/get challenge.
       console.warn(
-        "[bytune] homepage-challenge mint failed, retrying with att/get:",
+        "[blutheist] homepage-challenge mint failed, retrying with att/get:",
         err instanceof Error ? err.message : err
       );
       const fallback = await fetchChallengeFromAttGet();

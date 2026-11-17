@@ -66,7 +66,7 @@ export async function backupExport(parent: BrowserWindow | null): Promise<{ path
   const stamp = now.toISOString().slice(0, 10);
   const saveOpts = {
     title: "Export Blutheist backup",
-    defaultPath: `bytune-backup-${stamp}.json`,
+    defaultPath: `blutheist-backup-${stamp}.json`,
     filters: [{ name: "Blutheist backup", extensions: ["json"] }],
   };
   const res = parent

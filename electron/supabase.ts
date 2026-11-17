@@ -6,7 +6,7 @@
  *    `<username>@users.bytune.local` address; uniqueness is guaranteed by a
  *    UNIQUE column in the `profiles` table, not by the auth provider.
  *  - Google OAuth         → PKCE flow through the default browser, coming
- *    back over the bytune:// deep-link protocol.
+ *    back over the blutheist:// deep-link protocol.
  *  - guest                → no account at all; a local profile marker only.
  *
  * Session tokens are sealed with Electron safeStorage (DPAPI) into the local
@@ -137,12 +137,12 @@ export async function initAuth(): Promise<void> {
       refresh_token: stored.refresh_token,
     });
     if (error) {
-      console.warn("[bytune] session restore failed:", error.message);
+      console.warn("[blutheist] session restore failed:", error.message);
       return;
     }
     currentSession = data.session;
   } catch (err) {
-    console.warn("[bytune] unreadable stored session:", err);
+    console.warn("[blutheist] unreadable stored session:", err);
   }
 }
 
@@ -245,7 +245,7 @@ async function claimDisplayName(userId: string, name: string): Promise<void> {
     await pushDisplayName(userId, name);
   } catch (err) {
     pending = true;
-    console.warn("[bytune] display name not saved on the server yet:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] display name not saved on the server yet:", err instanceof Error ? err.message : err);
   }
   await patchAccount(userId, { displayName: name, displayNamePending: pending || undefined, suggestedDisplayName: undefined });
 }
@@ -287,7 +287,7 @@ export async function syncDisplayName(): Promise<boolean> {
     await patchAccount(userId, { displayName: remote ?? undefined });
     return true;
   } catch (err) {
-    console.warn("[bytune] display name sync failed:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] display name sync failed:", err instanceof Error ? err.message : err);
     return false;
   }
 }
@@ -444,7 +444,7 @@ export async function signInGoogle(): Promise<SessionInfo> {
     // complete that sign-in instead of opening a second browser tab.
     const early = earlyOAuthCallbacks.splice(0).pop();
     if (early) {
-      void handleOAuthCallback(early).catch((err) => console.warn("[bytune] oauth callback:", err.message));
+      void handleOAuthCallback(early).catch((err) => console.warn("[blutheist] oauth callback:", err.message));
       return;
     }
     void shell.openExternal(data.url).catch((err) => {
@@ -537,7 +537,7 @@ async function finishGoogleSignIn(code: string): Promise<SessionInfo> {
     const { error: pErr } = await supabase()
       .from("profiles")
       .insert({ id: userId, username: finalName });
-    if (pErr) console.warn("[bytune] profile insert failed:", pErr.message);
+    if (pErr) console.warn("[blutheist] profile insert failed:", pErr.message);
     username = finalName;
     // The display name offered with the username choice: the guest's own if they had one, else the
     // name on the Google account (cut to the length a display name can be).
@@ -634,12 +634,12 @@ export async function signOut(): Promise<SessionInfo> {
   return { mode: null, userId: null, username: null, freshInstall: false };
 }
 
-/** OS-level protocol registration so bytune:// reaches the running app. */
+/** OS-level protocol registration so blutheist:// reaches the running app. */
 export function registerProtocol(): void {
   if (process.defaultApp) {
     // electron dev: argv[1] is the entry script.
-    app.setAsDefaultProtocolClient("bytune", process.execPath, [path.resolve(process.argv[1])]);
+    app.setAsDefaultProtocolClient("blutheist", process.execPath, [path.resolve(process.argv[1])]);
   } else {
-    app.setAsDefaultProtocolClient("bytune");
+    app.setAsDefaultProtocolClient("blutheist");
   }
 }

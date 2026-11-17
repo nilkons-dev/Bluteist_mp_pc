@@ -4,10 +4,12 @@ import App from "./App";
 import { PipApp } from "./pip/PipApp";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { endIntro } from "./intro";
+import { installButtonFx } from "./lib/buttonFx";
 import "./lib/platform";
 import "./index.css";
 
 endIntro();
+installButtonFx();
 
 /**
  * One bundle, two windows: the main app shell, and — when this renderer was

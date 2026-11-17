@@ -55,7 +55,7 @@ updater.startUpdates((s) => seen.push(s), () => undefined);
 
 /** GitHub's /releases/latest, as fetch sees it with redirect: "manual". */
 const github = (location, status = 302) => async () => ({ status, headers: { get: (h) => (h === "location" ? location : null) } });
-const TAG = (v) => `https://github.com/rishiteja21/ByTune/releases/tag/${v}`;
+const TAG = (v) => `https://github.com/rishiteja21/Blutheist/releases/tag/${v}`;
 
 test("versions: only a newer x.y.z counts", () => {
   assert.equal(updater.newerVersion("v1.1.0", "1.0.1"), "1.1.0");
@@ -70,7 +70,7 @@ test("versions: only a newer x.y.z counts", () => {
 test("the latest release's tag comes from where GitHub redirects", () => {
   assert.equal(updater.tagFromLocation(TAG("v1.2.0")), "v1.2.0");
   assert.equal(updater.tagFromLocation(`${TAG("v1.2.0")}/`), "v1.2.0");
-  assert.equal(updater.tagFromLocation("https://github.com/rishiteja21/ByTune/releases"), null, "no release yet");
+  assert.equal(updater.tagFromLocation("https://github.com/rishiteja21/Blutheist/releases"), null, "no release yet");
   assert.equal(updater.tagFromLocation(null), null);
 });
 

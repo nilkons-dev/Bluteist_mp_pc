@@ -9,7 +9,7 @@
  *
  * A Mac can't install in place: macOS refuses an update to an app that isn't signed with an Apple
  * Developer ID, and Blutheist's Mac builds are signed ad hoc. There, and whenever a Windows install
- * fails, Download opens bytune.space instead.
+ * fails, Download opens the Blutheist download page instead.
  *
  * The release check reads where github.com/…/releases/latest redirects to: no API, so no rate limit.
  * A dev run checks only with BYTUNE_UPDATE_TEST_VERSION set, and pretends to be that version.
@@ -21,7 +21,7 @@ import * as persist from "./persist";
 // your repository (https://github.com/<you>/<repo>/releases), and add "publish" to package.json's build (see GITHUB_GUIDE.md).
 const UPDATES_ENABLED = false;
 const RELEASES = "https://github.com/YOUR_GITHUB_USERNAME/Blutheist/releases";
-export const DOWNLOAD_PAGE = "https://bytune.space";
+export const DOWNLOAD_PAGE = "https://github.com/nilkons-dev/Bluteist_mp_pc";
 const FIRST_CHECK_MS = 20_000;
 const CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
 
@@ -109,7 +109,7 @@ export function checkForUpdates(auto = false): Promise<void> {
     try {
       const res = await fetch(`${RELEASES}/latest`, {
         redirect: "manual",
-        headers: { "User-Agent": `ByTune/${state.current}` },
+        headers: { "User-Agent": `Blutheist/${state.current}` },
         signal: AbortSignal.timeout(15_000),
       });
       const tag = tagFromLocation(res.headers.get("location"));
@@ -162,8 +162,8 @@ export async function installUpdate(): Promise<void> {
     await u.downloadUpdate();
     set({ status: "ready", percent: 100 });
   } catch (err) {
-    console.warn("[bytune] update:", err instanceof Error ? err.message : err);
-    set({ status: "error", percent: undefined, error: "The update couldn't download. Download it from bytune.space instead." });
+    console.warn("[blutheist] update:", err instanceof Error ? err.message : err);
+    set({ status: "error", percent: undefined, error: "The update couldn't download. Download it from the Blutheist download page instead." });
   }
 }
 

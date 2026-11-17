@@ -174,7 +174,7 @@ export async function publicPlaylist(link: string): Promise<ImportedPlaylist> {
       const full = await readPlaylist(id, token);
       return { ...embed, songs: full.songs, total: full.total };
     } catch (err) {
-      console.warn("[bytune] spotify: reading the whole playlist failed, keeping the embed's songs:", err instanceof Error ? err.message : err);
+      console.warn("[blutheist] spotify: reading the whole playlist failed, keeping the embed's songs:", err instanceof Error ? err.message : err);
     }
   }
   return embed;
@@ -225,7 +225,7 @@ async function signedIn<T>(read: (token: string) => Promise<T>): Promise<T> {
     return result;
   } catch (err) {
     s.problem = err instanceof SpotifySessionError ? err.message : CHANGED;
-    console.warn("[bytune] spotify:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] spotify:", err instanceof Error ? err.message : err);
     throw new Error(s.problem);
   }
 }
@@ -328,7 +328,7 @@ async function adopt(cookie: string): Promise<void> {
     const name = web.parseProfileName(await query("profileAttributes", {}, s.access.token));
     await saveAccount({ name });
   } catch (err) {
-    console.warn("[bytune] spotify: profile:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] spotify: profile:", err instanceof Error ? err.message : err);
   }
   s.problem = null;
 }
@@ -399,7 +399,7 @@ async function openSignIn(parent: BrowserWindow | null): Promise<SpotifyStatus> 
           await adopt(cookie);
         } catch (err) {
           here().problem = err instanceof SpotifySessionError ? err.message : CHANGED;
-          console.warn("[bytune] spotify: connect:", err instanceof Error ? err.message : err);
+          console.warn("[blutheist] spotify: connect:", err instanceof Error ? err.message : err);
         }
       }
       // Every window of the sign-in, a Facebook or Apple popup included.

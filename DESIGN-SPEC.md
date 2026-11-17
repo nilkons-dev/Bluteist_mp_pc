@@ -1,4 +1,4 @@
-# ByTune — Design Spec
+# Blutheist — Design Spec
 
 An Apple-Music-style visual language on a black canvas, arranged in
 Spotify's desktop shell. Built from Apple Music-style design references and
@@ -25,7 +25,7 @@ artwork-derived colour, glass), **Spotify supplies the desktop arrangement**
 | ink.dim | `#8E8E93` | secondary text, subtitles |
 | ink.faint | `white @ 55%` | metadata, timestamps |
 | ink.ghost | `white @ 34%` | disabled, decorative |
-| accent | ByTune violet `rgb(139 92 246)` | progress, focus, active tints only |
+| accent | Blutheist violet `rgb(139 92 246)` | progress, focus, active tints only |
 
 - White is the primary control colour (play FABs, selected pills, switches):
   white fill, black glyph. No violet buttons.

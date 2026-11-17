@@ -17,7 +17,7 @@ Nothing in `electron/`, `src/`, `package.json`, or build configuration was touch
 
 ## Screenshots (all from the real application)
 
-Captured interactively from the live ByTune app (Electron instance running this repository's source — the same code as the v1.0.1 release; UI identical to the packaged build):
+Captured interactively from the live Blutheist app (Electron instance running this repository's source — the same code as the v1.0.1 release; UI identical to the packaged build):
 
 | File | Shows |
 |---|---|
@@ -52,9 +52,9 @@ Verified in code: keyboard shortcuts (`Space`, `←/→` seek 5s, `Shift+←/→
 ## Links verified (all HTTP 200)
 
 - `https://bytune.vercel.app/`
-- `https://github.com/rishiteja21/ByTune/releases/latest/download/ByTune-Setup.exe` (dynamic latest-release URL; resolves to the current v1.0.1 asset — keep the `ByTune-Setup.exe` asset name stable in future releases for this link to keep working)
-- `https://github.com/rishiteja21/ByTune/releases`
-- `https://github.com/rishiteja21/ByTune/issues`
+- `https://github.com/rishiteja21/Blutheist/releases/latest/download/Blutheist-Setup.exe` (dynamic latest-release URL; resolves to the current v1.0.1 asset — keep the `Blutheist-Setup.exe` asset name stable in future releases for this link to keep working)
+- `https://github.com/rishiteja21/Blutheist/releases`
+- `https://github.com/rishiteja21/Blutheist/issues`
 - `https://lrclib.net`, `https://github.com/Brainicism/bgutil-ytdlp-pot-provider`
 - All 10 relative screenshot paths exist in `docs/screenshots/`.
 
@@ -62,7 +62,7 @@ No localhost URLs, no stale GitHub Pages URLs, no old website domains remain in 
 
 ## SEO / discoverability
 
-- Repo description: "ByTune — an open-source desktop music player for Windows: YouTube Music streaming, word-synced lyrics, fullscreen & mini players, local library, downloads and listening stats."
+- Repo description: "Blutheist — an open-source desktop music player for Windows: YouTube Music streaming, word-synced lyrics, fullscreen & mini players, local library, downloads and listening stats."
 - First paragraph targets "open-source desktop music player for Windows" naturally; headings read as product sections (no keyword stuffing, no repeated "Spotify alternative").
 - Descriptive alt text on every screenshot; badge row limited to release / license / platform / website.
 
@@ -76,13 +76,13 @@ Commit `6fc266e` shipped the redesign. A second read/verify/fix pass followed:
 
 ### Finding: why screenshots could appear not to render
 
-- All 10 screenshot files **were** present on `main` and their GitHub URLs returned `200 image/png` (checked every one via `github.com/rishiteja21/ByTune/raw/main/docs/screenshots/*.png`).
+- All 10 screenshot files **were** present on `main` and their GitHub URLs returned `200 image/png` (checked every one via `github.com/rishiteja21/Blutheist/raw/main/docs/screenshots/*.png`).
 - However, they were embedded as raw HTML `<img>` tags inside `<p align="center">` wrappers — the least robust rendering path across GitHub web views, mobile web and the GitHub mobile apps.
 - **Fix:** every image is now standard Markdown syntax `![alt](docs/screenshots/…)` — the most reliable path on all GitHub surfaces. Badges converted to Markdown `[![…](…)](…)` too.
 
 ### Structure changes (product → visuals → features → install → technical)
 
-- Hero screenshot moved directly under the `# ByTune` heading, followed by the product description and Download/Website/Releases links.
+- Hero screenshot moved directly under the `# Blutheist` heading, followed by the product description and Download/Website/Releases links.
 - New `## Screenshots` section with one `###` subsection per capability, in the requested order: The player · Fullscreen · Mini player · Lyrics · Search · Queue & playlists · Your library · Local music · Downloads · Settings.
 - `Development` merged under `Installation` as a subsection; Architecture slimmed to a layer diagram + link to the new **`docs/ARCHITECTURE.md`**, which now holds the deep implementation detail (BotGuard/PO-token minting, InnerTube client rotation, local stream proxy, Piped fallback, persistence, Auto Mix analysis, local-music scanning).
 - New screenshot `docs/screenshots/artist.png` (artist page with Top songs + player bar) captured from the running app for "The player" section — 11 real screenshots now referenced.
@@ -109,7 +109,7 @@ No legality claims were added; the "use responsibly and in accordance with the t
 ### Links & metadata re-verified
 
 - `https://bytune.vercel.app/` → 200
-- `https://github.com/rishiteja21/ByTune/releases/latest/download/ByTune-Setup.exe` → 200 (dynamic latest-asset URL)
+- `https://github.com/rishiteja21/Blutheist/releases/latest/download/Blutheist-Setup.exe` → 200 (dynamic latest-asset URL)
 - Releases, Issues, LRCLIB, bgutil provider → 200
 - All 11 relative image paths exist in the working tree.
 - Repo description and topics unchanged from the first pass and still accurate.
@@ -129,10 +129,10 @@ At the owner's request, three of my captured screenshots were replaced with the 
 
 | Slot | Old file | New file | Source |
 |---|---|---|---|
-| Hero (under `# ByTune`) | `home.png` (my capture) | `home.png` — "Good night" home with Jump back in | Owner's screenshot |
+| Hero (under `# Blutheist`) | `home.png` (my capture) | `home.png` — "Good night" home with Jump back in | Owner's screenshot |
 | Mini player section | `miniplayer.png` | `miniplayer.jpg` (519 KB, converted from 6.8 MB PNG — photographic desktop wallpaper) | Owner's screenshot: PiP window over the desktop |
 | Local music section | `local-music.png` (my "All songs" capture) | `local-music.png` — ENGLISH folder view | Owner's screenshot |
 
 - Old captures remain recoverable in git history; alt texts updated to match the new imagery.
 - Note: the owner-selected local-music screenshot visibly shows the imported folder path (`D:\Music\ENGLISH — Scanned Sep 28`); owner's choice, kept as provided.
-- Same-day follow-up: the mini player shot was replaced again with the owner's later capture (ByTune PiP over the owner's Batman desktop wallpaper, playing "Sailor Song" — Gigi Perez); 2 MB PNG → 146 KB JPEG at 1920px.
+- Same-day follow-up: the mini player shot was replaced again with the owner's later capture (Blutheist PiP over the owner's Batman desktop wallpaper, playing "Sailor Song" — Gigi Perez); 2 MB PNG → 146 KB JPEG at 1920px.

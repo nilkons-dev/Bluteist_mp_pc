@@ -64,7 +64,7 @@ test("on Windows the helper takes over and Chromium's own session is switched of
   assert.deepEqual(h.switches, [["disable-features", "HardwareMediaKeyHandling"]]);
   h.api.start({ onAction() {}, readLocalArt: () => null });
   assert.equal(h.children.length, 1);
-  assert.match(h.children[0].file, /ByTuneMedia\.exe$/);
+  assert.match(h.children[0].file, /BlutheistMedia\.exe$/);
 });
 
 test("the title shows at once and the full-size cover follows", async () => {

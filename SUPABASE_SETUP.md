@@ -1,4 +1,4 @@
-# ByTune — Accounts & Cloud Backup Setup
+# Blutheist — Accounts & Cloud Backup Setup
 
 The app now has a first-run screen with three options: **Create account** (username +
 password), **Continue with Google**, and **Continue as guest**. Guests stay fully
@@ -43,7 +43,7 @@ The app cannot talk to the cloud until you complete the ~10 minutes of setup bel
 **Authentication → URL Configuration → Redirect URLs:** add
 
 ```
-bytune://oauth/callback
+blutheist://oauth/callback
 ```
 
 This is the deep link that carries the Google sign-in result back into the desktop app.
@@ -74,7 +74,7 @@ npm run build      # or: npm run dist   for the installer
 | Flow | What happens |
 | --- | --- |
 | **Username + password** | Availability is checked live while typing; the UNIQUE column makes double-claims impossible even in a race. No email, no OTP, nothing to verify. **No password recovery** — the sign-up screen warns about this. |
-| **Google** | Opens the default browser (no embedded webview, no password harvesting), returns via the `bytune://` deep link, exchanges a PKCE code. |
+| **Google** | Opens the default browser (no embedded webview, no password harvesting), returns via the `blutheist://` deep link, exchanges a PKCE code. |
 | **Guest** | Creates only a local profile marker — no network. Data lives in `%APPDATA%/bytune-desktop` (userData), which the NSIS installer does **not** delete on uninstall (`deleteAppDataOnUninstall: false`). |
 | **Reinstall as guest** | The app distinguishes a reinstall from a normal launch via a marker file in the *install directory* (wiped on uninstall) while the data in *userData* survives → it shows **"Guest account found — continue?"**. |
 | **Guest → account** | Signing in later keeps all local data and merges it into the account on the first sync. Nothing is deleted. |
@@ -84,7 +84,7 @@ npm run build      # or: npm run dist   for the installer
 ## Testing checklist
 
 - Sign up with a username, watch the "taken" check, verify the row in Supabase → Table Editor → `profiles`.
-- Log out (Settings → ByTune account → Sign out), sign back in.
+- Log out (Settings → Blutheist account → Sign out), sign back in.
 - Google button → browser opens → returns to the app signed in.
 - Guest: make a playlist → uninstall → reinstall → "Guest account found" → Continue → playlist is there.
 - Signed in on a wiped data folder → everything restores from the cloud.

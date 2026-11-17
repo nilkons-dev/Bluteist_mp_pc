@@ -210,7 +210,7 @@ test("a new Google account is offered its Google name, and keeps the one chosen 
   try {
     h.server.user.meta = { full_name: "Rishi Teja Thabeti", name: "Rishi Teja Thabeti" };
     const pending = h.api.signInGoogle();
-    await h.api.handleOAuthCallback("bytune://oauth/callback?code=good");
+    await h.api.handleOAuthCallback("blutheist://oauth/callback?code=good");
     const info = await pending;
     assert.equal(info.needsUsername, true);
     assert.equal(h.api.sessionInfo().suggestedDisplayName, "Rishi Teja Thabeti");
@@ -227,7 +227,7 @@ test("skipping the username choice still keeps the display name", async () => {
   try {
     h.server.user.meta = { full_name: "Rishi Teja Thabeti" };
     const pending = h.api.signInGoogle();
-    await h.api.handleOAuthCallback("bytune://oauth/callback?code=good");
+    await h.api.handleOAuthCallback("blutheist://oauth/callback?code=good");
     await pending;
     await h.api.skipUsernameClaim("Rishi");
     assert.deepEqual([h.api.sessionInfo().needsUsername, h.api.sessionInfo().displayName], [false, "Rishi"]);

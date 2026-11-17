@@ -18,12 +18,12 @@ export const MAX_ROOM_QUEUE = 100;
 
 /** A room code out of what was typed or pasted: "abc-234", " ABC234 ", or an invite link. */
 export function roomCodeIn(text: string): string | null {
-  const link = /^bytune:\/\/room\/([A-Za-z0-9-]+)\/?$/i.exec(text.trim());
+  const link = /^blutheist:\/\/room\/([A-Za-z0-9-]+)\/?$/i.exec(text.trim());
   const code = (link ? link[1] : text).replace(/[\s-]/g, "").toUpperCase();
   return ROOM_CODE.test(code) ? code : null;
 }
 
-export const inviteLink = (code: string): string => `bytune://room/${code}`;
+export const inviteLink = (code: string): string => `blutheist://room/${code}`;
 
 /** One reading of the server's clock, with this computer's clock just before and after asking. */
 export interface ClockSample {

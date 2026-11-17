@@ -1,0 +1,36 @@
+/* Your Library — the brand's bold eye icon rows. */
+.lb { --lb-cut: #0e0e0e; }
+.lb-ico { width: 28px; height: 28px; overflow: visible; fill: currentColor; stroke: none; transition: scale .16s cubic-bezier(.3, 1.4, .5, 1); }
+.lb-tb { transform-box: fill-box; transform-origin: center; }
+.lb-st { fill: currentColor; stroke: none; }
+.lb-sp { opacity: 0; }
+.lb-head-ico { width: 20px; height: 20px; }
+.lb-ib { position: relative; flex: none; width: 40px; height: 40px; display: grid; place-items: center; opacity: .55; transition: opacity .25s; color: #fff; }
+.lb-row:hover .lb-ib { opacity: .8; }
+.lb-row.sel .lb-ib { opacity: 1; }
+.lb-row:active .lb-ib .lb-ico { scale: .82; }
+.lb-row { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 20px; cursor: pointer; border-radius: 10px; color: #fff; }
+.lb-row::before {
+  content: ""; position: absolute; left: 6px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; background: #fff;
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  transform: scale(0); transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
+}
+.lb-row.sel::before { transform: scale(1); }
+.lb-row:focus-visible { outline: 1.5px solid #fff; outline-offset: -2px; }
+.lb-sm { flex: none; width: 36px; height: 36px; display: grid; place-items: center; color: #fff; background: none; border: 0; padding: 0; cursor: pointer; }
+.lb-sm .lb-ico { width: 22px; height: 22px; }
+.lb-sm:active .lb-ico { scale: .82; }
+.lb-sm:focus-visible { outline: 1.5px solid #fff; outline-offset: 2px; border-radius: 12px; }
+.lb-pin { opacity: .35; transition: opacity .2s; }
+.lb-row:hover .lb-pin { opacity: .6; }
+.lb-pin.on { opacity: 1; }
+.lb-pin.on .lb-pn { fill: currentColor; }
+.lb-hr { transition: fill .25s; }
+.lb-hr.on { fill: currentColor; }
+.lb-tx { flex: 1; min-width: 0; }
+.lb-tx b { display: block; font-size: 14px; font-weight: 600; }
+.lb-tx small { display: block; font-size: 12px; color: #8c8c8c; margin-top: 3px; }
+.lb-sep { height: 1px; background: rgba(255, 255, 255, .12); margin: 6px 14px; }
+.lb-foot { padding: 4px 0 6px; border-top: 1px solid rgba(255, 255, 255, .10); }
+.lb-photo { width: 40px; height: 40px; border-radius: 9999px; object-fit: cover; flex: none; }
+@media (prefers-reduced-motion: reduce) { .lb-row::before { transition: none; } }

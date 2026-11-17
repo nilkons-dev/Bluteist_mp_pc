@@ -1,6 +1,6 @@
 /**
  * Compiles the Windows media-session helper (electron/media-helper.cs) into
- * dist-electron/ByTuneMedia.exe with the C# compiler that ships with every
+ * dist-electron/BlutheistMedia.exe with the C# compiler that ships with every
  * Windows 10/11 (.NET Framework 4.x) — no SDK or Visual Studio needed.
  * No-op elsewhere: the helper is Windows only (electron/media-controls.ts).
  */
@@ -19,7 +19,7 @@ if (process.platform === "win32") {
       "/nologo",
       "/target:winexe",
       "/optimize+",
-      `/out:${path.join(root, "dist-electron", "ByTuneMedia.exe")}`,
+      `/out:${path.join(root, "dist-electron", "BlutheistMedia.exe")}`,
       ...["Windows.Foundation.winmd", "Windows.Media.winmd", "Windows.Storage.winmd"].map((f) => `/reference:${path.join(winmd, f)}`),
       ...["System.Runtime.dll", "System.Runtime.InteropServices.WindowsRuntime.dll", "System.Web.Extensions.dll"].map(
         (f) => `/reference:${path.join(framework, f)}`

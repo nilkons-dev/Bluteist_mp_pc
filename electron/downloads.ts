@@ -302,7 +302,7 @@ async function runDownload(track: Track, dirOverride?: string, maxKbps?: number,
     checkCancelled();
     // Named by the track id, the part is this song's own: one left by a download the app
     // was quit in the middle of is simply started over.
-    part = path.join(dir, `.bytune-${track.id}.part`);
+    part = path.join(dir, `.blutheist-${track.id}.part`);
     partials.add(part);
     emit({ type: "start", id: track.id });
     state.set(track.id, { phase: "running", downloaded: 0, total: 0 });
@@ -328,7 +328,7 @@ async function runDownload(track: Track, dirOverride?: string, maxKbps?: number,
       } catch (err) {
         checkCancelled();
         if (attempt >= ATTEMPTS) throw err;
-        console.warn(`[bytune] download ${track.id}: ${err instanceof Error ? err.message : err}; trying again`);
+        console.warn(`[blutheist] download ${track.id}: ${err instanceof Error ? err.message : err}; trying again`);
         await abortable(new Promise((r) => setTimeout(r, attempt * 1500)), ctrl.signal);
         // A fresh URL. The same file (rendition and length) resumes; another one starts over.
         const next = await abortable(resolveStream(track.id, true, maxKbps, true), ctrl.signal);
@@ -345,7 +345,7 @@ async function runDownload(track: Track, dirOverride?: string, maxKbps?: number,
         const cover = await coverFor(track, ctrl.signal);
         await writeM4aTags(part, { title: track.title, artist: track.artist, album: track.album || undefined, cover });
       } catch (err) {
-        console.warn(`[bytune] download ${track.id}: tags not written:`, err instanceof Error ? err.message : err);
+        console.warn(`[blutheist] download ${track.id}: tags not written:`, err instanceof Error ? err.message : err);
       }
       checkCancelled();
     }

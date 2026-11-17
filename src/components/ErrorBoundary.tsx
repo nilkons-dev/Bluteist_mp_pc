@@ -16,7 +16,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error("[bytune] renderer crashed:", error, info.componentStack);
+    console.error("[blutheist] renderer crashed:", error, info.componentStack);
   }
 
   render(): ReactNode {

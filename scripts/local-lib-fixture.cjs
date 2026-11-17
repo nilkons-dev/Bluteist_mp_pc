@@ -105,7 +105,7 @@ async function phase1() {
   check("legacy track survives the migration", lib.tracks.length === 1 && lib.tracks[0].path === legacyTrack.path);
 
   await locallib.renameLibraryFolder(root, "Legacy name");
-  check("rename stores a ByTune-only display name", locallib.readLocalLibrary().folders[0].displayName === "Legacy name");
+  check("rename stores a Blutheist-only display name", locallib.readLocalLibrary().folders[0].displayName === "Legacy name");
   await locallib.renameLibraryFolder(root, "");
   check("blank rename clears back to the folder's own name", locallib.readLocalLibrary().folders[0].displayName === undefined);
 
@@ -179,7 +179,7 @@ async function phase2() {
   check("rename metadata survives the restart", lib.folders.find((f) => f.name === "English")?.displayName === "My English");
   check("track index survives the restart", lib.tracks.length === 7, `got ${lib.tracks.length}`);
 
-  // --- Remove: ByTune's index only, disk untouched (test 6).
+  // --- Remove: Blutheist's index only, disk untouched (test 6).
   lib = await locallib.removeLibraryFolder(standalone);
   check("removed folder no longer listed", !lib.folders.some((f) => f.path === standalone));
   check("its tracks left the index", lib.tracks.length === 6 && !lib.tracks.some((t) => isUnder(t.path, standalone)), `got ${lib.tracks.length}`);
@@ -197,7 +197,7 @@ async function phase2() {
   check("rescan with a moved folder survives and drops its now-unreachable tracks", lib.tracks.length === 5 && !lib.tracks.some((t) => isUnder(t.path, telugu.path)), `got ${lib.tracks.length}`);
   fs.renameSync(movedTo, telugu.path);
   lib = await locallib.removeLibraryFolder(telugu.path);
-  check("a missing folder can still be removed from ByTune", !lib.folders.some((f) => f.name === "Telugu"));
+  check("a missing folder can still be removed from Blutheist", !lib.folders.some((f) => f.name === "Telugu"));
 
   // --- Removing a parent keeps songs covered by remaining roots (test 8 contd).
   const rootEntry = lib.folders.find((f) => f.name === "Music");

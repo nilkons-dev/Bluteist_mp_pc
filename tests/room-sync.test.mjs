@@ -43,9 +43,9 @@ test("room codes: typed, spaced, lower-case or as an invite link", async () => {
   const { roomCodeIn, inviteLink } = await mod;
   assert.equal(roomCodeIn("abc234"), "ABC234");
   assert.equal(roomCodeIn(" ABC-234 "), "ABC234");
-  assert.equal(roomCodeIn("bytune://room/HJK789"), "HJK789");
-  assert.equal(inviteLink("HJK789"), "bytune://room/HJK789");
-  for (const bad of ["ABC23", "ABC2345", "ABCD10", "ABCDEO", "https://evil.example/room/ABC234", "", "bytune://oauth/callback"]) {
+  assert.equal(roomCodeIn("blutheist://room/HJK789"), "HJK789");
+  assert.equal(inviteLink("HJK789"), "blutheist://room/HJK789");
+  for (const bad of ["ABC23", "ABC2345", "ABCD10", "ABCDEO", "https://evil.example/room/ABC234", "", "blutheist://oauth/callback"]) {
     assert.equal(roomCodeIn(bad), null, bad);
   }
 });

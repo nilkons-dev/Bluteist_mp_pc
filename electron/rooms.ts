@@ -168,7 +168,7 @@ async function enter(raw: unknown): Promise<RoomView> {
   lastHeard = Date.now();
   await persist.writeData(STASH, { ...((persist.readData(STASH) as object | null) ?? {}), roomId: next.id }).catch(() => undefined);
   await measureClock().catch(() => undefined);
-  await listen(next.id).catch((err) => console.warn("[bytune] room channel:", message(err)));
+  await listen(next.id).catch((err) => console.warn("[blutheist] room channel:", message(err)));
   pingTimer = setInterval(() => void ping(), PING_MS);
   publish(roomView());
   return roomView();
@@ -186,7 +186,7 @@ export async function joinRoom(code: string): Promise<RoomView> {
 export async function leaveRoom(): Promise<RoomView> {
   const id = state?.id;
   end();
-  if (id) await rpc("room_leave", { p_room: id }).catch((err) => console.warn("[bytune] room leave:", message(err)));
+  if (id) await rpc("room_leave", { p_room: id }).catch((err) => console.warn("[blutheist] room leave:", message(err)));
   return roomView();
 }
 

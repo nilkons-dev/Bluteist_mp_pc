@@ -4,12 +4,12 @@
 ; matches electron/audio-types.ts (PLAYABLE_AUDIO); a test keeps them in step.
 
 !macro BlutheistOfferFor EXT
-  WriteRegStr SHELL_CONTEXT "Software\Classes\.${EXT}\OpenWithProgids" "ByTune.Audio" ""
+  WriteRegStr SHELL_CONTEXT "Software\Classes\.${EXT}\OpenWithProgids" "Blutheist.Audio" ""
   WriteRegStr SHELL_CONTEXT "Software\Classes\Applications\${APP_EXECUTABLE_FILENAME}\SupportedTypes" ".${EXT}" ""
 !macroend
 
 !macro BlutheistWithdrawFrom EXT
-  DeleteRegValue SHELL_CONTEXT "Software\Classes\.${EXT}\OpenWithProgids" "ByTune.Audio"
+  DeleteRegValue SHELL_CONTEXT "Software\Classes\.${EXT}\OpenWithProgids" "Blutheist.Audio"
 !macroend
 
 !macro BlutheistEachAudioExtension MACRO
@@ -25,10 +25,10 @@
 !macroend
 
 !macro customInstall
-  WriteRegStr SHELL_CONTEXT "Software\Classes\ByTune.Audio" "" "Audio file"
-  WriteRegStr SHELL_CONTEXT "Software\Classes\ByTune.Audio\DefaultIcon" "" "$appExe,0"
-  WriteRegStr SHELL_CONTEXT "Software\Classes\ByTune.Audio\shell\open" "" "Play with Blutheist"
-  WriteRegStr SHELL_CONTEXT "Software\Classes\ByTune.Audio\shell\open\command" "" '"$appExe" "%1"'
+  WriteRegStr SHELL_CONTEXT "Software\Classes\Blutheist.Audio" "" "Audio file"
+  WriteRegStr SHELL_CONTEXT "Software\Classes\Blutheist.Audio\DefaultIcon" "" "$appExe,0"
+  WriteRegStr SHELL_CONTEXT "Software\Classes\Blutheist.Audio\shell\open" "" "Play with Blutheist"
+  WriteRegStr SHELL_CONTEXT "Software\Classes\Blutheist.Audio\shell\open\command" "" '"$appExe" "%1"'
   WriteRegStr SHELL_CONTEXT "Software\Classes\Applications\${APP_EXECUTABLE_FILENAME}\shell\open\command" "" '"$appExe" "%1"'
   !insertmacro BlutheistEachAudioExtension BlutheistOfferFor
   ; Let Explorer pick the new "Open with" entries up now.
@@ -37,7 +37,7 @@
 
 !macro customUnInstall
   !insertmacro BlutheistEachAudioExtension BlutheistWithdrawFrom
-  DeleteRegKey SHELL_CONTEXT "Software\Classes\ByTune.Audio"
+  DeleteRegKey SHELL_CONTEXT "Software\Classes\Blutheist.Audio"
   DeleteRegKey SHELL_CONTEXT "Software\Classes\Applications\${APP_EXECUTABLE_FILENAME}"
   System::Call "shell32::SHChangeNotify(i 0x08000000, i 0x1000, p 0, p 0)"
 !macroend

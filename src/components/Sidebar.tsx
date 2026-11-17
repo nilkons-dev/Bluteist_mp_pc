@@ -7,17 +7,7 @@
  * the top bar (home beside the search field).
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  Download,
-  Folder,
-  Heart,
-  Library,
-  ListPlus,
-  Music2,
-  Pin,
-  PinOff,
-  User,
-} from "lucide-react";
+import { Folder, ListPlus, Pin, PinOff, User } from "lucide-react";
 import { isPinned, useLibrary, type PinnedSingleKey, type Playlist } from "../stores/library";
 import { playingFromRow, usePlayer } from "../stores/player";
 import { useUI } from "../stores/ui";
@@ -32,12 +22,13 @@ import { playlistOwnItems } from "../lib/trackActions";
 import { draggingFromPlaylist, dragHasAlbum, dragHasArtist, dragHasPlaylist, dragHasTrack, readAlbum, readArtist, readPlaylist, readTrack, type AlbumPayload, type ArtistPayload, type PlaylistPayload } from "../lib/dnd";
 import { requireBridge } from "../lib/bridge";
 import { downloadAll, startDownload } from "../lib/downloads";
-import { DOWNLOADS_COVER, LIKED_COVER, LOCAL_COVER, REPLAY_COVER } from "../lib/libraryCovers";
 import { askToConnectSpotify, useSpotify } from "../lib/spotify";
 import { useEdgeFades } from "../lib/useEdgeFades";
 import { arrange, moveKey } from "../lib/libraryOrder";
 import { useSortable, type SortableRowProps } from "../lib/useSortable";
-import { SpotifyIcon } from "./SpotifyIcon";
+import { BookGlyph, LibIcon, PinGlyph, type LibIconKind } from "./LibraryIcons";
+import { bookFx, flashRow, libFx, pinFx } from "./libraryFx";
+import "./libraryEye.css";
 import type { Track } from "../types";
 
 const SPOTIFY_ROW = "__spotify__";
@@ -143,7 +134,6 @@ function LibraryPill() {
     title: "Liked Songs",
     subtitle: `Playlist · ${liked.length} ${liked.length === 1 ? "track" : "tracks"}`,
     // The four collections Blutheist keeps carry sleeves of their own, the same from the first day.
-    thumb: LIKED_COVER,
     kind: "playlist",
     pinned: singlePinned("liked"),
     singleKey: "liked",
@@ -152,7 +142,6 @@ function LibraryPill() {
     id: "__downloads__",
     title: "Downloads",
     subtitle: `Playlist · ${doneDownloads.length} ${doneDownloads.length === 1 ? "track" : "tracks"}`,
-    thumb: DOWNLOADS_COVER,
     kind: "downloads",
     pinned: singlePinned("downloads"),
     singleKey: "downloads",
@@ -161,7 +150,6 @@ function LibraryPill() {
     id: "__local__",
     title: "Local Music",
     subtitle: "On this device",
-    thumb: LOCAL_COVER,
     kind: "local",
     pinned: singlePinned("local"),
     singleKey: "local",
@@ -187,7 +175,6 @@ function LibraryPill() {
     id: "__replay__",
     title: "Replay",
     subtitle: "Your listening stats",
-    thumb: REPLAY_COVER,
     kind: "replay",
     pinned: singlePinned("replay"),
     singleKey: "replay",
@@ -618,14 +605,36 @@ function LibraryPill() {
     ]);
   };
 
+  const iconKindOf = (r: LibRow): LibIconKind =>
+    r.kind === "spotify" ? "spotify"
+    : r.kind === "replay" ? "replay"
+    : r.kind === "local" ? "local"
+    : r.kind === "downloads" ? "downloads"
+    : r.kind === "folder" ? "folder"
+    : r.id === "__liked__" ? "liked"
+    : "playlist";
+
+  /** one tap: the row flashes, its icon plays its motion, then the page opens */
+  const tapRow = (e: React.MouseEvent<HTMLElement>, r: LibRow): void => {
+    flashRow(e.currentTarget);
+    const ib = e.currentTarget.querySelector(".lb-ib");
+    if (ib && r.kind !== "artist") libFx[iconKindOf(r)](ib);
+    onClickRow(r);
+  };
+
   function renderRow(r: LibRow, drag: SortableRowProps | undefined): ReactNode {
     const filed = r.kind === "folder" ? playlists.filter((p) => p.folderId === r.id) : [];
     // A folder plays when one of its playlists (or the folder itself) does.
     const isCurrent =
       playingFrom !== null && (playingFrom === r.id || playingFrom === r.artistId || filed.some((p) => p.id === playingFrom));
     const open = rowIsOpen(r, view);
-    /** a folder's face: its playlists' covers, four up once it has four */
-    const folderArt = [...new Set(filed.map((p) => p.artistThumb ?? p.tracks[0]?.thumb).filter((t): t is string => !!t))].slice(0, 4);
+    const pl = r.kind === "playlist" && !r.singleKey ? playlists.find((p) => p.id === r.id) : undefined;
+    const canPin = !!r.singleKey || (!!pl && r.id !== "__liked__");
+    const pinned = r.singleKey ? !!r.pinned : !!pl?.pinned;
+    const togglePin = (): void => {
+      if (r.singleKey) useLibrary.getState().togglePinSingle(r.singleKey);
+      else if (pl) useLibrary.getState().togglePinPlaylist(pl.id);
+    };
     return (
       <div
         key={`${r.kind}-${r.id}`}
@@ -633,7 +642,7 @@ function LibraryPill() {
         role="button"
         tabIndex={0}
         aria-current={open ? "page" : undefined}
-        onClick={() => onClickRow(r)}
+        onClick={(e) => tapRow(e, r)}
         onKeyDown={(e) => {
           if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
             e.preventDefault();
@@ -644,77 +653,78 @@ function LibraryPill() {
         onDragOver={(e) => onRowDragOver(e, r)}
         onDragLeave={(e) => onRowDragLeave(e, r)}
         onDrop={(e) => onRowDrop(e, r)}
-        // The open page's row keeps the hover's light, a touch stronger, so it reads as "you're here".
-        className={`fit-host group w-full flex items-center gap-3 p-2 rounded-lg text-left cursor-pointer select-none ${
-          open ? "bg-ink-hi/[0.08]" : "hover:bg-ink-hi/[0.05]"
-        } active:bg-ink-hi/[0.1] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
-          dropHover === r.id ? "ring-2 ring-inset ring-accent/60 bg-ink-hi/[0.08] scale-[1.02]" : ""
-        } ${
-          pulse === r.id ? "animate-drop-pulse" : ""
-        }`}
+        className={`lb-row fit-host group select-none ${open ? "sel" : ""} ${
+          dropHover === r.id ? "ring-2 ring-inset ring-accent/60 bg-ink-hi/[0.08]" : ""
+        } ${pulse === r.id ? "animate-drop-pulse" : ""}`}
       >
         {r.kind === "artist" ? (
           r.thumb ? (
-            <img
-              src={upgradeArtwork(r.thumb)}
-              alt=""
-              draggable={false}
-              className="w-12 h-12 rounded-full object-cover art-hairline shrink-0"
-            />
+            <span className="lb-ib"><img src={upgradeArtwork(r.thumb)} alt="" draggable={false} className="lb-photo art-hairline" /></span>
           ) : (
-            <span className="w-12 h-12 rounded-full bg-ink-hi/[0.06] art-hairline shrink-0 grid place-items-center">
-              <User className="w-5 h-5 text-ink-hi/55" />
-            </span>
+            <span className="lb-ib"><span className="lb-photo bg-ink-hi/[0.06] art-hairline grid place-items-center"><User className="w-5 h-5 text-ink-hi/55" /></span></span>
           )
-        ) : r.kind === "folder" ? (
-          folderArt.length === 4 ? (
-            <span className="w-12 h-12 rounded-md overflow-hidden art-hairline shrink-0 grid grid-cols-2">
-              {folderArt.map((src) => (
-                <img key={src} src={upgradeArtwork(src)} alt="" draggable={false} className="w-full h-full object-cover" />
-              ))}
-            </span>
-          ) : folderArt.length ? (
-            <img src={upgradeArtwork(folderArt[0])} alt="" draggable={false} className="w-12 h-12 rounded-md object-cover art-hairline shrink-0" />
-          ) : (
-            <span className="w-12 h-12 rounded-md bg-ink-hi/[0.06] art-hairline shrink-0 grid place-items-center">
-              <Folder className="w-5 h-5 text-ink-hi/55" />
-            </span>
-          )
-        ) : r.kind === "spotify" ? (
-          <span className="w-12 h-12 rounded-md bg-ink-hi/[0.06] art-hairline shrink-0 grid place-items-center">
-            <SpotifyIcon className="w-6 h-6" />
-          </span>
-        ) : r.thumb ? (
-          <img src={upgradeArtwork(r.thumb)} alt="" draggable={false} className="w-12 h-12 rounded-md object-cover art-hairline shrink-0" />
         ) : (
-          <div className="w-12 h-12 rounded-md bg-ink-hi/[0.06] art-hairline shrink-0 grid place-items-center">
-            {r.kind === "downloads" ? (
-              <Download className="w-4 h-4 text-ink-hi/35" />
-            ) : r.kind === "playlist" ? (
-              <Music2 className="w-4 h-4 text-ink-hi/35" />
-            ) : (
-              <Heart className="w-4 h-4 text-ink-hi/35" />
-            )}
-          </div>
+          <span className="lb-ib"><LibIcon kind={iconKindOf(r)} on={open} /></span>
         )}
-        <div className="min-w-0 flex-1">
+        <div className="lb-tx">
           <FitText text={r.title} className="text-[14px] font-semibold text-ink-hi" />
-          <FitText text={r.subtitle} className="text-[12.5px] text-ink-hi/55 mt-0.5" />
+          <FitText text={r.subtitle} className="text-[12px] text-[#8c8c8c] mt-[3px]" />
         </div>
         {isCurrent && <EqBars />}
-        {((r.singleKey && r.pinned) ||
-          (r.kind === "playlist" &&
-            !r.singleKey &&
-            playlists.find((p) => p.id === r.id)?.pinned)) && (
-          <Pin className="w-3.5 h-3.5 text-accent shrink-0 fill-accent/20" aria-label="Pinned" />
+        {canPin && (
+          <button
+            type="button"
+            className={`lb-sm lb-pin${pinned ? " on" : ""}`}
+            title={pinned ? "Unpin" : "Pin to top"}
+            aria-label={pinned ? "Unpin" : "Pin to top"}
+            aria-pressed={pinned}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              pinFx(e.currentTarget);
+              togglePin();
+            }}
+          >
+            <PinGlyph />
+          </button>
         )}
       </div>
     );
   }
 
+  /** Overview (Home), and About / Settings at the foot — rows of the same make as the library's. */
+  const fixedRow = (kind: "overview" | "about" | "settings", title: string, sub: string, sel: boolean, go: () => void): ReactNode => (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-current={sel ? "page" : undefined}
+      onClick={(e) => {
+        flashRow(e.currentTarget);
+        const ib = e.currentTarget.querySelector(".lb-ib");
+        if (ib) libFx[kind](ib);
+        go();
+      }}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
+          e.preventDefault();
+          go();
+        }
+      }}
+      onContextMenu={(e) => e.stopPropagation()}
+      className={`lb-row select-none ${sel ? "sel" : ""}`}
+    >
+      <span className="lb-ib"><LibIcon kind={kind} on={sel} /></span>
+      <div className="lb-tx">
+        <b>{title}</b>
+        <small>{sub}</small>
+      </div>
+    </div>
+  );
+  const onAbout = view.name === "settings" && view.param === "about";
+
   return (
     <div
-      className={`relative flex-1 min-h-0 flex flex-col glass-pill rounded-2xl overflow-hidden shadow-pill transition-shadow ${
+      className={`lb relative flex-1 min-h-0 flex flex-col glass-pill rounded-2xl overflow-hidden shadow-pill transition-shadow ${
         libHover ? "shadow-[0_0_44px_rgb(var(--accent)/0.14)]" : ""
       }`}
       onContextMenu={onLibraryContextMenu}
@@ -762,23 +772,30 @@ function LibraryPill() {
         />
       )}
       {/* Header */}
-      <div className="flex items-center gap-2 px-5 pt-4 pb-2">
+      <div className="flex items-center justify-between pl-[18px] pr-3 pt-3.5 h-[48px]">
         <button
-          onClick={() => navigate({ name: "library" })}
-          className="flex items-center gap-2 text-[14px] font-semibold text-ink-hi/75 hover:text-ink-hi transition-colors"
+          onClick={(e) => {
+            bookFx(e.currentTarget);
+            navigate({ name: "library" });
+          }}
+          className="flex items-center gap-2.5 text-[14px] font-semibold text-white tracking-[.01em]"
+          title="Your Library"
         >
-          <Library className="w-4 h-4" />
+          <span className="lb-head-ico"><BookGlyph /></span>
           Your Library
         </button>
-        <div className="ml-auto flex items-center gap-1">
-          {/* + opens Spotify's create dropdown — Playlist / Folder, no modal. */}
-          <CreateMenu />
-        </div>
+        {/* + opens the create dropdown — Playlist / Folder, no modal. */}
+        <CreateMenu variant="eye" />
+      </div>
+
+      <div className="pt-1">
+        {fixedRow("overview", "Overview", "Home", view.name === "home", () => navigate({ name: "home" }))}
+        <div className="lb-sep" />
       </div>
 
       {/* Rows — drops bubble to the panel root, which imports playlists and
           artists anywhere they land; specific rows handle their own targets. */}
-      <div ref={scrollRef} className="edge-fades flex-1 min-h-0 overflow-y-auto px-2 pb-2 pt-1">
+      <div ref={scrollRef} className="edge-fades flex-1 min-h-0 overflow-y-auto px-1 pb-2">
         {entries.length === 0 ? (
           <div className="px-3 py-8 text-center text-[13px] text-ink-hi/55">
             Nothing here yet — play a track to fill your library.
@@ -801,6 +818,11 @@ function LibraryPill() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="lb-foot">
+        {fixedRow("about", "About", "Version & info", onAbout, () => useUI.getState().openSettings("about"))}
+        {fixedRow("settings", "Settings", "Preferences", view.name === "settings" && !onAbout, () => useUI.getState().openSettings())}
       </div>
     </div>
   );

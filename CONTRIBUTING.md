@@ -1,6 +1,6 @@
-# Contributing to ByTune
+# Contributing to Blutheist
 
-Thanks for helping improve ByTune! This document covers what you need to get a development environment running and what to expect when you open an issue or pull request.
+Thanks for helping improve Blutheist! This document covers what you need to get a development environment running and what to expect when you open an issue or pull request.
 
 ## Getting set up
 
@@ -12,15 +12,15 @@ Prerequisites:
 - **Git**
 
 ```bash
-git clone https://github.com/rishiteja21/ByTune.git
-cd ByTune
+git clone https://github.com/rishiteja21/Blutheist.git
+cd Blutheist
 npm install
 npm run dev
 ```
 
 `npm run dev` starts Vite (renderer) and Electron together with hot reload. The app opens with its onboarding screen — **Continue as guest** is fine for development; your data is stored locally.
 
-Accounts, sync and Rooms need a Supabase project, which the source doesn't include. To work on them, copy `.env.example` to `.env` and fill in your own project's URL and publishable key. Without it, ByTune runs guest-only.
+Accounts, sync and Rooms need a Supabase project, which the source doesn't include. To work on them, copy `.env.example` to `.env` and fill in your own project's URL and publishable key. Without it, Blutheist runs guest-only.
 
 ## Useful commands
 
@@ -43,18 +43,18 @@ The Windows and macOS editions share one codebase: platform-specific behavior li
 The installed app checks GitHub's latest release for a newer version (`electron/updater.ts`). Windows installs it in the app; a Mac sends people to bytune.space, because macOS only installs updates to apps signed with an Apple Developer ID.
 
 1. Set `version` in `package.json`. The app, its About page and the update check all read it from there.
-   Official builds need ByTune's Supabase project in `.env` (`BYTUNE_SUPABASE_URL`, `BYTUNE_SUPABASE_KEY`); the macOS workflow reads the same two from the repository's secrets. `npm run dist*` stops if they're missing, so no release ships without accounts.
-2. `npm run dist:win` writes three files to `release/`: `ByTune-Setup.exe`, `latest.yml` and `ByTune-Setup.exe.blockmap`.
+   Official builds need Blutheist's Supabase project in `.env` (`BYTUNE_SUPABASE_URL`, `BYTUNE_SUPABASE_KEY`); the macOS workflow reads the same two from the repository's secrets. `npm run dist*` stops if they're missing, so no release ships without accounts.
+2. `npm run dist:win` writes three files to `release/`: `Blutheist-Setup.exe`, `latest.yml` and `Blutheist-Setup.exe.blockmap`.
 3. Create the GitHub release with the tag `v<version>` and upload all three. Without `latest.yml`, Windows users are still told about the update, but have to download it themselves.
 4. Pushing the tag starts the macOS workflow, which attaches the Mac ZIPs and DMGs to that release.
 5. Bump the Mac download links in the website's `src/lib/site.ts`. They include the version number.
 
 ## Reporting bugs
 
-Open a [GitHub issue](https://github.com/rishiteja21/ByTune/issues) and include:
+Open a [GitHub issue](https://github.com/rishiteja21/Blutheist/issues) and include:
 
 - What you did and what happened
-- The ByTune version (Settings → About, or the release tag)
+- The Blutheist version (Settings → About, or the release tag)
 - Your OS and version (Windows 10/11, or macOS 13+ on Apple Silicon/Intel)
 
 Playback issues are often upstream changes on YouTube's side — mention whether playback fails for everything or just some tracks.

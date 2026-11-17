@@ -149,12 +149,12 @@ test("OAuth callback only completes for the exact registered redirect with a bou
   try {
     const pending = h.api.signInGoogle();
     for (const bad of [
-      "bytune://oauth/callbackX?code=good",
-      "bytune://oauth/other?code=good",
+      "blutheist://oauth/callbackX?code=good",
+      "blutheist://oauth/other?code=good",
       "evil://oauth/callback?code=good",
-      "bytune://oauth/callback?code=good#code=nope",
-      "bytune://attacker@oauth/callback?code=good",
-      `bytune://oauth/callback?code=${"x".repeat(600)}`,
+      "blutheist://oauth/callback?code=good#code=nope",
+      "blutheist://attacker@oauth/callback?code=good",
+      `blutheist://oauth/callback?code=${"x".repeat(600)}`,
       "not a url",
     ]) {
       await h.api.handleOAuthCallback(bad).catch(() => {});
@@ -164,11 +164,11 @@ test("OAuth callback only completes for the exact registered redirect with a bou
     }
     // A repeated callback after the pending flow already resolved must be
     // ignored — never complete a second sign-in or throw out of the handler.
-    await h.api.handleOAuthCallback("bytune://oauth/callback?code=good");
+    await h.api.handleOAuthCallback("blutheist://oauth/callback?code=good");
     const info = await pending;
     assert.equal(info.mode, "account");
     assert.equal(info.userId, "A");
-    await h.api.handleOAuthCallback("bytune://oauth/callback?code=good");
+    await h.api.handleOAuthCallback("blutheist://oauth/callback?code=good");
   } finally { h.cleanup(); }
 });
 
@@ -179,7 +179,7 @@ test("a failed browser launch rejects the pending Google sign-in instead of hang
     // The failed flow must release the slot so an immediate retry works.
     h.setBrowserFails(false);
     const retry = h.api.signInGoogle();
-    await h.api.handleOAuthCallback("bytune://oauth/callback?code=good");
+    await h.api.handleOAuthCallback("blutheist://oauth/callback?code=good");
     const info = await retry;
     assert.equal(info.mode, "account");
   } finally { h.cleanup(); }

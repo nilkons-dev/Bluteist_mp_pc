@@ -6,7 +6,7 @@
 - টপবার: মাউস-ফলো করা অ্যানিমেটেড লোগো (ক্লিক করলে চোখ বন্ধ → খোলা → লাল মণি) + Blutheist ওয়ার্ডমার্ক
 - প্লেয়ারের নিচে নতুন কন্ট্রোল (শাফল, প্রিভিয়াস, চোখ-প্লে বাটন, নেক্সট, রিপিট, স্পার্কল সিক বার)
 - Google / Create account / Sign in বন্ধ। শুধু **Continue as guest** + ডিসপ্লে নেম। পরে চালু করতে `src/lib/config.ts`-এ `ACCOUNTS_ENABLED = true`
-- আপডেটার বন্ধ (যাতে মূল ByTune-এর রিলিজে আপডেট না যায়)। নিজের রিলিজ থাকলে `electron/updater.ts`-এ `UPDATES_ENABLED` ও `RELEASES` ঠিক করুন
+- আপডেটার বন্ধ (যাতে মূল Blutheist-এর রিলিজে আপডেট না যায়)। নিজের রিলিজ থাকলে `electron/updater.ts`-এ `UPDATES_ENABLED` ও `RELEASES` ঠিক করুন
 
 ## ২. GitHub-এ নতুন রিপোজিটরি
 1. github.com → **New repository** → নাম `Blutheist` → Create (README/gitignore যোগ করবেন না)।
@@ -19,12 +19,12 @@
 
 ```bash
 unzip -q Blutheist.zip
-# জিপের ভেতরের ফোল্ডারের নাম দেখুন (সাধারণত ByTune-main)
+# জিপের ভেতরের ফোল্ডারের নাম দেখুন (সাধারণত Blutheist-main)
 ls
 # ফোল্ডারের ভেতরের সব ফাইল রুটে আনুন (ফোল্ডারের নাম অনুযায়ী বদলান)
 shopt -s dotglob
-mv ByTune-main/* .
-rmdir ByTune-main
+mv Blutheist-main/* .
+rmdir Blutheist-main
 rm Blutheist.zip
 
 git add -A
@@ -34,7 +34,7 @@ git push origin main
 
 ## ৪. নিজের কম্পিউটার থেকে পুশ (বিকল্প)
 ```bash
-unzip Blutheist.zip && cd ByTune-main
+unzip Blutheist.zip && cd Blutheist-main
 git init
 git add -A
 git commit -m "Blutheist: new logo, intro, eye controls, guest-only"
@@ -67,4 +67,4 @@ npm test              # টেস্ট
 `src/assets/brand/blutheist-icon.svg` এডিট করে `npm run icon` চালান।
 
 ## ৮. লাইসেন্স
-এই প্রজেক্ট GPL-3.0 লাইসেন্সের ByTune-এর উপর ভিত্তি করে। অ্যাপ অন্যদের দিলে LICENSE ফাইল রাখতে হবে এবং সোর্স কোড উন্মুক্ত রাখতে হবে।
+এই প্রজেক্ট GPL-3.0 লাইসেন্সের Blutheist-এর উপর ভিত্তি করে। অ্যাপ অন্যদের দিলে LICENSE ফাইল রাখতে হবে এবং সোর্স কোড উন্মুক্ত রাখতে হবে।

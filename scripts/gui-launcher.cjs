@@ -1,7 +1,7 @@
 /**
  * GUI-qa launcher: boots the REAL built app (dist-electron/main.js) with
  * appData/userData redirected into a scratch profile, so GUI testing never
- * touches the developer's or user's actual ByTune data.
+ * touches the developer's or user's actual Blutheist data.
  *
  *   BYTUNE_GUI_PROFILE=<dir> electron scripts/gui-launcher.cjs
  */

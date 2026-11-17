@@ -1,4 +1,4 @@
-# ByTune macOS — RELEASE CHECKLIST
+# Blutheist macOS — RELEASE CHECKLIST
 
 Status at 2026-09-30 (this machine, Apple Silicon, macOS 26.5):
 
@@ -22,16 +22,16 @@ Status at 2026-09-30 (this machine, Apple Silicon, macOS 26.5):
 - [x] Fullscreen verified (IPC round-trip + geometry proof)
 - [x] Persistence verified incl. **hard-kill (SIGKILL) restore** of queue+position
 - [x] Single-instance verified (second launch exits pre-boot)
-- [x] Deep links: malformed input ignored; LaunchServices routes `bytune://` to the installed bundle
+- [x] Deep links: malformed input ignored; LaunchServices routes `blutheist://` to the installed bundle
 - [x] Security audited: 194/194 suites, IPC trust boundary, filesystem gate live-proven
 - [x] Dependency audit: **0 vulnerabilities** (after build-tool refresh; was 16 with 1 critical)
-- [x] Production build created: `ByTune-1.0.1-arm64.dmg/.zip` + `ByTune-1.0.1-x64.dmg/.zip`
+- [x] Production build created: `Blutheist-1.0.1-arm64.dmg/.zip` + `Blutheist-1.0.1-x64.dmg/.zip`
 - [x] arm64 build verified (`lipo`: arm64) · [x] x64 build verified (`lipo`: x86_64)
 - [x] DMG installed into /Applications; installed app launched and tested (streaming, quit, data)
 
 ## Human pass required (automation lacks the macOS Accessibility/Screen Recording TCC grant)
 - [ ] Traffic lights look right (position/spacing/hover) — 30 seconds of looking at the window
-- [ ] Native menu bar: click through ByTune/File/Edit/View/Playback/Window; Playback checkmarks
+- [ ] Native menu bar: click through Blutheist/File/Edit/View/Playback/Window; Playback checkmarks
       track state; ⌘, opens Settings; ⌘O/⌘S open dialogs; ⌘W hides (music continues); ⌘Q quits
 - [ ] Green traffic-light button enters/exits fullscreen
 - [ ] Media keys (F7–F9) and the Control-Centre Now Playing widget show title/artist/artwork

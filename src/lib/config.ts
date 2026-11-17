@@ -22,8 +22,8 @@ export const SUPABASE_ANON_KEY = (typeof process === "undefined" ? undefined : p
 export const ACCOUNTS_ENABLED = false;
 
 /** Deep-link scheme used for the Google OAuth redirect back into the app. */
-export const OAUTH_PROTOCOL = "bytune";
-export const OAUTH_REDIRECT = "bytune://oauth/callback";
+export const OAUTH_PROTOCOL = "blutheist";
+export const OAUTH_REDIRECT = "blutheist://oauth/callback";
 
 /** Local JSON stores replicated to the cloud when signed in. */
 export const SYNCED_STORES = [

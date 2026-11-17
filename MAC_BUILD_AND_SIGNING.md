@@ -1,4 +1,4 @@
-# ByTune macOS — BUILD & SIGNING (verified on a real Mac)
+# Blutheist macOS — BUILD & SIGNING (verified on a real Mac)
 
 **Verified 2026-09-30** on Apple Silicon / macOS 26.5 with node 25, npm 11, electron 44.3,
 electron-builder 26.17 (esbuild 0.28, vite 8.3). Everything below is what actually happened.
@@ -15,12 +15,12 @@ Artifacts produced and verified (`release/`):
 
 | File | Size | Contents |
 |---|---|---|
-| `ByTune-1.0.1-arm64.dmg` | 135 MB | arm64 app (verified: `lipo -archs release/mac-arm64/ByTune.app/Contents/MacOS/ByTune` → `arm64`) |
-| `ByTune-1.0.1-arm64.zip` | 131 MB | same, zipped |
-| `ByTune-1.0.1-x64.dmg` | 140 MB | Intel app (`lipo` → `x86_64`) |
-| `ByTune-1.0.1-x64.zip` | 135 MB | same, zipped |
+| `Blutheist-1.0.1-arm64.dmg` | 135 MB | arm64 app (verified: `lipo -archs release/mac-arm64/Blutheist.app/Contents/MacOS/Blutheist` → `arm64`) |
+| `Blutheist-1.0.1-arm64.zip` | 131 MB | same, zipped |
+| `Blutheist-1.0.1-x64.dmg` | 140 MB | Intel app (`lipo` → `x86_64`) |
+| `Blutheist-1.0.1-x64.zip` | 135 MB | same, zipped |
 
-Bundle facts checked on the installed copy: `CFBundleIdentifier com.bytune.music`,
+Bundle facts checked on the installed copy: `CFBundleIdentifier com.blutheist.music`,
 `CFBundleShortVersionString 1.0.1`, `LSMinimumSystemVersion 11.0.0`,
 `NSHighResolutionCapable true`, `CFBundleURLSchemes ["bytune"]`, category
 `public.app-category.music`, `Resources/icon.icns` present.
@@ -29,15 +29,15 @@ Bundle facts checked on the installed copy: `CFBundleIdentifier com.bytune.music
 
 - electron-builder: *"skipped macOS application code signing — cannot find valid Developer ID
   Application identity … 0 valid identities found."*
-- `codesign -dv /Applications/ByTune.app` → `flags=0x20002(adhoc,linker-signed)` — i.e. **NOT
+- `codesign -dv /Applications/Blutheist.app` → `flags=0x20002(adhoc,linker-signed)` — i.e. **NOT
   signed** with any developer identity.
-- `spctl -a -t exec /Applications/ByTune.app` → rejected ("code has no resources but signature
+- `spctl -a -t exec /Applications/Blutheist.app` → rejected ("code has no resources but signature
   indicates they must be present").
 - **Not notarized.** Nothing was fabricated; the artifacts work locally because files created
   locally carry no quarantine attribute.
 
 **Update (2026-10-29):** that unsealed state is exactly what users downloading v1.0.0/v1.0.1 hit
-as "ByTune is damaged and can't be opened. You should move it to the Trash." (arm64 binaries
+as "Blutheist is damaged and can't be opened. You should move it to the Trash." (arm64 binaries
 linker-signed, x64 binaries unsigned, no `_CodeSignature/CodeResources`). The build now ad-hoc
 signs the whole bundle in an `afterPack` hook (`scripts/after-pack.cjs`, hardened runtime off —
 an ad-hoc signature has no Team ID, so library validation would block Electron Framework), and
@@ -59,9 +59,9 @@ export APPLE_API_KEY_PATH=/path/to/AuthKey_XXXXXXXXXX.p8
 npm run dist    # signs, notarizes, staples when the env vars are present
 
 # then verify:
-spctl -a -t exec -vv release/mac-arm64/ByTune.app
-xcrun stapler validate release/ByTune-1.0.1-arm64.dmg
-codesign --verify --deep --strict release/mac-arm64/ByTune.app
+spctl -a -t exec -vv release/mac-arm64/Blutheist.app
+xcrun stapler validate release/Blutheist-1.0.1-arm64.dmg
+codesign --verify --deep --strict release/mac-arm64/Blutheist.app
 ```
 
 Hardened Runtime is already configured (`hardenedRuntime: true`) with the minimal entitlements
@@ -70,13 +70,13 @@ in `build/entitlements.mac.plist` (JIT + unsigned executable memory for V8; noth
 ## 3. Install & first launch (verified)
 
 ```bash
-hdiutil attach release/ByTune-1.0.1-arm64.dmg -nobrowse
-ditto "/Volumes/ByTune 1.0.1/ByTune.app" /Applications/ByTune.app
-hdiutil detach "/Volumes/ByTune 1.0.1"
-open /Applications/ByTune.app
+hdiutil attach release/Blutheist-1.0.1-arm64.dmg -nobrowse
+ditto "/Volumes/Blutheist 1.0.1/Blutheist.app" /Applications/Blutheist.app
+hdiutil detach "/Volumes/Blutheist 1.0.1"
+open /Applications/Blutheist.app
 ```
 
-Observed: app boots to onboarding/shell; creates `~/Library/Application Support/ByTune/data/`
+Observed: app boots to onboarding/shell; creates `~/Library/Application Support/Blutheist/data/`
 with the expected stores; streams real audio; quits cleanly; player state survives.
 
 ⚠️ On a machine where the DMG arrived via the internet (quarantine attribute present) the
@@ -85,7 +85,7 @@ Open Anyway; macOS 13–14: right-click → Open. This disappears once §2 is do
 
 ## 4. Deep-link registration (verified)
 
-LaunchServices shows `bytune:` claimed by `com.bytune.music`; `open location "bytune://…"`
+LaunchServices shows `bytune:` claimed by `com.blutheist.music`; `open location "blutheist://…"`
 routes to the installed bundle (multiple copies of the same bundle id are reconciled by
 LaunchServices automatically). Handler validation: malformed URLs are ignored, valid-shaped
 callbacks without a pending OAuth flow are parked (max 3) — never executed blindly.

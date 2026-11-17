@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 
 /*
- * ByTune design tokens — an Apple-Music visual language: pure-black canvas, layered neutral surfaces,
+ * Blutheist design tokens — an Apple-Music visual language: pure-black canvas, layered neutral surfaces,
  * glass chrome, and artwork-derived tinting as the only source of colour.
  *
  * Surfaces (deepest → highest), all CSS-variable driven:

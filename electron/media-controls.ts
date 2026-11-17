@@ -1,6 +1,6 @@
 /**
  * Windows media flyout, lock screen and media keys through Blutheist's own
- * session: ByTuneMedia.exe, built from media-helper.cs.
+ * session: BlutheistMedia.exe, built from media-helper.cs.
  *
  * Chromium's built-in session hands Windows the cover downscaled to 150×150
  * (kDesiredImageSize in content/browser/media/system_media_controls/
@@ -56,8 +56,8 @@ let cachedCover = "";
 
 function helperPath(): string {
   return app.isPackaged
-    ? path.join(process.resourcesPath, "ByTuneMedia.exe")
-    : path.join(__dirname, "ByTuneMedia.exe");
+    ? path.join(process.resourcesPath, "BlutheistMedia.exe")
+    : path.join(__dirname, "BlutheistMedia.exe");
 }
 
 /** Call before app ready: the switch only takes effect at Chromium startup. */
@@ -74,13 +74,13 @@ export function start(d: Deps): void {
 }
 
 function launch(): void {
-  const p = spawn(helperPath(), ["com.bytune.music"], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  const p = spawn(helperPath(), ["com.blutheist.music"], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
   child = p;
   // Writes to a helper that just died: its exit handler takes over.
   p.stdin?.on("error", () => undefined);
   if (p.stdout) readline.createInterface({ input: p.stdout }).on("line", onLine);
-  if (p.stderr) readline.createInterface({ input: p.stderr }).on("line", (l) => console.warn("[bytune] media helper:", l));
-  p.on("error", (err) => console.warn("[bytune] media helper failed:", err.message));
+  if (p.stderr) readline.createInterface({ input: p.stderr }).on("line", (l) => console.warn("[blutheist] media helper:", l));
+  p.on("error", (err) => console.warn("[blutheist] media helper failed:", err.message));
   p.on("exit", () => {
     if (child !== p) return;
     child = null;

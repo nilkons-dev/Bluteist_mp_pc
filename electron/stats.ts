@@ -233,7 +233,7 @@ async function writeStore(): Promise<void> {
     await persist.writeData(HISTORY_STORE, envelopePayload());
     storeWritten();
   } catch (err) {
-    console.warn("[bytune] stats flush failed:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] stats flush failed:", err instanceof Error ? err.message : err);
   }
 }
 
@@ -321,10 +321,10 @@ function migrateLegacyStats(): void {
       dirty = false;
       storeWritten();
     } catch (err) {
-      console.warn("[bytune] stats recovery flush failed:", err instanceof Error ? err.message : err);
+      console.warn("[blutheist] stats recovery flush failed:", err instanceof Error ? err.message : err);
     }
     fs.rmSync(dir, { recursive: true, force: true });
-    console.log(`[bytune] recovered ${imported} Replay month(s) from legacy stats files`);
+    console.log(`[blutheist] recovered ${imported} Replay month(s) from legacy stats files`);
   }
 }
 
@@ -473,7 +473,7 @@ export function flushSync(): void {
     persist.writeDataSync(HISTORY_STORE, envelopePayload());
     storeWritten();
   } catch (err) {
-    console.warn("[bytune] stats flush failed:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] stats flush failed:", err instanceof Error ? err.message : err);
   }
 }
 

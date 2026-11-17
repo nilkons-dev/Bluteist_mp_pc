@@ -26,7 +26,7 @@
     "qa:local": "node scripts/local-lib-qa.mjs"
   },
   "build": {
-    "appId": "com.bytune.music",
+    "appId": "com.blutheist.music",
     "productName": "Blutheist",
     "directories": {
       "output": "release"
@@ -35,7 +35,7 @@
     "files": [
       "dist/**",
       "dist-electron/**",
-      "!dist-electron/ByTuneMedia.exe",
+      "!dist-electron/BlutheistMedia.exe",
       "build/icon.png",
       "build/icon.ico"
     ],
@@ -45,8 +45,8 @@
       "artifactName": "Blutheist-Setup.${ext}",
       "extraResources": [
         {
-          "from": "dist-electron/ByTuneMedia.exe",
-          "to": "ByTuneMedia.exe"
+          "from": "dist-electron/BlutheistMedia.exe",
+          "to": "BlutheistMedia.exe"
         }
       ]
     },
@@ -111,7 +111,7 @@
       {
         "name": "Blutheist",
         "schemes": [
-          "bytune"
+          "blutheist"
         ]
       }
     ],

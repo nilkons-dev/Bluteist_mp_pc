@@ -60,7 +60,7 @@ export function startStreamProxy(): Promise<number> {
     server!.on("error", reject);
     server!.listen(0, "127.0.0.1", () => {
       proxyPort = (server!.address() as AddressInfo).port;
-      console.log(`[bytune] stream proxy on 127.0.0.1:${proxyPort}`);
+      console.log(`[blutheist] stream proxy on 127.0.0.1:${proxyPort}`);
       resolve(proxyPort);
     });
   });
@@ -146,7 +146,7 @@ function serveLocalFile(filePath: string | null, range: string | undefined, res:
   const stream = fs.createReadStream(filePath, { start, end });
   stream.on("error", (err) => {
     // Basename only — the log must not carry the user's folder structure.
-    console.warn(`[bytune] local file read error (${path.basename(filePath)}):`, err instanceof Error ? err.message : err);
+    console.warn(`[blutheist] local file read error (${path.basename(filePath)}):`, err instanceof Error ? err.message : err);
     res.destroy();
   });
   req.on("close", () => stream.destroy());
@@ -229,7 +229,7 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse): Prom
         });
         res.end(JSON.stringify({ lufs: meta.lufs }));
       } catch (err) {
-        console.warn("[bytune] proxy meta error:", err instanceof Error ? err.message : err);
+        console.warn("[blutheist] proxy meta error:", err instanceof Error ? err.message : err);
         res.writeHead(502, { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
         res.end(JSON.stringify({ lufs: null }));
       }
@@ -242,14 +242,14 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse): Prom
 
     // Self-heal: a URL that just went bad gets one more resolution.
     if (upstream.status === 403 && trackId) {
-      console.warn(`[bytune] proxy upstream 403 for ${trackId}, re-resolving`);
+      console.warn(`[blutheist] proxy upstream 403 for ${trackId}, re-resolving`);
       stream = await resolveStream(trackId, true, maxKbps);
       ctl = new AbortController();
       upstream = await fetchUpstream(stream.url, range, ctl);
     }
 
     if (!upstream.ok || !upstream.body) {
-      console.warn(`[bytune] proxy upstream HTTP ${upstream.status} for ${trackId}`);
+      console.warn(`[blutheist] proxy upstream HTTP ${upstream.status} for ${trackId}`);
       res.writeHead(upstream.status === 403 ? 404 : upstream.status);
       res.end();
       return;
@@ -263,7 +263,7 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse): Prom
     const before = served.get(key);
     if (range && !/^bytes=0-/.test(range) && before && before !== identity) {
       void upstream.body.cancel().catch(() => undefined);
-      console.warn(`[bytune] proxy: rendition changed mid-song for ${trackId}, refusing the range`);
+      console.warn(`[blutheist] proxy: rendition changed mid-song for ${trackId}, refusing the range`);
       res.writeHead(409, { "Access-Control-Allow-Origin": "*" });
       res.end();
       return;
@@ -318,7 +318,7 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse): Prom
     }
     res.end();
   } catch (err) {
-    console.warn("[bytune] proxy error:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] proxy error:", err instanceof Error ? err.message : err);
     // Mid-body (headers already sent) the only honest answer is to drop the
     // connection: Chromium then errors or re-requests the range. Writing a
     // status here threw and left the response open, so playback hung.

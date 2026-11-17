@@ -239,6 +239,6 @@ export function migrateLegacyData(): void {
       return;
     }
   } catch (err) {
-    console.warn("[bytune] legacy data migration failed:", err);
+    console.warn("[blutheist] legacy data migration failed:", err);
   }
 }

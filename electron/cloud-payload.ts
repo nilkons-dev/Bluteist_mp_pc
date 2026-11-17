@@ -313,7 +313,7 @@ export function validateCloudRows(value: unknown, dated: boolean): CloudRow[] {
     try {
       sanitized = validateCloudPayload(name, row.payload);
     } catch (err) {
-      console.warn(`[bytune] cloud row for "${name}" was unusable and was skipped:`,
+      console.warn(`[blutheist] cloud row for "${name}" was unusable and was skipped:`,
         err instanceof Error ? err.message : err);
       continue;
     }

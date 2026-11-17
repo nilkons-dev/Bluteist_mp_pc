@@ -45,12 +45,12 @@ child.stdout.on("data", (d) => (out += d.toString()));
 child.stderr.on("data", (d) => (out += d.toString()));
 child.on("exit", (code) => (exited = code ?? -1));
 
-const MARKER = "[bytune] stream proxy on 127.0.0.1:";
+const MARKER = "[blutheist] stream proxy on 127.0.0.1:";
 const FAILURE_MARKERS = [
   "Cannot find module",
   "A JavaScript error occurred in the main process",
-  "[bytune] uncaught exception",
-  "[bytune] unhandled rejection",
+  "[blutheist] uncaught exception",
+  "[blutheist] unhandled rejection",
 ];
 
 const tail = (lines) => out.split(/\r?\n/).slice(-lines).join("\n");

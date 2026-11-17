@@ -16,7 +16,7 @@ using Windows.Media;
 using Windows.Media.Playback;
 using Windows.Storage.Streams;
 
-static class ByTuneMedia
+static class BlutheistMedia
 {
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     static extern int SetCurrentProcessExplicitAppUserModelID(string appId);
@@ -29,7 +29,7 @@ static class ByTuneMedia
     static void Main(string[] args)
     {
         // The flyout names and badges the session from this ID's Start menu shortcut.
-        SetCurrentProcessExplicitAppUserModelID(args.Length > 0 ? args[0] : "com.bytune.music");
+        SetCurrentProcessExplicitAppUserModelID(args.Length > 0 ? args[0] : "com.blutheist.music");
         var player = new MediaPlayer();
         player.CommandManager.IsEnabled = false;
         smtc = player.SystemMediaTransportControls;

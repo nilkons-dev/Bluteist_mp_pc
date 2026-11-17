@@ -345,7 +345,7 @@ function received(view: RoomView): void {
   }
 }
 
-/** An invite link (bytune://room/CODE): asks before joining. */
+/** An invite link (blutheist://room/CODE): asks before joining. */
 async function takeInvite(): Promise<void> {
   const code = await requireBridge().roomTakeInvite();
   if (!code || !roomCodeIn(code)) return;

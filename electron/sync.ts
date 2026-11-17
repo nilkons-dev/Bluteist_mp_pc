@@ -134,7 +134,7 @@ export function flushMetaSync(): void {
   try {
     persist.writeDataSync("sync-meta", meta);
   } catch (err) {
-    console.warn("[bytune] sync-meta flush failed:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] sync-meta flush failed:", err instanceof Error ? err.message : err);
   }
 }
 
@@ -200,7 +200,7 @@ function schedulePush(name: string, delayMs = PUSH_DEBOUNCE_MS): void {
 /** A failed push never drops the change — surface it and retry later. */
 function onSyncFailure(err: unknown, name?: string): void {
   lastError = err instanceof Error ? err.message : String(err);
-  console.warn(`[bytune] sync${name ? ` ${name}` : ""} failed (will retry):`, lastError);
+  console.warn(`[blutheist] sync${name ? ` ${name}` : ""} failed (will retry):`, lastError);
   if (!retryTimer) {
     retryTimer = setTimeout(() => {
       retryTimer = null;
@@ -388,7 +388,7 @@ async function backupStore(name: string, data: unknown): Promise<void> {
       }
     }
   } catch (err) {
-    console.warn("[bytune] pre-merge backup failed:", err);
+    console.warn("[blutheist] pre-merge backup failed:", err);
   }
 }
 

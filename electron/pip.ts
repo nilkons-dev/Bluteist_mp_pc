@@ -207,7 +207,7 @@ function visibleRect(r: PipRect): PipRect {
 
 function loadInto(win: BrowserWindow): void {
   const fail = (err: unknown): void => {
-    console.warn("[bytune] miniplayer failed to load:", err instanceof Error ? err.message : err);
+    console.warn("[blutheist] miniplayer failed to load:", err instanceof Error ? err.message : err);
     // A blank always-on-top window is worse than none; only close it if it is
     // still the current PiP (a rapid open/close race must not close the
     // replacement window).
@@ -244,7 +244,7 @@ export function savePipRect(): void {
   try {
     persist.writeDataSync("pip-rect", { ...lastRect, compact });
   } catch (err) {
-    console.warn("[bytune] pip-rect save failed:", err);
+    console.warn("[blutheist] pip-rect save failed:", err);
   }
 }
 
