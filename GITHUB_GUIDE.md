@@ -19,12 +19,12 @@
 
 ```bash
 unzip -q Blutheist.zip
-# জিপের ভেতরে Blutheist নামে একটি ফোল্ডার আছে
+# জিপের ভেতরের ফোল্ডারের নাম দেখুন (সাধারণত ByTune-main)
 ls
-# ফোল্ডারের ভেতরের সব ফাইল রুটে আনুন
+# ফোল্ডারের ভেতরের সব ফাইল রুটে আনুন (ফোল্ডারের নাম অনুযায়ী বদলান)
 shopt -s dotglob
-mv Blutheist/* .
-rmdir Blutheist
+mv ByTune-main/* .
+rmdir ByTune-main
 rm Blutheist.zip
 
 git add -A
@@ -34,7 +34,7 @@ git push origin main
 
 ## ৪. নিজের কম্পিউটার থেকে পুশ (বিকল্প)
 ```bash
-unzip Blutheist.zip && cd Blutheist
+unzip Blutheist.zip && cd ByTune-main
 git init
 git add -A
 git commit -m "Blutheist: new logo, intro, eye controls, guest-only"

@@ -1,6 +1,6 @@
 # Windows installer (Blutheist-Setup.exe), built on GitHub's hosted Windows runner.
-# Run it by hand: GitHub → Actions → "Build Windows installer" → Run workflow.
-# Pushing a tag that starts with v (e.g. v1.0.0) also attaches the installer to a GitHub Release.
+# Runs on every push to main, on v* tags (which also attach the installer to a Release),
+# and by hand: Actions -> "Build Windows installer" -> Run workflow.
 
 name: Build Windows installer
 
@@ -8,7 +8,6 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-  push:
     tags:
       - 'v*'
 
