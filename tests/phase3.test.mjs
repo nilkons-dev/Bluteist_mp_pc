@@ -58,7 +58,7 @@ test("player bar, library and right rail use the new layouts", () => {
   const ex = read("src/components/EyeExtras.tsx");
   for (const label of ["Sleep timer", "Lyrics", "Queue", "Mute", "Miniplayer"]) assert.match(ex, new RegExp(label));
   const sb = read("src/components/Sidebar.tsx");
-  assert.match(sb, /fixedRow\("overview", "Overview", "Home"/);
+  assert.match(sb, /fixedRow\("overview", "Home", null/);
   assert.match(sb, /fixedRow\("about", "About"/);
   assert.match(sb, /fixedRow\("settings", "Settings"/);
   assert.match(sb, /openFloating\("about"\)/);

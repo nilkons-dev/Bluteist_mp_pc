@@ -672,7 +672,7 @@ function LibraryPill() {
             <span className="lb-ib"><span className="lb-photo bg-ink-hi/[0.06] art-hairline grid place-items-center"><User className="w-5 h-5 text-ink-hi/55" /></span></span>
           )
         ) : r.kind === "playlist" && r.id !== "__liked__" ? (
-          <span className="lb-ib lb-cover"><PlaylistThumb covers={r.covers ?? []} size={40} /></span>
+          <span className="lb-ib lb-cover"><PlaylistThumb covers={r.covers ?? []} size={56} round={8} /></span>
         ) : (
           <span className="lb-ib"><LibIcon kind={iconKindOf(r)} on={open} /></span>
         )}
@@ -703,7 +703,7 @@ function LibraryPill() {
   }
 
   /** Overview (Home), and About / Settings at the foot — rows of the same make as the library's. */
-  const fixedRow = (kind: "overview" | "about" | "settings", title: string, sub: string, sel: boolean, go: () => void): ReactNode => (
+  const fixedRow = (kind: "overview" | "about" | "settings", title: string, sub: string | null, sel: boolean, go: () => void): ReactNode => (
     <div
       role="button"
       tabIndex={0}
@@ -721,12 +721,12 @@ function LibraryPill() {
         }
       }}
       onContextMenu={(e) => e.stopPropagation()}
-      className={`lb-row select-none ${sel ? "sel" : ""}`}
+      className={`lb-row select-none ${sel ? "sel" : ""}${sub === null ? " lb-row-lean" : ""}${kind === "overview" ? " lb-row-home" : ""}`}
     >
       <span className="lb-ib"><LibIcon kind={kind} on={sel} /></span>
       <div className="lb-tx">
         <b>{title}</b>
-        <small>{sub}</small>
+        {sub !== null && <small>{sub}</small>}
       </div>
     </div>
   );
@@ -798,7 +798,7 @@ function LibraryPill() {
       </div>
 
       <div className="pt-1">
-        {fixedRow("overview", "Overview", "Home", view.name === "home", () => navigate({ name: "home" }))}
+        {fixedRow("overview", "Home", null, view.name === "home", () => navigate({ name: "home" }))}
         <div className="lb-sep" />
         {/* the library's own shelves, always together, in this order */}
         <div className="px-1 space-y-0.5">{singles.map((r) => renderRow(r, undefined))}</div>
@@ -834,8 +834,8 @@ function LibraryPill() {
       </div>
 
       <div className="lb-foot">
-        {fixedRow("about", "About", "Version & info", floating === "about", () => useUI.getState().openFloating("about"))}
-        {fixedRow("settings", "Settings", "Preferences", view.name === "settings", () => useUI.getState().openSettings())}
+        {fixedRow("about", "About", null, floating === "about", () => useUI.getState().openFloating("about"))}
+        {fixedRow("settings", "Settings", null, view.name === "settings", () => useUI.getState().openSettings())}
       </div>
     </div>
   );

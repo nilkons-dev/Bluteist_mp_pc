@@ -4,8 +4,8 @@
  * in this computer's app-data folder and survives an uninstall). It also asks a reinstalled guest
  * whether to carry on, and asks a fresh Google account for a username, once.
  *
- * Composition: Blutheist's own look, a page lit by the music. On the right, a drum of covers in 3D
- * (components/CoverDrum) that turns and can be spun or rolled; the cover in focus lights the page.
+ * Composition: Blutheist's own look, a page lit by the music. On the right, a wall of covers in 3D
+ * (components/CoverWall) drifting on a tilted plane; the cover in focus lights the page.
  * On the left, on the dark side, the brand and one step at a time. The first step says what Blutheist
  * is and lists the ways in, each saying what it means and lighting up with the cover in focus as
  * the pointer reaches it. A step swaps in place (keyed, direction-aware) and turns the drum a notch.
@@ -16,7 +16,7 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Cloud, Eye, EyeOff, HardDrive, KeyRound, Loader2 } from "lucide-react";
 import { CaptionButtons } from "../components/TopBar";
-import { CoverDrum } from "../components/CoverDrum";
+import { CoverWall } from "../components/CoverWall";
 import { useSession } from "../lib/session";
 import { ACCOUNTS_ENABLED } from "../lib/config";
 import { isMac } from "../lib/platform";
@@ -831,7 +831,7 @@ export function Onboarding({ initial }: { initial: Screen }) {
 
   return (
     <div className="ob-root h-screen flex flex-col bg-canvas text-ink overflow-hidden select-none relative">
-      <CoverDrum turn={turn} busy={screen === "restoring"} />
+      <CoverWall turn={turn} busy={screen === "restoring"} />
 
       {/* Frameless-window chrome: a bare drag strip with the caption buttons. macOS draws its
           traffic lights top-left over this strip, so there's nothing to render there. */}

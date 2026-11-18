@@ -1,13 +1,17 @@
 /**
- * Floating windows over the app: the equalizer (opened from the now-playing panel) and About (opened from the library's
- * footer). One host, rendered once in App; `useUI.floating` says which is open. Escape or a click outside closes.
+ * Floating windows over the app: the equalizer (opened from the now-playing panel), About (opened from the library's
+ * footer) and the profile picture (opened from Settings). One host, rendered once in App; `useUI.floating` says which is open. Escape or a click outside closes.
  */
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useSettings } from "../stores/settings";
 import { useUI } from "../stores/ui";
 import { Switch } from "./primitives";
 import { EqualizerBoard } from "./EqualizerBoard";
 import { STAR } from "./eyeFx";
+import { ProfileAvatar } from "./ProfileAvatar";
+import { AVATARS, builtInChoice, customChoice, randomAvatarChoice } from "../lib/avatars";
+import { useMyAvatar } from "../stores/avatar";
+import { pickCoverImage } from "../lib/coverImage";
 import brandLogo from "../assets/brand/blutheist-logo.svg";
 import brandText from "../assets/brand/blutheist-wordmark.png";
 import "./floating.css";
@@ -123,9 +127,55 @@ function AboutWindow() {
   );
 }
 
+function AvatarWindow() {
+  const { choice, change } = useMyAvatar();
+  const [busy, setBusy] = useState(false);
+  const own = choice?.startsWith("c:") ?? false;
+  const fromFile = async (): Promise<void> => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const img = await pickCoverImage();
+      if (img) change(customChoice(img));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Shell id="fw-avatar" title="Profile picture">
+      <div className="av-win">
+        <ProfileAvatar size={96} className="av-big" />
+        <p className="fw-lede">Pick one of these, or use a picture from your computer. It is kept on this computer.</p>
+        <div className="av-grid" role="group" aria-label="Pictures">
+          {AVATARS.map((a) => {
+            const on = choice === builtInChoice(a.id);
+            return (
+              <button key={a.id} type="button" className={`av-opt${on ? " on" : ""}`} aria-pressed={on} aria-label={a.name} title={a.name} onClick={() => change(builtInChoice(a.id))}>
+                <img src={a.src} alt="" draggable={false} />
+              </button>
+            );
+          })}
+        </div>
+        <div className="fw-foot is-center">
+          <button type="button" className={`fw-btn${own ? " is-solid" : ""}`} disabled={busy} onClick={() => void fromFile()}>
+            {own ? "Choose another file…" : "Choose from files…"}
+          </button>
+          <button type="button" className="fw-btn" onClick={() => change(randomAvatarChoice())}>
+            Surprise me
+          </button>
+          <button type="button" className="fw-btn is-solid" onClick={() => useUI.getState().closeFloating()}>
+            Done
+          </button>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
 export function FloatingWindows() {
   const floating = useUI((s) => s.floating);
   if (floating === "eq") return <EqualizerWindow />;
   if (floating === "about") return <AboutWindow />;
+  if (floating === "avatar") return <AvatarWindow />;
   return null;
 }

@@ -37,3 +37,11 @@
 .lb-sep-long { margin: 8px 12px 4px; height: 1px; background: rgba(255,255,255,.22); }
 .lb-cover { opacity: 1 !important; }
 .lb-row:hover .lb-cover { opacity: 1; }
+
+/* Library: bigger playlist covers, a bold Home row, and About / Settings as lean text rows. */
+.lb-ib.lb-cover { width: 56px; height: 56px; }
+.lb-row-home .lb-tx b { font-size: 16px; font-weight: 800; letter-spacing: .1px; }
+.lb-row-lean { padding-top: 5px; padding-bottom: 5px; }
+.lb-row-lean .lb-ib { width: 28px; height: 28px; }
+.lb-row-lean .lb-ico { width: 20px; height: 20px; }
+.lb-row-lean .lb-tx b { font-size: 13px; font-weight: 600; }

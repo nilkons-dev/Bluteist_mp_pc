@@ -81,7 +81,7 @@ import { Switch } from "../components/primitives";
 import { useUI, type MenuItem } from "../stores/ui";
 import { listOutputDevices } from "../lib/audio";
 import type { OutputDeviceChoice } from "../lib/audio-output";
-import { avatarFor } from "../lib/avatar";
+import { ProfileAvatar } from "../components/ProfileAvatar";
 import { wallCovers } from "../lib/collection";
 import { upgradeArtwork } from "../lib/artwork";
 import { EqualizerBoard } from "../components/EqualizerBoard";
@@ -631,7 +631,6 @@ function IdentityCard({
   const signedIn = session.mode === "account";
   const shown = shownName(session);
   const name = shown ?? (signedIn ? "Account" : session.mode === "guest" ? "Guest" : "No account");
-  const { color, letter } = avatarFor(session.mode, session.username, shown);
   return (
     <section data-setting-group className="st-group">
       <div data-setting-row className="st-id">
@@ -653,9 +652,12 @@ function IdentityCard({
             })}
           </div>
         )}
-        <span aria-hidden className="st-id-avatar" style={{ backgroundColor: color }}>
-          {letter}
-        </span>
+        <button type="button" className="av-edit" aria-label="Change profile picture" title="Change profile picture" onClick={() => useUI.getState().openFloating("avatar")}>
+          <ProfileAvatar size={64} />
+          <span aria-hidden className="av-edit-badge">
+            <svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" /></svg>
+          </span>
+        </button>
         <div className="st-id-text">
           <div className="st-id-name">
             <span className="truncate">{name}</span>
@@ -667,6 +669,7 @@ function IdentityCard({
           <div className={`st-id-sync is-${sync.tone}`}>{sync.text}</div>
         </div>
         <div className="st-id-actions">
+          {session.mode && <Button onClick={() => useUI.getState().openFloating("avatar")}>Change picture</Button>}
           {session.mode && <Button onClick={onEditName}>{session.displayName ? "Edit name" : "Add name"}</Button>}
           {signedIn && <Button onClick={onChangeUsername}>Change username</Button>}
         </div>

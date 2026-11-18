@@ -1,7 +1,7 @@
 /**
  * The now-playing turntable (the brand's "eye now playing" layout): a record that spins while a song plays, a tonearm
  * that swings onto it, the title and artist, a real-time spectrum read from the audio that is actually playing, and an
- * equalizer switch.
+ * equalizer switch (by the heart).
  *
  *  - The record changes only when a different song starts (never mid-song, never on pause, resume or seek): the old one
  *    fades out, the new one fades in, picked at random without repeating.
@@ -9,7 +9,7 @@
  *    files on this computer alike, nothing online). It is still while nothing plays.
  *  - Tapping the record or arm plays / pauses.
  */
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { usePlayer } from "../stores/player";
 import { useLibrary } from "../stores/library";
 import { useSettings } from "../stores/settings";
@@ -42,6 +42,22 @@ export function Turntable({ track }: { track: Track }) {
   const likeRef = useRef<HTMLButtonElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
   const eqRef = useRef<HTMLButtonElement>(null);
+
+  /* ---- the title: one line; one too long for it slides slowly to its end and back, its edges faded ---- */
+  const titleBox = useRef<HTMLHeadingElement>(null);
+  const titleTx = useRef<HTMLSpanElement>(null);
+  const [slide, setSlide] = useState(0);
+  const shown = shortTitle(track.title);
+  useLayoutEffect(() => {
+    const box = titleBox.current, tx = titleTx.current;
+    if (!box || !tx) return;
+    const measure = (): void => setSlide(Math.max(0, Math.ceil(tx.scrollWidth - box.clientWidth)));
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [shown]);
 
   /* ---- the record: swapped only when a new song begins ---- */
   const swapping = useRef(false);
@@ -242,6 +258,17 @@ export function Turntable({ track }: { track: Track }) {
       <div className="np-top">
         <small>NOW PLAYING</small>
         <div className="np-acts">
+          <button ref={eqRef} className={`np-ib np-eqb${eqEnabled ? " on" : ""}`} aria-haspopup="dialog" aria-pressed={eqEnabled} aria-label={eqEnabled ? "Equalizer, on" : "Equalizer, off"} title={eqEnabled ? "Equalizer · On" : "Equalizer · Off"} onClick={onEq}>
+            <svg className="np-ico" viewBox="0 0 48 48">
+              <path d="M10 8V40" /><path d="M24 8V40" /><path d="M38 8V40" />
+              {[10, 24, 38].map((x, i) => (
+                <g key={x} className="np-kn np-tb" style={{ transform: `translateY(${eqEnabled ? KNOBS[i][1] : KNOBS[i][0]}px)` }}>
+                  <g transform={`translate(${x} 24) scale(1.25)`}><path d={STAR} className="np-st" /></g>
+                </g>
+              ))}
+            </svg>
+            <i className="np-eqdot" aria-hidden />
+          </button>
           <button ref={likeRef} className={`np-ib${liked ? " on" : ""}`} aria-label={liked ? "Remove from Liked Songs" : "Add to Liked Songs"} aria-pressed={liked} title={liked ? "Remove from Liked Songs" : "Add to Liked Songs"} onClick={onLike}>
             <svg className="np-ico" viewBox="0 0 48 48">
               <path className="np-hr np-tb" d={HEART} />
@@ -264,6 +291,7 @@ export function Turntable({ track }: { track: Track }) {
           <radialGradient id={id("vg")} cx="125" cy="152" r="110" gradientUnits="userSpaceOnUse"><stop offset=".32" stopColor="#101010" /><stop offset=".75" stopColor="#070707" /><stop offset="1" stopColor="#030303" /></radialGradient>
           <linearGradient id={id("w1")} x1="72" y1="60" x2="125" y2="152" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#fff" stopOpacity=".2" /><stop offset=".7" stopColor="#fff" stopOpacity=".03" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
           <linearGradient id={id("w2")} x1="178" y1="244" x2="125" y2="152" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#fff" stopOpacity=".2" /><stop offset=".7" stopColor="#fff" stopOpacity=".03" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+          <linearGradient id={id("bk")} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#050505" /><stop offset=".3" stopColor="#4a4a4a" /><stop offset=".45" stopColor="#151515" /><stop offset="1" stopColor="#000" /></linearGradient>
           <clipPath id={id("dc")}><circle cx="125" cy="152" r="110" /></clipPath>
         </defs>
         <g ref={discRef}>
@@ -282,27 +310,20 @@ export function Turntable({ track }: { track: Track }) {
         <path d="M202.8 229.8A110 110 0 0 1 153.5 258.2L125 152Z" fill={`url(#${id("w2")})`} />
         <g ref={armRef}>
           <path d="M261.5 50L266.5 50L265 220L263 220Z" fill="#fff" />
-          <path d="M257 214H271L268 238H260Z" fill="#fff" stroke="#fff" strokeWidth="2" strokeLinejoin="round" />
-          <rect x="260" y="14" width="8" height="18" rx="2.5" fill="#fff" />
+          <path d="M257 214H271L268 238H260Z" fill={`url(#${id("bk")})`} stroke="#6a6a6a" strokeWidth="1" strokeLinejoin="round" />
+          <path d="M259.5 216.5H262L261 234H260Z" fill="#fff" opacity=".35" />
+          <rect x="260" y="14" width="8" height="18" rx="2.5" fill={`url(#${id("bk")})`} stroke="#6a6a6a" strokeWidth="1" />
+          <rect x="262" y="16" width="1.6" height="13" rx=".8" fill="#fff" opacity=".4" />
           <circle cx="264" cy="36" r="15" fill="#0c0c0c" stroke="#fff" strokeWidth="2.5" />
           <g transform="translate(264 36) scale(1.1)"><path d={STAR} fill="#fff" /></g>
         </g>
       </svg>
 
-      <h2 className="np-title" title={track.title}>{shortTitle(track.title)}</h2>
+      <h2 ref={titleBox} className={`np-title${slide > 0 ? " is-slide" : ""}`} title={track.title}>
+        <span ref={titleTx} className="np-title-tx" style={slide > 0 ? ({ "--np-slide": `${slide}px`, "--np-dur": `${Math.round(7 + slide / 16)}s` } as CSSProperties) : undefined}>{shown}</span>
+      </h2>
       <p className="np-artist">{track.artist}</p>
       <canvas ref={canvasRef} className="np-spec" aria-hidden />
-      <button ref={eqRef} className={`np-eq${eqEnabled ? " on" : ""}`} aria-haspopup="dialog" aria-label="Equalizer" title="Open the equalizer" onClick={onEq}>
-        <svg className="np-ico" viewBox="0 0 48 48">
-          <path d="M10 8V40" /><path d="M24 8V40" /><path d="M38 8V40" />
-          {[10, 24, 38].map((x, i) => (
-            <g key={x} className="np-kn np-tb" style={{ transform: `translateY(${eqEnabled ? KNOBS[i][1] : KNOBS[i][0]}px)` }}>
-              <g transform={`translate(${x} 24) scale(1.25)`}><path d={STAR} className="np-st" /></g>
-            </g>
-          ))}
-        </svg>
-        <span>Equalizer · {eqEnabled ? "On" : "Off"}</span>
-      </button>
     </div>
   );
 }

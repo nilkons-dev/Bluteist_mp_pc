@@ -469,7 +469,7 @@ function DetailsBody() {
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2 space-y-4">
-      {/* The turntable: the record spins while the song plays; the live spectrum and the equalizer button sit under it. */}
+      {/* The turntable: the record spins while the song plays; the equalizer switch sits by the heart, the live spectrum under it. */}
       <Turntable track={track} />
 
       <AboutArtistCard track={track} fallbackImage={artistImage ?? track.thumb ?? null} />

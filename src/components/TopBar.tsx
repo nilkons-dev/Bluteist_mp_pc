@@ -33,7 +33,7 @@ import { searchPageOnce } from "../lib/searchOnce";
 import { browseMenuItems, trackMenuItems } from "../lib/trackActions";
 import { shownName, useSession } from "../lib/session";
 import { isMac } from "../lib/platform";
-import { avatarFor } from "../lib/avatar";
+import { ProfileAvatar } from "./ProfileAvatar";
 import { useUI } from "../stores/ui";
 import { usePlayer } from "../stores/player";
 import { useRecents } from "../stores/recents";
@@ -89,28 +89,22 @@ function UpdateChip() {
   );
 }
 
-/** The profile button: opens Settings, and closes it again while it's showing. */
+/** The profile button: the picture with the name beside it; opens Settings, and closes it again while it's showing.
+    Where the window is narrow, the name tucks into the picture (index.css, .av-who). */
 function Avatar({ onClick, active }: { onClick: () => void; active?: boolean }) {
   const mode = useSession((s) => s.mode);
   const username = useSession((s) => s.username);
   const displayName = useSession((s) => s.displayName);
-  // The first letter of the display name (an account without one yet: its username's).
-  const { color, letter } = avatarFor(mode, username, shownName({ mode, username, displayName }));
+  const name = shownName({ mode, username, displayName }) ?? (mode === "guest" ? "Guest" : "");
   return (
     <button
       onClick={onClick}
-      title={active ? "Close settings" : "Settings"}
+      title={active ? "Close settings" : name ? `${name} · Settings` : "Settings"}
       aria-label={active ? "Close settings" : "Settings"}
-      className={`w-11 h-11 rounded-full grid place-items-center transition-colors select-none ${
-        active ? "bg-ink-hi/[0.16]" : "bg-ink-hi/[0.10] hover:bg-ink-hi/[0.16]"
-      }`}
+      className={`av-who select-none${active ? " is-active" : ""}`}
     >
-      <span
-        className="grid h-8 w-8 place-items-center rounded-full text-[15px] font-semibold leading-none text-black/85"
-        style={{ backgroundColor: color }}
-      >
-        {letter}
-      </span>
+      {name && <span className="av-who-name">{name}</span>}
+      <ProfileAvatar size={32} />
     </button>
   );
 }
