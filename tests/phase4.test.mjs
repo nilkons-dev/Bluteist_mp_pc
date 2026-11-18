@@ -71,7 +71,10 @@ test("now playing: one-line sliding title, EQ switch by the heart, black arm hea
   const css = read("src/components/turntable.css");
   assert.match(css, /\.np-title \{[^}]*white-space: nowrap/);
   const r = read("src/components/RightRail.tsx");
-  assert.ok(r.indexOf("<Turntable track={track} />") < r.indexOf("<AboutArtistCard track={track} fallbackImage={artistImage"));
+  assert.ok(r.indexOf("<Turntable track={track} />") < r.indexOf("<SongPoster track={track} />"));
+  assert.ok(r.indexOf("<SongPoster track={track} />") < r.indexOf("<AboutArtistCard track={track} fallbackImage={artistImage"));
+  assert.doesNotMatch(t, /np-eqdot/);
+  assert.doesNotMatch(r, /wideArtwork\(photo\)/);
 });
 
 test("profile pictures: top bar shows the name and tucks it away, Settings and the picker can change it", () => {

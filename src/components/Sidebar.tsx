@@ -721,7 +721,7 @@ function LibraryPill() {
         }
       }}
       onContextMenu={(e) => e.stopPropagation()}
-      className={`lb-row select-none ${sel ? "sel" : ""}${sub === null ? " lb-row-lean" : ""}${kind === "overview" ? " lb-row-home" : ""}`}
+      className={`lb-row select-none ${sel ? "sel" : ""}${sub === null && kind !== "overview" ? " lb-row-lean" : ""}${kind === "overview" ? " lb-row-home" : ""}`}
     >
       <span className="lb-ib"><LibIcon kind={kind} on={sel} /></span>
       <div className="lb-tx">

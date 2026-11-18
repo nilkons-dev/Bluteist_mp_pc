@@ -111,7 +111,7 @@ export function Turntable({ track }: { track: Track }) {
   }, [track.id]);
 
   /* ---- motion: record, arm and spectrum share one loop that runs only while something is moving ---- */
-  const sim = useRef({ ang: 0, om: 0, arm: 0, last: 0, raf: 0, v: new Array<number>(BARS).fill(BASE), pk: new Array<number>(BARS).fill(BASE) });
+  const sim = useRef({ ang: 0, om: 0, arm: 0, last: 0, raf: 0, v: new Array<number>(BARS).fill(BASE), pk: new Array<number>(BARS).fill(BASE), ref: 0.5 });
   const playingRef = useRef(playing);
   playingRef.current = playing;
   const analyser = useRef<AnalyserNode | null>(null);
@@ -158,7 +158,10 @@ export function Turntable({ track }: { track: Track }) {
         const v = (avg * 0.5 + mx * 0.5) / 255;
         out.push(Math.min(1, Math.pow(v, 1.35) * (0.9 + 0.55 * (i / BARS))));
       }
-      return out;
+      // The bars are scaled to what this song actually reaches (a slowly falling reference), so a quiet one still fills the frame.
+      const top = Math.max(...out);
+      S.ref = Math.max(0.5, top, S.ref * 0.996);
+      return out.map((v) => Math.min(1, (v / S.ref) * 0.97));
     };
 
     const draw = (dt: number, live: number[] | null): boolean => {
@@ -172,7 +175,7 @@ export function Turntable({ track }: { track: Track }) {
         S.v[i] += (tg - S.v[i]) * (tg > S.v[i] ? 0.38 : 0.1);
         S.pk[i] = Math.max(S.v[i], S.pk[i] - dt * 0.4);
         if (Math.abs(S.v[i] - before) > 0.0005 || Math.abs(S.v[i] - tg) > 0.003 || S.pk[i] - S.v[i] > 0.003) moving = true;
-        const h = Math.max(3, S.v[i] * (H - 8)), x = i * (w + gap), b = H, c = Math.min(4, h);
+        const h = Math.max(3, S.v[i] * (H - 6)), x = i * (w + gap), b = H, c = Math.min(4, h);
         ctx.fillStyle = "#fff";
         ctx.beginPath();
         ctx.moveTo(x, b);
@@ -182,7 +185,7 @@ export function Turntable({ track }: { track: Track }) {
         ctx.lineTo(x + w, b);
         ctx.fill();
         ctx.fillStyle = "#777";
-        ctx.fillRect(x, Math.max(0, b - S.pk[i] * (H - 8) - 6), w, 2);
+        ctx.fillRect(x, Math.max(0, b - S.pk[i] * (H - 6) - 5), w, 2);
       }
       return moving;
     };
@@ -262,12 +265,11 @@ export function Turntable({ track }: { track: Track }) {
             <svg className="np-ico" viewBox="0 0 48 48">
               <path d="M10 8V40" /><path d="M24 8V40" /><path d="M38 8V40" />
               {[10, 24, 38].map((x, i) => (
-                <g key={x} className="np-kn np-tb" style={{ transform: `translateY(${eqEnabled ? KNOBS[i][1] : KNOBS[i][0]}px)` }}>
+                <g key={x} className="np-kn np-tb" style={{ transform: `translateY(${eqEnabled ? KNOBS[i][1] : KNOBS[i][0]}px)`, "--a": `${KNOBS[i][0]}px`, "--b": `${KNOBS[i][1]}px`, "--d": `${1.9 + i * 0.45}s` } as CSSProperties}>
                   <g transform={`translate(${x} 24) scale(1.25)`}><path d={STAR} className="np-st" /></g>
                 </g>
               ))}
             </svg>
-            <i className="np-eqdot" aria-hidden />
           </button>
           <button ref={likeRef} className={`np-ib${liked ? " on" : ""}`} aria-label={liked ? "Remove from Liked Songs" : "Add to Liked Songs"} aria-pressed={liked} title={liked ? "Remove from Liked Songs" : "Add to Liked Songs"} onClick={onLike}>
             <svg className="np-ico" viewBox="0 0 48 48">

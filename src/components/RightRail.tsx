@@ -471,7 +471,7 @@ function DetailsBody() {
     <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2 space-y-4">
       {/* The turntable: the record spins while the song plays; the equalizer switch sits by the heart, the live spectrum under it. */}
       <Turntable track={track} />
-
+      <SongPoster track={track} />
       <AboutArtistCard track={track} fallbackImage={artistImage ?? track.thumb ?? null} />
     </div>
   );
@@ -506,14 +506,26 @@ function StartHere() {
         </Btn>
         <span className="text-[12.5px] text-ink-hi/55">Nothing playing yet</span>
       </div>
+      <SongPoster track={track} />
       <AboutArtistCard track={track} fallbackImage={track.thumb} />
     </div>
   );
 }
 
+/** The song's own poster, big, between the spectrum and the artist's details (nothing when the song has none). */
+function SongPoster({ track }: { track: Track }) {
+  const [bad, setBad] = useState<string | null>(null);
+  const src = upgradeArtwork(track.thumb);
+  if (!src || bad === src) return null;
+  return (
+    <div className="np-poster">
+      <img src={src} alt={`${track.title} — cover`} draggable={false} onError={() => setBad(src)} />
+    </div>
+  );
+}
+
 /**
- * About the artist, Spotify-panel style: photo header with the section label
- * over its top edge, the artist's name with their verified seal, monthly
+ * About the artist, Spotify-panel style: the section label, the artist's name with their verified seal, monthly
  * listeners beside a View profile pill, and the editorial blurb — the same
  * "About the artist" writing the artist page shows. Clicking it opens that
  * artist page; the whole card is also an artist drag source (the home page's
@@ -558,19 +570,9 @@ function AboutArtistCard({
         drag.dragging ? "opacity-40" : ""
       }`}
     >
-      {/* Photo header with the label over its top edge, Spotify-style — a tall
-          3:2 frame showing the whole artist shot, not a cropped strip. */}
-      <div className="relative aspect-[3/2] bg-ink-hi/[0.06]">
-        {photo ? (
-          <img src={wideArtwork(photo)} alt="" className="w-full h-full object-cover object-top art-hairline" />
-        ) : (
-          <div className="w-full h-full art-hairline" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/10 to-transparent" />
-        <div className="absolute top-2.5 left-3.5 text-[15px] font-bold text-ink-hi">About the artist</div>
-      </div>
+      <div className="px-3.5 pt-3.5 text-[15px] font-bold text-ink-hi">About the artist</div>
 
-      <div className="p-3.5 pt-3">
+      <div className="p-3.5 pt-2.5">
         <div className="flex items-center gap-1.5 min-w-0">
           <FitText text={about.name} className="text-[15px] font-bold text-ink-hi" />
           <BadgeCheck className="w-[18px] h-[18px] shrink-0 text-[#4cb3ff]" fill="#4cb3ff" stroke="#0a0a0a" />

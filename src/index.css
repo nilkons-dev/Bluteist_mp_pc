@@ -3257,11 +3257,11 @@ html.noglass .chrome-glass {
   top: 0;
   bottom: 0;
   right: 0;
-  left: calc(var(--ob-gutter) + 300px);
+  left: 0;
   overflow: hidden;
   pointer-events: none;
   z-index: 1;
-  --tile: clamp(84px, 8vw, 124px);
+  --tile: clamp(84px, 7.6vw, 118px);
   --gap: 14px;
 }
 /* Edges melt into the dark: the left, where the words are, and the top and foot. */
@@ -3269,17 +3269,26 @@ html.noglass .chrome-glass {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 3;
   background:
-    linear-gradient(to right, rgb(var(--base)) 0%, rgb(var(--base) / 0.55) 14%, rgb(var(--base) / 0) 38%),
-    linear-gradient(to bottom, rgb(var(--base)) 0%, rgb(var(--base) / 0) 14%, rgb(var(--base) / 0) 74%, rgb(var(--base)) 100%),
-    linear-gradient(to left, rgb(var(--base) / 0.7) 0%, rgb(var(--base) / 0) 22%);
+    linear-gradient(to right, rgb(var(--base) / 0.72) 0%, rgb(var(--base) / 0.5) calc(var(--ob-gutter) + 330px), rgb(var(--base) / 0) 62%),
+    linear-gradient(to bottom, rgb(var(--base) / 0.55) 0%, rgb(var(--base) / 0) 16%, rgb(var(--base) / 0) 80%, rgb(var(--base) / 0.6) 100%);
+}
+/* Behind the words the covers go soft, so the text reads; the blur melts away toward the right. */
+.ob-stage-blur {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(var(--ob-gutter) + 340px), transparent 58%);
+  mask-image: linear-gradient(to right, #000 0, #000 calc(var(--ob-gutter) + 340px), transparent 58%);
 }
 .ob-stage-in {
   position: absolute;
   inset: 0;
   perspective: 2200px;
-  perspective-origin: 40% 50%;
+  perspective-origin: 55% 50%;
   animation: ob-drum-in 1.6s var(--ob-ease) 0.1s both;
 }
 @keyframes ob-drum-in {
@@ -3301,12 +3310,14 @@ html.noglass .chrome-glass {
   flex-direction: column;
   gap: var(--gap);
   transform-style: preserve-3d;
-  transform: translate(-50%, -50%) rotateX(22deg) rotateY(-20deg) rotateZ(-7deg) scale(1.15);
+  transform: translate(-47%, -50%) rotateX(calc(22deg + var(--py, 0) * 3deg)) rotateY(calc(-20deg + var(--px, 0) * 4deg)) rotateZ(-7deg) scale(1.34);
+  transition: transform 0.9s var(--ob-ease);
 }
 .ob-wall-row {
   display: flex;
   gap: var(--gap);
   width: max-content;
+  transform-style: preserve-3d;
   will-change: transform;
   animation: ob-wall-left var(--dur, 200s) linear infinite;
 }
@@ -3343,10 +3354,21 @@ html.noglass .chrome-glass {
   background: rgb(var(--panel));
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
   transition:
-    transform 0.45s var(--ob-ease),
-    filter 0.45s var(--ob-ease);
+    transform 0.35s var(--ob-ease),
+    filter 0.35s var(--ob-ease),
+    box-shadow 0.35s var(--ob-ease);
   filter: brightness(0.78);
   pointer-events: auto;
+}
+/* A glare that follows the pointer across the hovered cover. */
+.ob-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgb(255 255 255 / 0.32), rgb(255 255 255 / 0) 62%);
+  transition: opacity 0.3s;
 }
 /* A cover fades in once it has loaded (CoverWall adds .is-in), never popping in late. */
 .ob-tile-art {
@@ -3367,8 +3389,14 @@ html.noglass .chrome-glass {
 }
 @media (hover: hover) {
   .ob-tile:hover {
-    transform: translateZ(40px) scale(1.04);
-    filter: brightness(1.05);
+    transform: translateZ(60px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.08);
+    filter: brightness(1.08);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.25),
+      0 18px 40px rgb(0 0 0 / 0.55);
+  }
+  .ob-tile:hover::after {
+    opacity: 1;
   }
 }
 

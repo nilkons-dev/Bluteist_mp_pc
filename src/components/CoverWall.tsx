@@ -5,7 +5,7 @@
  * resting the pointer on another lifts it and lights that one instead, and the row under the pointer stops so a cover
  * holds still while you look at it. Motion is CSS (index.css, .ob-wall); with reduced motion the wall holds still.
  */
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { DRUM, type DrumCover } from "../lib/coverDrum";
 
 /** Rows, top to bottom: each ring of covers once, then two of them again, turned round, so the wall is tall enough. */
@@ -17,9 +17,14 @@ const ROWS: ReadonlyArray<{ cover: ReadonlyArray<DrumCover>; dir: 1 | -1; secs: 
   { cover: DRUM[4], dir: -1, secs: 215 },
   { cover: [...DRUM[0]].reverse(), dir: 1, secs: 235 },
   { cover: [...DRUM[2]].reverse(), dir: -1, secs: 225 },
+  { cover: [...DRUM[1]].reverse(), dir: 1, secs: 250 },
+  { cover: [...DRUM[4]].reverse(), dir: -1, secs: 210 },
+  { cover: [...DRUM[3]].reverse(), dir: 1, secs: 240 },
+  { cover: [...DRUM[0]], dir: -1, secs: 200 },
+  { cover: [...DRUM[2]], dir: 1, secs: 228 },
 ];
 /** The row whose cover lights the page when nothing is hovered. */
-const MID = 3;
+const MID = 5;
 const bg = (src: string): CSSProperties => ({ backgroundImage: `url(${JSON.stringify(src)})` });
 
 export function CoverWall({ turn, busy }: { turn: number; busy: boolean }) {
@@ -48,6 +53,52 @@ export function CoverWall({ turn, busy }: { turn: number; busy: boolean }) {
     idx.current = (idx.current + 3) % mid.length;
     setLit(mid[idx.current]);
   }, [turn, mid]);
+
+  // The whole wall leans a little toward the pointer (and settles back when it leaves the window).
+  useEffect(() => {
+    const root = wallRef.current?.closest<HTMLElement>(".ob-root");
+    const wall = wallRef.current;
+    if (!root || !wall) return;
+    let raf = 0, nx = 0, ny = 0;
+    const apply = (): void => {
+      raf = 0;
+      wall.style.setProperty("--px", nx.toFixed(3));
+      wall.style.setProperty("--py", ny.toFixed(3));
+    };
+    const move = (e: PointerEvent): void => {
+      nx = (e.clientX / Math.max(1, window.innerWidth)) * 2 - 1;
+      ny = (e.clientY / Math.max(1, window.innerHeight)) * 2 - 1;
+      if (!raf) raf = requestAnimationFrame(apply);
+    };
+    const reset = (): void => {
+      nx = 0;
+      ny = 0;
+      if (!raf) raf = requestAnimationFrame(apply);
+    };
+    root.addEventListener("pointermove", move, { passive: true });
+    root.addEventListener("pointerleave", reset);
+    return () => {
+      root.removeEventListener("pointermove", move);
+      root.removeEventListener("pointerleave", reset);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  // A cover tilts toward the pointer, and a soft glare follows it across the cover.
+  const tilt = (e: ReactPointerEvent<HTMLElement>): void => {
+    const t = e.currentTarget, r = t.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return;
+    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    t.style.setProperty("--ry", `${((x - 0.5) * 16).toFixed(2)}deg`);
+    t.style.setProperty("--rx", `${((0.5 - y) * 16).toFixed(2)}deg`);
+    t.style.setProperty("--gx", `${(x * 100).toFixed(1)}%`);
+    t.style.setProperty("--gy", `${(y * 100).toFixed(1)}%`);
+  };
+  const untilt = (e: ReactPointerEvent<HTMLElement>): void => {
+    const t = e.currentTarget;
+    t.style.removeProperty("--ry");
+    t.style.removeProperty("--rx");
+  };
 
   const enter = (c: DrumCover): void => {
     window.clearTimeout(leaving.current);
@@ -87,7 +138,7 @@ export function CoverWall({ turn, busy }: { turn: number; busy: boolean }) {
               <div key={r} className={`ob-wall-row${row.dir === 1 ? " is-rev" : ""}`} style={{ ["--dur" as string]: `${row.secs}s` }}>
                 {[0, 1, 2].flatMap((copy) =>
                   row.cover.map((c, i) => (
-                    <span key={`${copy}-${i}`} className={`ob-tile${c === shown ? " is-lit" : ""}`} onPointerEnter={() => enter(c)} onPointerLeave={leave}>
+                    <span key={`${copy}-${i}`} className={`ob-tile${c === shown ? " is-lit" : ""}`} onPointerEnter={() => enter(c)} onPointerMove={tilt} onPointerLeave={(e) => { untilt(e); leave(); }}>
                       {/* Fades in once it's here; one that won't load leaves its place dark. */}
                       <img
                         className="ob-tile-art"
@@ -108,6 +159,7 @@ export function CoverWall({ turn, busy }: { turn: number; busy: boolean }) {
             ))}
           </div>
         </div>
+        <div className="ob-stage-blur" />
       </div>
     </>
   );
