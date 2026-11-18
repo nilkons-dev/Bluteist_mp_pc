@@ -61,7 +61,7 @@ test("player bar, library and right rail use the new layouts", () => {
   assert.match(sb, /fixedRow\("overview", "Overview", "Home"/);
   assert.match(sb, /fixedRow\("about", "About"/);
   assert.match(sb, /fixedRow\("settings", "Settings"/);
-  assert.match(sb, /openSettings\("about"\)/);
+  assert.match(sb, /openFloating\("about"\)/);
   assert.match(read("src/components/RightRail.tsx"), /<Turntable track=\{track\} \/>/);
 });
 
@@ -77,4 +77,28 @@ test("the old name is gone from everything the listener can see", () => {
   };
   roots.forEach(walk);
   assert.deepEqual(bad, []);
+});
+
+test("no class of the new components collides with the app's own stylesheet", () => {
+  const app = read("src/index.css");
+  const mine = ["eyeExtras", "libraryEye", "turntable", "floating"].map((f) => read(`src/components/${f}.css`));
+  const clash = [];
+  for (const css of mine) {
+    for (const m of css.matchAll(/\.([a-z][a-z0-9]*(?:-[a-z0-9]+)*)/gi)) {
+      const re = new RegExp(`\\.${m[1].replace(/[-]/g, "\\-")}(?![\\w-])`);
+      if (re.test(app)) clash.push(m[1]);
+    }
+  }
+  assert.deepEqual([...new Set(clash)], []);
+});
+
+test("playlist pictures: own image first, else one / two / three / four distinct song covers", async () => {
+  const { playlistCovers } = await load("src/lib/playlistCovers.ts");
+  const t = (...u) => u.map((x) => ({ thumb: x }));
+  assert.deepEqual(playlistCovers({ cover: "own", tracks: t("a", "b") }), ["own"]);
+  assert.deepEqual(playlistCovers({ tracks: t("a") }), ["a"]);
+  assert.deepEqual(playlistCovers({ tracks: t("a", "a", "b") }), ["a", "b"]);
+  assert.deepEqual(playlistCovers({ tracks: t("a", "b", "c") }), ["a", "b", "c"]);
+  assert.deepEqual(playlistCovers({ tracks: t("a", "b", "c", "d", "e") }), ["a", "b", "c", "d"]);
+  assert.deepEqual(playlistCovers({ tracks: [] }), []);
 });

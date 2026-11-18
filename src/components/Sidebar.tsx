@@ -7,7 +7,7 @@
  * the top bar (home beside the search field).
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Folder, ListPlus, Pin, PinOff, User } from "lucide-react";
+import { Folder, ImagePlus, ListPlus, Pin, PinOff, User } from "lucide-react";
 import { isPinned, useLibrary, type PinnedSingleKey, type Playlist } from "../stores/library";
 import { playingFromRow, usePlayer } from "../stores/player";
 import { useUI } from "../stores/ui";
@@ -29,6 +29,8 @@ import { useSortable, type SortableRowProps } from "../lib/useSortable";
 import { BookGlyph, LibIcon, PinGlyph, type LibIconKind } from "./LibraryIcons";
 import { bookFx, flashRow, libFx, pinFx } from "./libraryFx";
 import "./libraryEye.css";
+import { PlaylistThumb, playlistCovers } from "./PlaylistThumb";
+import { pickCoverImage } from "../lib/coverImage";
 import type { Track } from "../types";
 
 const SPOTIFY_ROW = "__spotify__";
@@ -47,6 +49,8 @@ interface LibRow {
   folderId?: string;
   /** Liked / Downloads / Local shortcut rows carry their pin state */
   pinned?: boolean;
+  /** a playlist's picture(s): its own image, or up to four song covers to combine */
+  covers?: string[];
   /** which shortcut pin this row toggles (liked / downloads / local) */
   singleKey?: PinnedSingleKey;
 }
@@ -71,6 +75,7 @@ function LibraryPill() {
   const navigate = useUI((s) => s.navigate);
   /** the page open in the middle panel: its row stays lit */
   const view = useUI((s) => s.view);
+  const floating = useUI((s) => s.floating);
   const openDialog = useUI((s) => s.openDialog);
   const openContextMenu = useUI((s) => s.openContextMenu);
   const playingFrom = usePlayer(playingFromRow);
@@ -189,6 +194,7 @@ function LibraryPill() {
     title: p.name,
     subtitle: subtitleOf(p),
     thumb: p.artistThumb ?? p.tracks[0]?.thumb,
+    covers: playlistCovers(p),
     kind: "playlist",
     artistId: p.artistId,
     ...(p.folderId ? { folderId: p.folderId } : {}),
@@ -197,7 +203,6 @@ function LibraryPill() {
   // Pinned rows stay on top where they are; every row below moves by drag, in the order last
   // dragged (lib/libraryOrder), a folder together with its open playlists.
   const fixed: Entry[] = [
-    ...singles.filter((r) => r.pinned).map((r) => ({ key: `single:${r.singleKey}`, rows: [r] })),
     ...unfiled.filter((p) => p.pinned).map((p) => ({ key: `playlist:${p.id}`, rows: [playlistRow(p)] })),
   ];
   const movable: Entry[] = [
@@ -211,7 +216,6 @@ function LibraryPill() {
         rows: [{ id: f.id, title: f.name, subtitle: `Folder · ${filed.length} ${filed.length === 1 ? "playlist" : "playlists"}`, kind: "folder" as const, folderId: f.id }],
       };
     }),
-    ...singles.filter((r) => !r.pinned).map((r) => ({ key: `single:${r.singleKey}`, rows: [r] })),
   ];
   const byKey = new Map(movable.map((e) => [e.key, e]));
   const entries: Entry[] = [...fixed, ...arrange(movable.map((e) => e.key), libraryOrder ?? []).map((k) => byKey.get(k)!)];
@@ -520,16 +524,9 @@ function LibraryPill() {
   /** Right-click a row: pin/unpin shortcuts, playlist options, folder options. */
   const onRowContextMenu = (e: React.MouseEvent, r: LibRow): void => {
     if (r.singleKey) {
+      // the five shortcuts have nothing to pin: they always sit above the line
       e.preventDefault();
       e.stopPropagation();
-      const pinned = singlePinned(r.singleKey);
-      openContextMenu(e.clientX, e.clientY, [
-        {
-          label: pinned ? "Unpin" : "Pin to top",
-          icon: pinned ? PinOff : Pin,
-          action: () => useLibrary.getState().togglePinSingle(r.singleKey!),
-        },
-      ]);
       return;
     }
     if (r.kind === "artist") {
@@ -559,6 +556,18 @@ function LibraryPill() {
           icon: playlist.pinned ? PinOff : Pin,
           action: () => useLibrary.getState().togglePinPlaylist(playlist.id),
         },
+        {
+          label: playlist.cover ? "Change picture…" : "Choose a picture…",
+          icon: ImagePlus,
+          action: () => {
+            void pickCoverImage().then((url) => {
+              if (url) useLibrary.getState().setPlaylistCover(playlist.id, url);
+            });
+          },
+        },
+        ...(playlist.cover
+          ? [{ label: "Remove picture", action: () => useLibrary.getState().setPlaylistCover(playlist.id, null) }]
+          : []),
         ...playlistOwnItems(playlist),
       ]);
       return;
@@ -629,11 +638,10 @@ function LibraryPill() {
       playingFrom !== null && (playingFrom === r.id || playingFrom === r.artistId || filed.some((p) => p.id === playingFrom));
     const open = rowIsOpen(r, view);
     const pl = r.kind === "playlist" && !r.singleKey ? playlists.find((p) => p.id === r.id) : undefined;
-    const canPin = !!r.singleKey || (!!pl && r.id !== "__liked__");
-    const pinned = r.singleKey ? !!r.pinned : !!pl?.pinned;
+    const canPin = !!pl && r.id !== "__liked__";
+    const pinned = !!pl?.pinned;
     const togglePin = (): void => {
-      if (r.singleKey) useLibrary.getState().togglePinSingle(r.singleKey);
-      else if (pl) useLibrary.getState().togglePinPlaylist(pl.id);
+      if (pl) useLibrary.getState().togglePinPlaylist(pl.id);
     };
     return (
       <div
@@ -663,6 +671,8 @@ function LibraryPill() {
           ) : (
             <span className="lb-ib"><span className="lb-photo bg-ink-hi/[0.06] art-hairline grid place-items-center"><User className="w-5 h-5 text-ink-hi/55" /></span></span>
           )
+        ) : r.kind === "playlist" && r.id !== "__liked__" ? (
+          <span className="lb-ib lb-cover"><PlaylistThumb covers={r.covers ?? []} size={40} /></span>
         ) : (
           <span className="lb-ib"><LibIcon kind={iconKindOf(r)} on={open} /></span>
         )}
@@ -720,7 +730,6 @@ function LibraryPill() {
       </div>
     </div>
   );
-  const onAbout = view.name === "settings" && view.param === "about";
 
   return (
     <div
@@ -791,6 +800,10 @@ function LibraryPill() {
       <div className="pt-1">
         {fixedRow("overview", "Overview", "Home", view.name === "home", () => navigate({ name: "home" }))}
         <div className="lb-sep" />
+        {/* the library's own shelves, always together, in this order */}
+        <div className="px-1 space-y-0.5">{singles.map((r) => renderRow(r, undefined))}</div>
+        {/* a long line, and below it only the playlists you made (and the artists and folders you keep) */}
+        <div className="lb-sep lb-sep-long" />
       </div>
 
       {/* Rows — drops bubble to the panel root, which imports playlists and
@@ -821,8 +834,8 @@ function LibraryPill() {
       </div>
 
       <div className="lb-foot">
-        {fixedRow("about", "About", "Version & info", onAbout, () => useUI.getState().openSettings("about"))}
-        {fixedRow("settings", "Settings", "Preferences", view.name === "settings" && !onAbout, () => useUI.getState().openSettings())}
+        {fixedRow("about", "About", "Version & info", floating === "about", () => useUI.getState().openFloating("about"))}
+        {fixedRow("settings", "Settings", "Preferences", view.name === "settings", () => useUI.getState().openSettings())}
       </div>
     </div>
   );

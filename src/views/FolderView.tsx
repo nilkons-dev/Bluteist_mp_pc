@@ -139,7 +139,7 @@ export function FolderView({ folderId }: { folderId: string }) {
               const elsewhere = p.folderId ? folders.find((f) => f.id === p.folderId)?.name : undefined;
               return (
                 <div key={p.id} className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl hover:bg-ink-hi/[0.04] transition-colors">
-                  <Artwork src={p.artistThumb ?? p.tracks[0]?.thumb} className="w-11 h-11 rounded-md shrink-0" iconClassName="w-4 h-4" alt="" />
+                  <Artwork src={p.cover ?? p.artistThumb ?? p.tracks[0]?.thumb} className="w-11 h-11 rounded-md shrink-0" iconClassName="w-4 h-4" alt="" />
                   <div className="min-w-0 flex-1">
                     <FitText text={p.name} className="text-[14.5px] font-semibold text-ink-hi" />
                     <span className="block text-[12.5px] text-ink-dim">

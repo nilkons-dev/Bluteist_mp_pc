@@ -125,6 +125,8 @@ export interface UIState {
   rightPanel: "details" | "queue" | "room";
   /** Synced lyrics rendered in the centre pane over the current view. */
   lyricsCenter: boolean;
+  /** A floating window over the app (the equalizer, About); null when none is open. */
+  floating: "eq" | "about" | null;
   nowPlayingOpen: boolean;
   /** Plain OS fullscreen (F11): the window covers the screen and the taskbar
       is gone; the app's own top bar stays visible. Mirrored from the main
@@ -162,6 +164,8 @@ export interface UIState {
   toggleQueue(): void;
   toggleRoom(): void;
   toggleLyrics(): void;
+  openFloating(kind: "eq" | "about"): void;
+  closeFloating(): void;
   toggleNowPlaying(): void;
   setOsFullscreen(fs: boolean): void;
   closePanels(): void;
@@ -229,6 +233,9 @@ export const useUI = create<UIState>((set, get) => ({
   searchFilter: "all",
   rightPanel: "details" as "details" | "queue" | "room",
   lyricsCenter: false,
+  floating: null,
+  openFloating: (kind) => set({ floating: kind }),
+  closeFloating: () => set({ floating: null }),
   nowPlayingOpen: false,
   osFullscreen: false,
   toasts: [],

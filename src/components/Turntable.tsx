@@ -32,7 +32,6 @@ export function Turntable({ track }: { track: Track }) {
   const toggle = usePlayer((s) => s.toggle);
   const liked = useLibrary((s) => s.liked.some((t) => t.id === track.id));
   const eqEnabled = useSettings((s) => s.eqEnabled);
-  const setEqEnabled = useSettings((s) => s.setEqEnabled);
 
   const [disc, setDisc] = useState(currentDisc);
   const discRef = useRef<SVGGElement>(null);
@@ -214,54 +213,53 @@ export function Turntable({ track }: { track: Track }) {
   const onLike = (): void => {
     const b = likeRef.current;
     if (b) {
-      const h = b.querySelector(".tt-hr");
+      const h = b.querySelector(".np-hr");
       if (h) A(h, [{ transform: "scale(1)" }, { transform: "scale(1.32)", offset: 0.25 }, { transform: "scale(.92)", offset: 0.5 }, { transform: "scale(1.14)", offset: 0.72 }, { transform: "scale(1)" }], { duration: 720 });
-      b.querySelectorAll(".tt-sp").forEach((s, i) => twinkle(s, 120 + i * 110));
+      b.querySelectorAll(".np-sp").forEach((s, i) => twinkle(s, 120 + i * 110));
     }
     useLibrary.getState().toggleLike(track);
   };
   const onMore = (): void => {
     const b = moreRef.current;
-    b?.querySelectorAll(".tt-dt").forEach((d, i) => A(d, [{ transform: "translateY(0) rotate(0)" }, { transform: "translateY(-7px) rotate(180deg)", offset: 0.4 }, { transform: "translateY(0) rotate(360deg)" }], { duration: 620, delay: i * 110, easing: "ease-in-out" }));
+    b?.querySelectorAll(".np-dt").forEach((d, i) => A(d, [{ transform: "translateY(0) rotate(0)" }, { transform: "translateY(-7px) rotate(180deg)", offset: 0.4 }, { transform: "translateY(0) rotate(360deg)" }], { duration: 620, delay: i * 110, easing: "ease-in-out" }));
     const r = b?.getBoundingClientRect();
     useUI.getState().openContextMenu(r ? r.right - 8 : window.innerWidth / 2, r ? r.bottom + 4 : window.innerHeight / 2, trackMenuItems(track));
   };
   const KNOBS = [[0, 8], [0, -9], [0, 3]] as const;
   const onEq = (): void => {
-    const next = !eqEnabled;
-    eqRef.current?.querySelectorAll(".tt-kn").forEach((k, i) => {
+    eqRef.current?.querySelectorAll(".np-kn").forEach((k, i) => {
       const [a, b] = KNOBS[i] ?? [0, 0];
-      const from = next ? a : b, to = next ? b : a;
-      A(k, [{ transform: `translateY(${from}px)` }, { transform: `translateY(${to + (next ? -1 : 1) * 2}px)`, offset: 0.7 }, { transform: `translateY(${to}px)` }], { duration: 560, delay: i * 90, easing: "cubic-bezier(.3,.9,.4,1)" });
+      const from = eqEnabled ? b : a, to = eqEnabled ? a : b;
+      A(k, [{ transform: `translateY(${from}px)` }, { transform: `translateY(${to}px)`, offset: 0.5 }, { transform: `translateY(${from}px)` }], { duration: 560, delay: i * 90, easing: "cubic-bezier(.3,.9,.4,1)" });
     });
-    setEqEnabled(next);
+    useUI.getState().openFloating("eq");
   };
 
-  const id = (n: string): string => `tt${uid}${n}`;
+  const id = (n: string): string => `np${uid}${n}`;
 
   return (
-    <div className="tt">
-      <div className="tt-top">
+    <div className="np">
+      <div className="np-top">
         <small>NOW PLAYING</small>
-        <div className="tt-acts">
-          <button ref={likeRef} className={`tt-ib${liked ? " on" : ""}`} aria-label={liked ? "Remove from Liked Songs" : "Add to Liked Songs"} aria-pressed={liked} title={liked ? "Remove from Liked Songs" : "Add to Liked Songs"} onClick={onLike}>
-            <svg className="tt-ico" viewBox="0 0 48 48">
-              <path className="tt-hr tt-tb" d={HEART} />
-              <g transform="translate(40 7) scale(.6)"><path d={STAR} className="tt-st tt-sp tt-tb" /></g>
-              <g transform="translate(8 6) scale(.5)"><path d={STAR} className="tt-st tt-sp tt-tb" /></g>
+        <div className="np-acts">
+          <button ref={likeRef} className={`np-ib${liked ? " on" : ""}`} aria-label={liked ? "Remove from Liked Songs" : "Add to Liked Songs"} aria-pressed={liked} title={liked ? "Remove from Liked Songs" : "Add to Liked Songs"} onClick={onLike}>
+            <svg className="np-ico" viewBox="0 0 48 48">
+              <path className="np-hr np-tb" d={HEART} />
+              <g transform="translate(40 7) scale(.6)"><path d={STAR} className="np-st np-sp np-tb" /></g>
+              <g transform="translate(8 6) scale(.5)"><path d={STAR} className="np-st np-sp np-tb" /></g>
             </svg>
           </button>
-          <button ref={moreRef} className="tt-ib" aria-label="More" title="More" aria-haspopup="menu" onClick={onMore}>
-            <svg className="tt-ico" viewBox="0 0 48 48">
+          <button ref={moreRef} className="np-ib" aria-label="More" title="More" aria-haspopup="menu" onClick={onMore}>
+            <svg className="np-ico" viewBox="0 0 48 48">
               {[8, 24, 40].map((x) => (
-                <g key={x} transform={`translate(${x} 24) scale(.8)`}><path d={STAR} className="tt-st tt-dt tt-tb" /></g>
+                <g key={x} transform={`translate(${x} 24) scale(.8)`}><path d={STAR} className="np-st np-dt np-tb" /></g>
               ))}
             </svg>
           </button>
         </div>
       </div>
 
-      <svg ref={deckRef} className="tt-deck" viewBox="0 0 300 270" role="button" tabIndex={0} aria-label={playing ? "Turntable — tap to pause" : "Turntable — tap to play"} onClick={onDeck} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onDeck(); } }}>
+      <svg ref={deckRef} className="np-deck" viewBox="0 0 300 270" role="button" tabIndex={0} aria-label={playing ? "Turntable — tap to pause" : "Turntable — tap to play"} onClick={onDeck} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onDeck(); } }}>
         <defs>
           <radialGradient id={id("vg")} cx="125" cy="152" r="110" gradientUnits="userSpaceOnUse"><stop offset=".32" stopColor="#101010" /><stop offset=".75" stopColor="#070707" /><stop offset="1" stopColor="#030303" /></radialGradient>
           <linearGradient id={id("w1")} x1="72" y1="60" x2="125" y2="152" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#fff" stopOpacity=".2" /><stop offset=".7" stopColor="#fff" stopOpacity=".03" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
@@ -291,15 +289,15 @@ export function Turntable({ track }: { track: Track }) {
         </g>
       </svg>
 
-      <h2 className="tt-title" title={track.title}>{shortTitle(track.title)}</h2>
-      <p className="tt-artist">{track.artist}</p>
-      <canvas ref={canvasRef} className="tt-spec" aria-hidden />
-      <button ref={eqRef} className={`tt-eq${eqEnabled ? " on" : ""}`} aria-pressed={eqEnabled} aria-label="Equalizer" title="Equalizer on / off — set the bands in Settings" onClick={onEq}>
-        <svg className="tt-ico" viewBox="0 0 48 48">
+      <h2 className="np-title" title={track.title}>{shortTitle(track.title)}</h2>
+      <p className="np-artist">{track.artist}</p>
+      <canvas ref={canvasRef} className="np-spec" aria-hidden />
+      <button ref={eqRef} className={`np-eq${eqEnabled ? " on" : ""}`} aria-haspopup="dialog" aria-label="Equalizer" title="Open the equalizer" onClick={onEq}>
+        <svg className="np-ico" viewBox="0 0 48 48">
           <path d="M10 8V40" /><path d="M24 8V40" /><path d="M38 8V40" />
           {[10, 24, 38].map((x, i) => (
-            <g key={x} className="tt-kn tt-tb" style={{ transform: `translateY(${eqEnabled ? KNOBS[i][1] : KNOBS[i][0]}px)` }}>
-              <g transform={`translate(${x} 24) scale(1.25)`}><path d={STAR} className="tt-st" /></g>
+            <g key={x} className="np-kn np-tb" style={{ transform: `translateY(${eqEnabled ? KNOBS[i][1] : KNOBS[i][0]}px)` }}>
+              <g transform={`translate(${x} 24) scale(1.25)`}><path d={STAR} className="np-st" /></g>
             </g>
           ))}
         </svg>

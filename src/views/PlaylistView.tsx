@@ -109,7 +109,7 @@ export function PlaylistView({ playlistId }: { playlistId: string }) {
         kind={onDevice ? "On this device" : "Your playlist"}
         title={playlist.name}
         // An artist's playlist leads with the artist's photo.
-        covers={[playlist.artistThumb, ...tracks.map((t) => t.thumb)]}
+        covers={[playlist.cover ?? playlist.artistThumb, ...tracks.map((t) => t.thumb)]}
         facts={
           <>
             {tracks.length ? [facts.songs, facts.length].filter(Boolean).join(" · ") : "No songs yet"}

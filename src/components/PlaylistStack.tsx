@@ -14,7 +14,7 @@ import { usePlayer } from "../stores/player";
 import { useUI } from "../stores/ui";
 
 /** A playlist's covers; an artist's playlist leads with the artist's photo. */
-export const coversOf = (p: Playlist): Array<string | undefined> => [p.artistThumb, ...p.tracks.map((t) => t.thumb)];
+export const coversOf = (p: Playlist): Array<string | undefined> => [p.cover ?? p.artistThumb, ...p.tracks.map((t) => t.thumb)];
 
 export function PlaylistStack({ playlist }: { playlist: Playlist }) {
   const navigate = useUI((s) => s.navigate);

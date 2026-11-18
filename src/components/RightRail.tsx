@@ -464,17 +464,13 @@ export function QueuePanel({ onClose }: { onClose: () => void }) {
 function DetailsBody() {
   const track = usePlayer(shownTrack);
   const { artistImage } = useArtistImage(track);
-  const detailsDrag = useDrag({ track: track ?? { id: "", title: "", artist: "", duration: 0, thumb: "" } });
 
   if (!track) return <StartHere />;
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2 space-y-4">
-      {/* The turntable: the record spins while the song plays; the live spectrum and the equalizer switch sit under it.
-          Title and artist are a drag source — drop them on a sidebar playlist. */}
-      <div {...detailsDrag.props} className={detailsDrag.dragging ? "opacity-40" : ""}>
-        <Turntable track={track} />
-      </div>
+      {/* The turntable: the record spins while the song plays; the live spectrum and the equalizer button sit under it. */}
+      <Turntable track={track} />
 
       <AboutArtistCard track={track} fallbackImage={artistImage ?? track.thumb ?? null} />
     </div>

@@ -1,0 +1,36 @@
+/* Floating windows (equalizer, About). */
+.fw-back { --st-ease: cubic-bezier(0.22, 1, 0.36, 1); position: fixed; inset: 0; z-index: 190; background: rgba(0, 0, 0, .62); display: flex; align-items: center; justify-content: center; padding: 24px; animation: fw-fade .2s ease-out; }
+.fw-win { width: 460px; max-width: 100%; max-height: 100%; overflow: auto; background: #0c0c0c; border: 1px solid #2b2b2b; border-radius: 20px; box-shadow: 0 24px 80px rgba(0, 0, 0, .6); color: #fff; outline: none; animation: fw-rise .32s cubic-bezier(.22, 1, .36, 1); }
+.fw-win.fw-wide { width: 640px; }
+.fw-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 6px 22px; }
+.fw-head h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: .01em; }
+.fw-right { display: flex; align-items: center; gap: 10px; }
+.fw-sw { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #bdbdbd; cursor: pointer; }
+.fw-x { width: 36px; height: 36px; display: grid; place-items: center; background: none; border: 0; color: #fff; cursor: pointer; opacity: .65; transition: opacity .2s; }
+.fw-x:hover { opacity: 1; }
+.fw-x svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; transition: rotate .25s cubic-bezier(.34, 1.56, .64, 1); }
+.fw-x:hover svg { rotate: 90deg; }
+.fw-x:focus-visible { outline: 1.5px solid #fff; outline-offset: 2px; border-radius: 10px; }
+.fw-body { padding: 4px 22px 20px; }
+.fw-lede { margin: 2px 0 14px; font-size: 13px; line-height: 1.5; color: #9a9a9a; }
+.fw-foot { display: flex; gap: 10px; margin-top: 16px; }
+.fw-foot.is-center { justify-content: center; }
+.fw-btn { height: 38px; padding: 0 18px; border-radius: 999px; border: 1px solid #3a3a3a; background: none; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .2s, border-color .2s; }
+.fw-btn:hover:not(:disabled) { background: #1a1a1a; border-color: #666; }
+.fw-btn:disabled { opacity: .4; cursor: default; }
+.fw-btn.is-solid { background: #fff; color: #000; border-color: #fff; }
+.fw-btn.is-solid:hover { background: #e6e6e6; }
+.fw-about { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 6px; }
+.fw-mark { width: 72px; height: 72px; }
+.fw-word { height: 30px; margin-top: 14px; object-fit: contain; }
+.fw-ver { margin: 12px 0 0; font-size: 12.5px; color: #8c8c8c; letter-spacing: .04em; }
+.fw-tag { margin: 6px 0 0; font-size: 15px; font-weight: 600; }
+.fw-copy { margin: 14px 0 0; font-size: 13.5px; line-height: 1.6; color: #b4b4b4; }
+.fw-feat { list-style: none; margin: 18px 0 0; padding: 0; width: 100%; text-align: left; display: grid; gap: 12px; }
+.fw-feat li { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: #a8a8a8; }
+.fw-feat svg { width: 14px; height: 14px; margin-top: 3px; flex: none; fill: #fff; }
+.fw-feat b { display: block; color: #fff; font-weight: 600; margin-bottom: 1px; }
+.fw-small { margin: 18px 0 0; font-size: 12px; line-height: 1.5; color: #7a7a7a; }
+@keyframes fw-fade { from { opacity: 0; } }
+@keyframes fw-rise { from { opacity: 0; transform: translateY(14px) scale(.97); } }
+@media (prefers-reduced-motion: reduce) { .fw-back, .fw-win { animation: none; } }

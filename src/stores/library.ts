@@ -22,6 +22,8 @@ export interface Playlist {
   /** when the listener last put the songs in their own order — the newest
       order wins a two-device merge (electron/sync-merge.ts inPlaylistOrder) */
   orderedAt?: number;
+  /** a picture the listener chose for the playlist (a small square JPEG data URL); wins over the songs' covers */
+  cover?: string;
 }
 
 /** An artist the user dropped into their library — a follow, not a playlist. */
@@ -91,6 +93,8 @@ interface LibraryState {
   importPlaylist(name: string, tracks: Track[], folderId?: string): Playlist;
   renamePlaylist(id: string, name: string): void;
   togglePinPlaylist(id: string): void;
+  /** set, or with null clear, the playlist's own picture */
+  setPlaylistCover(id: string, cover: string | null): void;
   deletePlaylist(id: string): void;
   addToPlaylist(playlistId: string, track: Track): boolean;
   removeFromPlaylist(playlistId: string, trackId: string): void;
@@ -207,6 +211,16 @@ export const useLibrary = create<LibraryState>()(
       togglePinPlaylist(id) {
         withChanges(set, get, {
           playlists: get().playlists.map((p) => (p.id === id ? { ...p, pinned: !p.pinned } : p)),
+        }, [{ kind: "edit", group: "playlists", id }]);
+      },
+
+      setPlaylistCover(id, cover) {
+        withChanges(set, get, {
+          playlists: get().playlists.map((p) => {
+            if (p.id !== id) return p;
+            const { cover: _drop, ...rest } = p;
+            return cover ? { ...rest, cover } : rest;
+          }),
         }, [{ kind: "edit", group: "playlists", id }]);
       },
 

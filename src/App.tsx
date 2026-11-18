@@ -51,6 +51,7 @@ import { PodcastView } from "./views/PodcastView";
 import { PodcastsView } from "./views/PodcastsView";
 import { MoodView } from "./views/MoodView";
 import { SearchView } from "./views/SearchView";
+import { FloatingWindows } from "./components/FloatingWindows";
 import { SettingsView } from "./views/SettingsView";
 
 function useKeyboardShortcuts(): void {
@@ -500,6 +501,7 @@ export default function App() {
       <PlayerBar />
       <NowPlaying />
       <Dialog />
+      <FloatingWindows />
       <PlaylistPicker />
       <ContextMenu />
       <FileDropOverlay />
