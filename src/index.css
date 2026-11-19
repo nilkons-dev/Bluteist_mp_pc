@@ -452,6 +452,10 @@ main {
   -webkit-mask-image: linear-gradient(to bottom, black 0%, rgb(0 0 0 / 0.78) 30%, rgb(0 0 0 / 0.36) 62%, transparent 100%);
   mask-image: linear-gradient(to bottom, black 0%, rgb(0 0 0 / 0.78) 30%, rgb(0 0 0 / 0.36) 62%, transparent 100%);
 }
+/* The panel's own glow: light grey-white, the same on every page that has one, never a cover's colours. */
+.cover-glow-neutral {
+  background: radial-gradient(130% 100% at 50% 0%, rgb(236 236 240 / 0.2) 0%, rgb(220 220 226 / 0.1) 42%, rgb(200 200 208 / 0) 78%);
+}
 /* Stretched to the band rather than cropped: blurred this far, all of a
    cover's colours show, each where it sits on the cover. Bigger than the band
    so the blur's soft edge stays out of sight. The filter is inline: its
@@ -947,21 +951,17 @@ body.bytune-dragging * {
   bottom: 0;
   z-index: -1;
 }
+/* A song row's light is plain ash grey, never the cover's colours: the row under the pointer a clear step above
+   the page, the playing one a quieter step. */
 .tl-light::before,
 .tl-playing::before {
   content: "";
   position: absolute;
-  inset: -45% -8%;
-  background: var(--light) center / 100% 100% no-repeat;
-  filter: blur(30px) saturate(1.7);
-  opacity: 0.4;
+  inset: 0;
+  background: rgb(255 255 255 / 0.12);
 }
 .tl-playing::before {
-  opacity: 0.22;
-  animation: tl-breathe 3.2s ease-in-out infinite;
-}
-@keyframes tl-breathe {
-  50% { opacity: 0.34; }
+  background: rgb(255 255 255 / 0.07);
 }
 .tl-row {
   position: relative;
@@ -3310,8 +3310,7 @@ html.noglass .chrome-glass {
   flex-direction: column;
   gap: var(--gap);
   transform-style: preserve-3d;
-  transform: translate(-47%, -50%) rotateX(calc(22deg + var(--py, 0) * 3deg)) rotateY(calc(-20deg + var(--px, 0) * 4deg)) rotateZ(-7deg) scale(1.34);
-  transition: transform 0.9s var(--ob-ease);
+  transform: translate(-47%, -50%) rotateX(22deg) rotateY(-20deg) rotateZ(-7deg) scale(1.34);
 }
 .ob-wall-row {
   display: flex;
@@ -3319,30 +3318,13 @@ html.noglass .chrome-glass {
   width: max-content;
   transform-style: preserve-3d;
   will-change: transform;
-  animation: ob-wall-left var(--dur, 200s) linear infinite;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  pointer-events: auto;
 }
-.ob-wall-row.is-rev {
-  animation-name: ob-wall-right;
-}
-@keyframes ob-wall-left {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-33.3333%);
-  }
-}
-@keyframes ob-wall-right {
-  from {
-    transform: translateX(-33.3333%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-/* The row under the pointer stops, so a cover holds still while you look at it. */
-.ob-wall-row:hover {
-  animation-play-state: paused;
+.ob-wall-row.is-drag {
+  cursor: grabbing;
 }
 .ob-tile {
   position: relative;
@@ -3354,9 +3336,9 @@ html.noglass .chrome-glass {
   background: rgb(var(--panel));
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
   transition:
-    transform 0.35s var(--ob-ease),
-    filter 0.35s var(--ob-ease),
-    box-shadow 0.35s var(--ob-ease);
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.5s ease,
+    box-shadow 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   filter: brightness(0.78);
   pointer-events: auto;
 }
@@ -3389,7 +3371,7 @@ html.noglass .chrome-glass {
 }
 @media (hover: hover) {
   .ob-tile:hover {
-    transform: translateZ(60px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.08);
+    transform: translateY(-16px) scale(1.08);
     filter: brightness(1.08);
     box-shadow:
       inset 0 0 0 1px rgb(255 255 255 / 0.25),

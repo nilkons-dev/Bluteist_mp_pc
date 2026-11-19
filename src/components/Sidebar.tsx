@@ -62,7 +62,7 @@ interface Entry {
   rows: LibRow[];
 }
 
-function LibraryPill() {
+function LibraryPill({ compact }: { compact: boolean }) {
   const liked = useLibrary((s) => s.liked);
   const playlists = useLibrary((s) => s.playlists);
   const folders = useLibrary((s) => s.folders);
@@ -650,6 +650,7 @@ function LibraryPill() {
         role="button"
         tabIndex={0}
         aria-current={open ? "page" : undefined}
+        title={compact ? r.title : undefined}
         onClick={(e) => tapRow(e, r)}
         onKeyDown={(e) => {
           if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
@@ -708,6 +709,7 @@ function LibraryPill() {
       role="button"
       tabIndex={0}
       aria-current={sel ? "page" : undefined}
+      title={compact ? title : undefined}
       onClick={(e) => {
         flashRow(e.currentTarget);
         const ib = e.currentTarget.querySelector(".lb-ib");
@@ -733,7 +735,7 @@ function LibraryPill() {
 
   return (
     <div
-      className={`lb relative flex-1 min-h-0 flex flex-col glass-pill rounded-2xl overflow-hidden shadow-pill transition-shadow ${
+      className={`lb${compact ? " lb-compact" : ""} relative flex-1 min-h-0 flex flex-col glass-pill rounded-2xl overflow-hidden shadow-pill transition-shadow ${
         libHover ? "shadow-[0_0_44px_rgb(var(--accent)/0.14)]" : ""
       }`}
       onContextMenu={onLibraryContextMenu}
@@ -781,7 +783,7 @@ function LibraryPill() {
         />
       )}
       {/* Header */}
-      <div className="flex items-center justify-between pl-[18px] pr-3 pt-3.5 h-[48px]">
+      <div className="lb-head flex items-center justify-between pl-[18px] pr-3 pt-3.5 h-[48px]">
         <button
           onClick={(e) => {
             bookFx(e.currentTarget);
@@ -791,17 +793,20 @@ function LibraryPill() {
           title="Your Library"
         >
           <span className="lb-head-ico"><BookGlyph /></span>
-          Your Library
+          <span className="lb-head-tx">Your Library</span>
         </button>
         {/* + opens the create dropdown — Playlist / Folder, no modal. */}
-        <CreateMenu variant="eye" />
+        <div className="lb-head-plus">
+          <CreateMenu variant="eye" />
+        </div>
       </div>
 
       <div className="pt-1">
-        {fixedRow("overview", "Home", null, view.name === "home", () => navigate({ name: "home" }))}
-        <div className="lb-sep" />
-        {/* the library's own shelves, always together, in this order */}
-        <div className="px-1 space-y-0.5">{singles.map((r) => renderRow(r, undefined))}</div>
+        {/* Home first, then the library's own shelves, always together, in this order: one list, one set of rows */}
+        <div className="px-1 space-y-0.5">
+          {fixedRow("overview", "Home", null, view.name === "home", () => navigate({ name: "home" }))}
+          {singles.map((r) => renderRow(r, undefined))}
+        </div>
         {/* a long line, and below it only the playlists you made (and the artists and folders you keep) */}
         <div className="lb-sep lb-sep-long" />
       </div>
@@ -843,10 +848,104 @@ function LibraryPill() {
 
 /* ============================================================ root */
 
+/** The library's width: open (328 to start with, 250 to 480 when pulled) or a narrow strip of icons and covers. */
+const LIB_KEY = "blutheist.libraryWidth";
+const LIB_STRIP = 76;
+const LIB_OPEN = 328;
+const LIB_MIN = 250;
+const LIB_MAX = 480;
+/** Pulled narrower than this, the library lets go of its words and shows only icons. */
+const LIB_SNAP = 168;
+
+function readLibraryWidth(): number {
+  try {
+    const v = Number(localStorage.getItem(LIB_KEY));
+    if (v === LIB_STRIP) return LIB_STRIP;
+    if (Number.isFinite(v) && v >= LIB_MIN && v <= LIB_MAX) return Math.round(v);
+  } catch {
+    /* no storage: the default */
+  }
+  return LIB_OPEN;
+}
+
+const settleWidth = (w: number): number => (w < LIB_SNAP ? LIB_STRIP : Math.min(LIB_MAX, Math.max(LIB_MIN, Math.round(w))));
+
 export function Sidebar() {
+  const [w, setW] = useState(readLibraryWidth);
+  const [pulling, setPulling] = useState(false);
+  const from = useRef<{ x: number; w: number; id: number } | null>(null);
+  const live = useRef(w);
+  live.current = w;
+  const compact = w < LIB_SNAP;
+
+  const keep = (next: number): void => {
+    setW(next);
+    try {
+      localStorage.setItem(LIB_KEY, String(next));
+    } catch {
+      /* the width still holds for this run */
+    }
+  };
+
   return (
-    <aside className="w-[328px] shrink-0 flex flex-col min-h-0">
-      <LibraryPill />
+    <aside
+      className={`lb-aside relative shrink-0 flex flex-col min-h-0${pulling ? " is-pulling" : ""}`}
+      style={{ width: w }}
+    >
+      <LibraryPill compact={compact} />
+      {/* The edge (and the corners with it): take hold and pull to make the library wider or narrower; let go
+          and it settles; a double tap opens or folds it. */}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize your library"
+        aria-valuemin={LIB_STRIP}
+        aria-valuemax={LIB_MAX}
+        aria-valuenow={w}
+        tabIndex={0}
+        className="lb-grip"
+        onPointerDown={(e) => {
+          if (e.button !== 0) return;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          from.current = { x: e.clientX, w: live.current, id: e.pointerId };
+          setPulling(true);
+        }}
+        onPointerMove={(e) => {
+          const f = from.current;
+          if (!f || f.id !== e.pointerId) return;
+          setW(Math.min(LIB_MAX, Math.max(LIB_STRIP, f.w + (e.clientX - f.x))));
+        }}
+        onPointerUp={(e) => {
+          const f = from.current;
+          if (!f || f.id !== e.pointerId) return;
+          from.current = null;
+          setPulling(false);
+          try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+          } catch {
+            /* already released */
+          }
+          keep(settleWidth(live.current));
+        }}
+        onPointerCancel={() => {
+          from.current = null;
+          setPulling(false);
+          keep(settleWidth(live.current));
+        }}
+        onDoubleClick={() => keep(live.current < LIB_SNAP ? LIB_OPEN : LIB_STRIP)}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            keep(live.current <= LIB_MIN ? LIB_STRIP : settleWidth(live.current - 24));
+          } else if (e.key === "ArrowRight") {
+            e.preventDefault();
+            keep(live.current < LIB_SNAP ? LIB_MIN : settleWidth(live.current + 24));
+          } else if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            keep(live.current < LIB_SNAP ? LIB_OPEN : LIB_STRIP);
+          }
+        }}
+      />
     </aside>
   );
 }

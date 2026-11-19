@@ -15,7 +15,7 @@ import { autoplayTail, isRadioSeed, shownTrack, usePlayer } from "../stores/play
 import { useSettings } from "../stores/settings";
 import { useUI, type MenuItem } from "../stores/ui";
 import { dontPlay, useAutoplayInfo } from "../lib/autoplay";
-import { confirmClearHistory, historyMenuItems, trackMenuItems } from "../lib/trackActions";
+import { confirmClearHistory, historyMenuItems, nowPlayingMenuItems, trackMenuItems } from "../lib/trackActions";
 import { Artwork, Btn, EqBars, IconBtn, Switch } from "./primitives";
 import { RoomPanel } from "./RoomPanel";
 import { useRoom } from "../stores/room";
@@ -41,7 +41,7 @@ function QueueCurrentRow({ track }: { track: Track }) {
       {...drag.props}
       onContextMenu={(e) => {
         e.preventDefault();
-        useUI.getState().openContextMenu(e.clientX, e.clientY, trackMenuItems(track));
+        useUI.getState().openContextMenu(e.clientX, e.clientY, nowPlayingMenuItems(track));
       }}
       className={`fit-host flex items-center gap-3 h-14 px-2 rounded-lg bg-ink-hi/[0.14] ${
         drag.dragging ? "opacity-40" : ""

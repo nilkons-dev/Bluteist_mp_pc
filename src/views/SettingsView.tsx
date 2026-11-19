@@ -82,6 +82,8 @@ import { useUI, type MenuItem } from "../stores/ui";
 import { listOutputDevices } from "../lib/audio";
 import type { OutputDeviceChoice } from "../lib/audio-output";
 import { ProfileAvatar } from "../components/ProfileAvatar";
+import { AboutBody } from "../components/AboutBody";
+import { AboutIcon, AccountIcon, DataIcon, DisplayIcon, LibraryIcon, LyricsIcon, PlaybackIcon, SoundIcon } from "../components/SettingsIcons";
 import { wallCovers } from "../lib/collection";
 import { upgradeArtwork } from "../lib/artwork";
 import { EqualizerBoard } from "../components/EqualizerBoard";
@@ -93,14 +95,14 @@ type Glyph = React.ComponentType<{ className?: string }>;
 /* ============================================================ categories */
 
 const CATEGORIES = [
-  { id: "account", label: "Account", icon: UserRound, lede: "Your name, your backup and the services you've connected" },
-  { id: "playback", label: "Playback", icon: CirclePlay, lede: "How songs start, end and follow each other" },
-  { id: "sound", label: "Sound", icon: AudioLines, lede: "Quality, loudness, where it plays and how it's shaped" },
-  { id: "lyrics", label: "Lyrics", icon: MicVocal, lede: "How lyrics follow the song" },
-  { id: "display", label: "Display", icon: Palette, lede: "Motion, glass and how covers show" },
-  { id: "library", label: "Library", icon: Library, lede: "Your music folders and downloads" },
-  { id: "data", label: "Your data", icon: Database, lede: "Your listening, your backups and a fresh start" },
-  { id: "about", label: "About", icon: Info, lede: "The version you're running and where Blutheist lives" },
+  { id: "account", label: "Account", icon: AccountIcon, lede: "Your name, your backup and the services you've connected" },
+  { id: "playback", label: "Playback", icon: PlaybackIcon, lede: "How songs start, end and follow each other" },
+  { id: "sound", label: "Sound", icon: SoundIcon, lede: "Quality, loudness, where it plays and how it's shaped" },
+  { id: "lyrics", label: "Lyrics", icon: LyricsIcon, lede: "How lyrics follow the song" },
+  { id: "display", label: "Display", icon: DisplayIcon, lede: "Motion, glass and how covers show" },
+  { id: "library", label: "Library", icon: LibraryIcon, lede: "Your music folders and downloads" },
+  { id: "data", label: "Your data", icon: DataIcon, lede: "Your listening, your backups and a fresh start" },
+  { id: "about", label: "About", icon: AboutIcon, lede: "The version you're running and where Blutheist lives" },
 ] as const;
 type CategoryId = (typeof CATEGORIES)[number]["id"];
 
@@ -1367,8 +1369,8 @@ function AboutPane() {
         <div data-setting-row className="st-about">
           <img src={brandLogo} alt="" aria-hidden className="st-about-mark" />
           <img src={brandText} alt="Blutheist" className="st-about-word" />
-          <p className="st-about-version">Version {versions?.app ?? "1.0.0"}</p>
-          <p className="st-about-meta">Free and open source under GPL-3.0</p>
+          <p className="st-about-version">Version {versions?.app ?? "1.1.1"}</p>
+          <AboutBody />
         </div>
       </section>
       <UpdatesGroup />
@@ -1412,6 +1414,51 @@ export function SettingsView() {
     last.current = active;
   }, [active]);
   const category = CATEGORIES[indexOf(active)];
+
+  // The icons' little animations: one more play when a category is picked; Sound's bars run while the pointer is on
+  // it, and finish their beat before they stop (settingsIcons.css).
+  const playTimers = useRef(new Map<HTMLElement, number>());
+  const sound = useRef({ hold: false, stopping: false, timer: 0 });
+  useEffect(() => {
+    const timers = playTimers.current, snd = sound.current;
+    return () => {
+      timers.forEach((t) => window.clearTimeout(t));
+      window.clearTimeout(snd.timer);
+    };
+  }, []);
+  const replay = (el: HTMLElement): void => {
+    el.classList.remove("is-play");
+    void el.offsetWidth;
+    el.classList.add("is-play");
+    window.clearTimeout(playTimers.current.get(el));
+    playTimers.current.set(el, window.setTimeout(() => el.classList.remove("is-play"), 1500));
+  };
+  const runSound = (el: HTMLElement, pulse = false): void => {
+    const snd = sound.current;
+    el.classList.add("si-run");
+    snd.stopping = false;
+    if (pulse && !snd.hold) {
+      window.clearTimeout(snd.timer);
+      snd.timer = window.setTimeout(() => {
+        if (!snd.hold) snd.stopping = true;
+      }, 1800);
+    }
+  };
+  const soundProps = (id: CategoryId) =>
+    id !== "sound"
+      ? {}
+      : {
+          onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { sound.current.hold = true; runSound(e.currentTarget); },
+          onMouseLeave: () => { sound.current.hold = false; sound.current.stopping = true; },
+          onFocus: (e: React.FocusEvent<HTMLElement>) => { sound.current.hold = true; runSound(e.currentTarget); },
+          onBlur: () => { sound.current.hold = false; sound.current.stopping = true; },
+          onAnimationIteration: (e: React.AnimationEvent<HTMLElement>) => {
+            if (sound.current.stopping && !sound.current.hold) {
+              e.currentTarget.classList.remove("si-run");
+              sound.current.stopping = false;
+            }
+          },
+        };
 
   const pick = (id: CategoryId): void => {
     setFilter("");
@@ -1541,10 +1588,15 @@ export function SettingsView() {
                 type="button"
                 data-cat={c.id}
                 aria-current={!q && c.id === active ? "page" : undefined}
-                onClick={() => pick(c.id)}
+                onClick={(e) => {
+                  pick(c.id);
+                  replay(e.currentTarget);
+                  if (c.id === "sound") runSound(e.currentTarget, true);
+                }}
                 className="st-nav-item"
+                {...soundProps(c.id)}
               >
-                <c.icon aria-hidden className="w-[18px] h-[18px]" />
+                <c.icon />
                 <span>{c.label}</span>
               </button>
             ))}

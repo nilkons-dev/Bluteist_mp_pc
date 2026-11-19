@@ -1,0 +1,9 @@
+/* About text: the same in the window and in Settings. */
+.ab-body { width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.ab-tag { margin: 8px 0 0; font-size: 15px; font-weight: 600; color: #fff; letter-spacing: .01em; }
+.ab-intro { margin: 14px 0 0; font-size: 13.5px; line-height: 1.65; color: #b4b4b4; }
+.ab-list { list-style: none; margin: 20px 0 0; padding: 0; width: 100%; text-align: left; display: grid; gap: 14px; }
+.ab-list li { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.55; color: #a8a8a8; }
+.ab-list svg { width: 14px; height: 14px; margin-top: 3px; flex: none; fill: #fff; }
+.ab-list b { display: block; color: #fff; font-weight: 600; margin-bottom: 2px; }
+.ab-closing { margin: 22px 0 4px; font-size: 13px; font-weight: 600; color: #e6e6e6; letter-spacing: .02em; }

@@ -1,0 +1,26 @@
+/* Playlists as a stack of cards (Crate.tsx). Each card's place and motion are set by the loop; this is how they look. */
+.ps-row { --ps-s: 130px; position: relative; width: 100%; height: calc(var(--ps-s) * 2.1); perspective: 1300px; outline: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.ps-row:focus-visible { box-shadow: 0 0 0 2px #ffffff40; border-radius: 12px; }
+.ps-card { position: absolute; left: 0; top: 50%; width: var(--ps-s); height: var(--ps-s); margin-top: calc(var(--ps-s) * -.5); will-change: transform; cursor: pointer; transition: filter .35s; opacity: 0; }
+.ps-row.has-hover .ps-card:not(.is-up) { filter: brightness(.5); }
+.ps-tilt { position: absolute; inset: 0; }
+.ps-face { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; background: #1c1c20; box-shadow: inset 0 0 0 1px #ffffff26, 0 18px 40px #000c; }
+.ps-face img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ps-face::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), #fff, transparent 58%); opacity: var(--sh, 0); mix-blend-mode: soft-light; }
+.ps-card.is-up .ps-face { box-shadow: inset 0 0 0 1.5px #fffc, 0 18px 40px #000c; }
+.ps-sheen { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity .35s; background: linear-gradient(160deg, #ffffff24, transparent 42%); }
+.ps-sheen::after { content: ""; position: absolute; top: -25%; bottom: -25%; left: -70%; width: 45%; background: linear-gradient(100deg, transparent, #ffffff70 50%, transparent); transform: skewX(-18deg); }
+.ps-card.is-up .ps-sheen { opacity: 1; }
+.ps-card.is-up .ps-sheen::after { animation: ps-sweep .9s cubic-bezier(.22, .8, .2, 1) .05s; }
+@keyframes ps-sweep { from { left: -70%; } to { left: 135%; } }
+/* The card that slides up from behind the one that is up. */
+.ps-back { position: absolute; inset: 0; transform: translateY(-14%) scale(.92) rotate(-1.5deg); transition: transform .8s cubic-bezier(.34, 1.45, .5, 1); pointer-events: none; }
+.ps-card.is-up .ps-back { transform: translateY(-52%) scale(1) rotate(2deg); }
+.ps-inside { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 5% 8%; border-radius: 8px; overflow: hidden; background: linear-gradient(145deg, #5a5a62, #1c1c20); box-shadow: inset 0 0 0 1px #ffffff33, 0 -6px 20px #0006; transition: box-shadow .5s; font-size: calc(var(--ps-s) * .12); line-height: 1.12; color: #fff; }
+.ps-inside::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, #0009, transparent 55%); }
+.ps-inside em, .ps-inside span { position: relative; }
+.ps-inside em { font-style: normal; font-size: .5em; font-weight: 600; letter-spacing: .12em; opacity: .7; }
+.ps-inside span { font-weight: 700; font-size: .78em; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 8px #0009; }
+.ps-card.is-up .ps-inside { box-shadow: inset 0 0 0 1px #ffffff55, 0 -10px 40px #ffffff22; animation: ps-bob 3.2s ease-in-out .8s infinite; }
+@keyframes ps-bob { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-3%) rotate(1deg); } }
+@media (prefers-reduced-motion: reduce) { .ps-card.is-up .ps-inside, .ps-card.is-up .ps-sheen::after { animation: none; } }

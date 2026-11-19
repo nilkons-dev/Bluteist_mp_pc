@@ -9,6 +9,7 @@ import { Switch } from "./primitives";
 import { EqualizerBoard } from "./EqualizerBoard";
 import { STAR } from "./eyeFx";
 import { ProfileAvatar } from "./ProfileAvatar";
+import { AboutBody } from "./AboutBody";
 import { AVATARS, builtInChoice, customChoice, randomAvatarChoice } from "../lib/avatars";
 import { useMyAvatar } from "../stores/avatar";
 import { pickCoverImage } from "../lib/coverImage";
@@ -80,13 +81,6 @@ function EqualizerWindow() {
   );
 }
 
-const FEATURES: ReadonlyArray<readonly [string, string]> = [
-  ["One library", "Streaming and your own music folders side by side, with playlists, likes and downloads."],
-  ["Live sound", "A ten-band equalizer and a now-playing turntable whose spectrum follows the song as it plays."],
-  ["Synced lyrics", "Word-by-word lyrics that follow the music, with timing you can nudge."],
-  ["Private by design", "Starts as a guest: your library and settings stay on this computer."],
-];
-
 function AboutWindow() {
   const versions = window.bytune?.versions;
   return (
@@ -94,26 +88,8 @@ function AboutWindow() {
       <div className="fw-about">
         <img src={brandLogo} alt="" aria-hidden className="fw-mark" />
         <img src={brandText} alt="Blutheist" className="fw-word" />
-        <p className="fw-ver">Version {versions?.app ?? "1.0.0"}</p>
-        <p className="fw-tag">Music, seen and heard.</p>
-        <p className="fw-copy">
-          Blutheist is a desktop music player made for listening: a clean, dark interface, a library that brings your streaming and your own files
-          together, and sound you can shape. It is free, it keeps your data on your computer, and it stays out of the way of the music.
-        </p>
-        <ul className="fw-feat">
-          {FEATURES.map(([t, d]) => (
-            <li key={t}>
-              <svg viewBox="-6 -6 12 12" aria-hidden>
-                <path d={STAR} />
-              </svg>
-              <span>
-                <b>{t}</b>
-                {d}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="fw-small">Free and open source under the GPL-3.0 licence. Third-party credits are listed in the NOTICE file that ships with the source.</p>
+        <p className="fw-ver">Version {versions?.app ?? "1.1.1"}</p>
+        <AboutBody />
         <div className="fw-foot is-center">
           <button type="button" className="fw-btn" onClick={() => window.open("https://github.com/nilkons-dev/Bluteist_mp_pc", "_blank", "noopener")}>
             Project page

@@ -2,8 +2,10 @@
  * The onboarding's showpiece: a wall of covers, set on a tilted plane in perspective, its rows drifting slowly against
  * each other (songs most people know on sight; the same covers as before, lib/coverDrum). The cover in the middle of the
  * wall lights the page with its own colours (a blurred copy of it behind the wall, the way a collection page is lit);
- * resting the pointer on another lifts it and lights that one instead, and the row under the pointer stops so a cover
- * holds still while you look at it. Motion is CSS (index.css, .ob-wall); with reduced motion the wall holds still.
+ * resting the pointer on another lifts it (smoothly) and lights that one instead, and the row under the pointer slows to
+ * a stop so a cover holds still while you look at it. Take hold of a cover and pull, and its row follows the pointer and
+ * keeps going the way you flung it before it settles back to its own pace. The wall itself never moves or tilts.
+ * With reduced motion the rows hold still (they can still be pulled).
  */
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { DRUM, type DrumCover } from "../lib/coverDrum";
@@ -25,6 +27,9 @@ const ROWS: ReadonlyArray<{ cover: ReadonlyArray<DrumCover>; dir: 1 | -1; secs: 
 ];
 /** The row whose cover lights the page when nothing is hovered. */
 const MID = 5;
+/** Pixels a row travels along its own line for a pixel of pointer travel (the wall is turned a little). */
+const PULL = 1.1;
+const FLING_MAX = 3200;
 const bg = (src: string): CSSProperties => ({ backgroundImage: `url(${JSON.stringify(src)})` });
 
 export function CoverWall({ turn, busy }: { turn: number; busy: boolean }) {
@@ -54,50 +59,88 @@ export function CoverWall({ turn, busy }: { turn: number; busy: boolean }) {
     setLit(mid[idx.current]);
   }, [turn, mid]);
 
-  // The whole wall leans a little toward the pointer (and settles back when it leaves the window).
+  /* ---- the rows: each drifts at its own pace; one can be pulled ---- */
+  const rowEls = useRef<Array<HTMLDivElement | null>>([]);
+  const sim = useRef(
+    ROWS.map((r, i) => ({ off: -((i * 0.137 + 0.08) % 1), vel: 0, w: 0, base: 0, over: false })),
+  );
+  const drag = useRef<{ row: number; id: number; x: number; t: number; v: number } | null>(null);
+
   useEffect(() => {
-    const root = wallRef.current?.closest<HTMLElement>(".ob-root");
-    const wall = wallRef.current;
-    if (!root || !wall) return;
-    let raf = 0, nx = 0, ny = 0;
-    const apply = (): void => {
-      raf = 0;
-      wall.style.setProperty("--px", nx.toFixed(3));
-      wall.style.setProperty("--py", ny.toFixed(3));
+    const reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0, last = performance.now(), frame = 0;
+    const tick = (now: number): void => {
+      const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
+      last = now;
+      const measure = frame++ % 30 === 0;
+      sim.current.forEach((r, i) => {
+        const el = rowEls.current[i];
+        if (!el) return;
+        if (measure || r.w === 0) {
+          const w = el.offsetWidth / 3;
+          if (w > 0) {
+            // A fraction until the width is known, then pixels.
+            if (r.w === 0) r.off = r.off * w;
+            else r.off = (r.off / r.w) * w;
+            r.w = w;
+          }
+        }
+        if (r.w === 0) return;
+        r.base = reduce ? 0 : (ROWS[i].dir * r.w) / ROWS[i].secs;
+        if (drag.current?.row !== i) {
+          // Held still while the pointer rests on it, unless it is still running from a fling.
+          const flinging = Math.abs(r.vel) > Math.abs(r.base) * 2 + 40;
+          const target = r.over && !flinging ? 0 : r.base;
+          r.vel += (target - r.vel) * (1 - Math.exp(-dt * (flinging ? 1.6 : 4)));
+          r.off += r.vel * dt;
+        }
+        while (r.off <= -r.w) r.off += r.w;
+        while (r.off > 0) r.off -= r.w;
+        el.style.transform = `translate3d(${r.off.toFixed(2)}px,0,0)`;
+      });
+      raf = requestAnimationFrame(tick);
     };
-    const move = (e: PointerEvent): void => {
-      nx = (e.clientX / Math.max(1, window.innerWidth)) * 2 - 1;
-      ny = (e.clientY / Math.max(1, window.innerHeight)) * 2 - 1;
-      if (!raf) raf = requestAnimationFrame(apply);
-    };
-    const reset = (): void => {
-      nx = 0;
-      ny = 0;
-      if (!raf) raf = requestAnimationFrame(apply);
-    };
-    root.addEventListener("pointermove", move, { passive: true });
-    root.addEventListener("pointerleave", reset);
-    return () => {
-      root.removeEventListener("pointermove", move);
-      root.removeEventListener("pointerleave", reset);
-      if (raf) cancelAnimationFrame(raf);
-    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
-  // A cover tilts toward the pointer, and a soft glare follows it across the cover.
-  const tilt = (e: ReactPointerEvent<HTMLElement>): void => {
-    const t = e.currentTarget, r = t.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1) return;
-    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-    t.style.setProperty("--ry", `${((x - 0.5) * 16).toFixed(2)}deg`);
-    t.style.setProperty("--rx", `${((0.5 - y) * 16).toFixed(2)}deg`);
-    t.style.setProperty("--gx", `${(x * 100).toFixed(1)}%`);
-    t.style.setProperty("--gy", `${(y * 100).toFixed(1)}%`);
+  const down = (i: number) => (e: ReactPointerEvent<HTMLElement>): void => {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    const row = e.currentTarget;
+    try {
+      row.setPointerCapture(e.pointerId);
+    } catch {
+      /* a pointer that is already gone */
+    }
+    drag.current = { row: i, id: e.pointerId, x: e.clientX, t: performance.now(), v: 0 };
+    row.classList.add("is-drag");
   };
-  const untilt = (e: ReactPointerEvent<HTMLElement>): void => {
-    const t = e.currentTarget;
-    t.style.removeProperty("--ry");
-    t.style.removeProperty("--rx");
+  const move = (i: number) => (e: ReactPointerEvent<HTMLElement>): void => {
+    const d = drag.current;
+    if (!d || d.row !== i || d.id !== e.pointerId) return;
+    const now = performance.now();
+    const dx = (e.clientX - d.x) * PULL;
+    const dt = Math.max(0.001, (now - d.t) / 1000);
+    const r = sim.current[i];
+    r.off += dx;
+    // The speed it will keep when let go: the pointer's own, smoothed.
+    d.v = d.v * 0.6 + (dx / dt) * 0.4;
+    r.vel = Math.max(-FLING_MAX, Math.min(FLING_MAX, d.v));
+    d.x = e.clientX;
+    d.t = now;
+  };
+  const up = (i: number) => (e: ReactPointerEvent<HTMLElement>): void => {
+    const d = drag.current;
+    if (!d || d.row !== i || d.id !== e.pointerId) return;
+    // A pointer held still before letting go does not fling.
+    if (performance.now() - d.t > 90) sim.current[i].vel = 0;
+    drag.current = null;
+    e.currentTarget.classList.remove("is-drag");
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* already released */
+    }
   };
 
   const enter = (c: DrumCover): void => {
@@ -109,6 +152,14 @@ export function CoverWall({ turn, busy }: { turn: number; busy: boolean }) {
     leaving.current = window.setTimeout(() => setHover(null), 140);
   };
   useEffect(() => () => window.clearTimeout(leaving.current), []);
+
+  // A soft glare follows the pointer across the cover it rests on.
+  const glare = (e: ReactPointerEvent<HTMLElement>): void => {
+    const t = e.currentTarget, r = t.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return;
+    t.style.setProperty("--gx", `${(((e.clientX - r.left) / r.width) * 100).toFixed(1)}%`);
+    t.style.setProperty("--gy", `${(((e.clientY - r.top) / r.height) * 100).toFixed(1)}%`);
+  };
 
   // The glow crossfades between two layers, so a new cover never cuts in.
   const [glow, setGlow] = useState({ a: "", b: "", on: "a" as "a" | "b" });
@@ -135,10 +186,22 @@ export function CoverWall({ turn, busy }: { turn: number; busy: boolean }) {
         <div className="ob-stage-in">
           <div ref={wallRef} className={`ob-wall${busy ? " is-busy" : ""}`}>
             {ROWS.map((row, r) => (
-              <div key={r} className={`ob-wall-row${row.dir === 1 ? " is-rev" : ""}`} style={{ ["--dur" as string]: `${row.secs}s` }}>
+              <div
+                key={r}
+                ref={(el) => {
+                  rowEls.current[r] = el;
+                }}
+                className="ob-wall-row"
+                onPointerDown={down(r)}
+                onPointerMove={move(r)}
+                onPointerUp={up(r)}
+                onPointerCancel={up(r)}
+                onPointerEnter={() => (sim.current[r].over = true)}
+                onPointerLeave={() => (sim.current[r].over = false)}
+              >
                 {[0, 1, 2].flatMap((copy) =>
                   row.cover.map((c, i) => (
-                    <span key={`${copy}-${i}`} className={`ob-tile${c === shown ? " is-lit" : ""}`} onPointerEnter={() => enter(c)} onPointerMove={tilt} onPointerLeave={(e) => { untilt(e); leave(); }}>
+                    <span key={`${copy}-${i}`} className={`ob-tile${c === shown ? " is-lit" : ""}`} onPointerEnter={() => enter(c)} onPointerMove={glare} onPointerLeave={leave}>
                       {/* Fades in once it's here; one that won't load leaves its place dark. */}
                       <img
                         className="ob-tile-art"

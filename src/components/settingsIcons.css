@@ -1,0 +1,70 @@
+/* Settings category icons: the motion for each (hover, keyboard focus, or just picked). */
+.st-nav { --si-spring: cubic-bezier(.34, 1.56, .64, 1); --si-out: cubic-bezier(.16, 1, .3, 1); --si-io: cubic-bezier(.65, 0, .35, 1); }
+.si { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; overflow: visible; transition: transform .45s var(--si-spring), color .16s; }
+.si * { transform-box: fill-box; transform-origin: center; }
+.st-nav-item:is(:hover, .is-play) .si { transform: scale(1.1); }
+.si-ghost { opacity: 0; stroke-width: 1.2; }
+
+/* Account: a nod, shoulders, a halo */
+.st-nav-item:is(:hover, .is-play) .si-head { animation: si-head .8s var(--si-spring); }
+.st-nav-item:is(:hover, .is-play) .si-body { animation: si-body .8s var(--si-spring); }
+.st-nav-item:is(:hover, .is-play) .si-halo { animation: si-halo .9s var(--si-out); }
+@keyframes si-head { 0% { transform: translateY(0); } 30% { transform: translateY(-3px) scale(1.1); } 55% { transform: translateY(.8px) scale(.96); } 100% { transform: none; } }
+@keyframes si-body { 0% { transform: none; } 30% { transform: translateY(1.6px) scaleY(.88); } 60% { transform: translateY(-.5px) scaleY(1.05); } 100% { transform: none; } }
+@keyframes si-halo { 0% { opacity: .7; transform: scale(.5); } 100% { opacity: 0; transform: scale(1.35); } }
+
+/* Playback: the ring draws, the triangle pops, a ripple */
+.si-ring { stroke-dasharray: 1; stroke-dashoffset: 0; }
+.st-nav-item:is(:hover, .is-play) .si-ring { animation: si-draw .9s var(--si-io); }
+.st-nav-item:is(:hover, .is-play) .si-tri { animation: si-tri .7s var(--si-spring) .25s both; }
+.st-nav-item:is(:hover, .is-play) .si-playback .si-rr { animation: si-halo .9s var(--si-out) .55s; }
+@keyframes si-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes si-tri { 0% { transform: scale(.3) translateX(-2px); opacity: 0; } 60% { transform: scale(1.2) translateX(1px); opacity: 1; } 100% { transform: none; opacity: 1; } }
+
+/* Sound: bars, each with its own rhythm, while .si-run is on the row */
+.si-bar { stroke-width: 2; transform: scaleY(1); }
+.st-nav-item.si-run .si-bar { animation: si-eq var(--t, .9s) ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes si-eq { 0%, 100% { transform: scaleY(1); } 30% { transform: scaleY(var(--a, 1.4)); } 60% { transform: scaleY(.45); } 80% { transform: scaleY(calc(var(--a, 1.4) * .8)); } }
+
+/* Lyrics: the mic swings, two waves each side */
+.st-nav-item:is(:hover, .is-play) .si-mic { animation: si-mic 1s var(--si-spring); }
+.st-nav-item:is(:hover, .is-play) .si-w { animation: si-wave .9s var(--si-out) both; animation-delay: var(--d); }
+@keyframes si-mic { 0% { transform: none; } 25% { transform: rotate(-16deg) scale(1.1); } 55% { transform: rotate(9deg); } 80% { transform: rotate(-3deg); } 100% { transform: none; } }
+@keyframes si-wave { 0% { opacity: 0; transform: translateX(0) scale(.6); } 35% { opacity: 1; } 100% { opacity: 0; transform: translateX(var(--x)) scale(1.15); } }
+
+/* Display: the palette wobbles, its dots take their colours */
+.si-dot { fill: currentColor; stroke: none; }
+.st-nav-item:is(:hover, .is-play) .si-pal { animation: si-pal .9s var(--si-spring); }
+.st-nav-item:is(:hover, .is-play) .si-dot { animation: si-dot .9s var(--si-spring) both; animation-delay: var(--d); }
+@keyframes si-pal { 0% { transform: none; } 35% { transform: rotate(-22deg) scale(1.1); } 70% { transform: rotate(8deg); } 100% { transform: none; } }
+@keyframes si-dot { 0% { transform: scale(1); } 35% { transform: scale(2); fill: var(--c); } 70% { transform: scale(1.2); fill: var(--c); } 100% { transform: scale(1); } }
+
+/* Library: the books lift in turn, the last one tips */
+.si-b3 { transform-origin: 50% 100%; }
+.st-nav-item:is(:hover, .is-play) .si-b1 { animation: si-book .7s var(--si-spring); }
+.st-nav-item:is(:hover, .is-play) .si-b2 { animation: si-book .7s var(--si-spring) .09s; }
+.st-nav-item:is(:hover, .is-play) .si-b3 { animation: si-lean 1.1s var(--si-spring) .18s; }
+@keyframes si-book { 40% { transform: translateY(-3px) scaleY(1.06); } 100% { transform: none; } }
+@keyframes si-lean { 0% { transform: none; } 35% { transform: rotate(-20deg); } 65% { transform: rotate(-9deg); } 100% { transform: none; } }
+
+/* Your data: the layers stack, a bit of data travels */
+.si-bit { fill: currentColor; stroke: none; opacity: 0; }
+.st-nav-item:is(:hover, .is-play) .si-top { animation: si-layer .8s var(--si-spring); }
+.st-nav-item:is(:hover, .is-play) .si-m1 { animation: si-layer .8s var(--si-spring) .07s; }
+.st-nav-item:is(:hover, .is-play) .si-m2 { animation: si-layer .8s var(--si-spring) .14s; }
+.st-nav-item:is(:hover, .is-play) .si-bit { animation: si-bit .9s var(--si-io); }
+@keyframes si-layer { 35% { transform: translateY(-2.6px); } 100% { transform: none; } }
+@keyframes si-bit { 0% { opacity: 0; transform: translateY(-6px); } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(8px); } }
+
+/* About: a ripple, the dot drops and bounces */
+.st-nav-item:is(:hover, .is-play) .si-circ { animation: si-ping .8s var(--si-spring); }
+.st-nav-item:is(:hover, .is-play) .si-about .si-rr { animation: si-halo .9s var(--si-out); }
+.st-nav-item:is(:hover, .is-play) .si-idot { animation: si-hop .9s var(--si-spring); }
+.st-nav-item:is(:hover, .is-play) .si-istem { animation: si-stem .9s var(--si-spring) .1s; }
+@keyframes si-ping { 0% { transform: none; } 40% { transform: scale(1.13); } 100% { transform: none; } }
+@keyframes si-hop { 0% { transform: translateY(-5px); opacity: 0; } 35% { transform: translateY(1px); opacity: 1; } 55% { transform: translateY(-2px); } 75% { transform: translateY(.4px); } 100% { transform: none; } }
+@keyframes si-stem { 0% { transform: scaleY(0); } 60% { transform: scaleY(1.15); } 100% { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .st-nav-item .si, .st-nav-item .si * { animation: none !important; transition-duration: .01ms !important; }
+}

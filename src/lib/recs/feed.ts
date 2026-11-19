@@ -200,7 +200,7 @@ async function loadMoodTitles(): Promise<string[] | null> {
 /** The artists Home leans on: the two you're into lately, then your six long-term favourites. */
 function focusArtists(profile: TasteProfile): ArtistSignal[] {
   const out: ArtistSignal[] = [];
-  for (const a of [...profile.lately.slice(0, 2), ...profile.artists.slice(0, 6)]) {
+  for (const a of [...profile.lately.slice(0, 2), ...profile.artists.slice(0, 10)]) {
     if (!out.some((o) => o.key === a.key)) out.push(a);
   }
   return out;
@@ -254,7 +254,7 @@ async function orchestrate(profile: TasteProfile, apply: (sections: HomeSection[
     const bundle = peekBundle(seedId);
     for (const rel of bundle?.related.slice(0, 2) ?? []) relatedIds.add(rel.id);
   }
-  await Promise.all([...relatedIds].slice(0, 6).map((id) => getArtistBundle(id)));
+  await Promise.all([...relatedIds].slice(0, 10).map((id) => getArtistBundle(id)));
 
   const feedThin = collectBundles(profile, [...seedIds, ...relatedIds]).size < 2;
   const wantYt = feedThin || profile.maturity === "cold" || profile.maturity === "light";

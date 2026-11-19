@@ -60,6 +60,8 @@ test("library: Home row, bigger covers, lean About / Settings", () => {
   assert.match(sb, /fixedRow\("settings", "Settings", null/);
   assert.doesNotMatch(sb, /Version & info|Preferences"/);
   assert.match(sb, /size=\{56\}/);
+  assert.match(sb, /lb-grip/);
+  assert.doesNotMatch(sb, /<div className="lb-sep" \/>\s*\{\/\* the library/);
 });
 
 test("now playing: one-line sliding title, EQ switch by the heart, black arm head, disc before About", () => {

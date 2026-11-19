@@ -28,6 +28,26 @@ import { usePlayer } from "../stores/player";
 import { useUI, type MenuItem } from "../stores/ui";
 import type { BrowseItem, Track } from "../types";
 
+/**
+ * The menu of the song that is playing right now (the disc's ⋯, the playing row in the queue). For a song already
+ * playing, "Play next" can only mean what it says on the player: go on to the next one, which is the next song of the
+ * playlist or album being played, or the next in Up next when it is a stream of suggestions.
+ */
+export function nowPlayingMenuItems(track: Track): MenuItem[] {
+  return trackMenuItems(track).map((item) =>
+    item.label === "Play next"
+      ? {
+          ...item,
+          action: () => {
+            const s = usePlayer.getState();
+            if (s.index + 1 >= s.queue.length && s.repeat !== "all") useUI.getState().toast("Finding something to play next…");
+            s.next(true);
+          },
+        }
+      : item,
+  );
+}
+
 export function trackMenuItems(track: Track): MenuItem[] {
   const lib = useLibrary.getState();
   const ui = useUI.getState();

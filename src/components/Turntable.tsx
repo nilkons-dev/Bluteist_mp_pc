@@ -16,7 +16,7 @@ import { useSettings } from "../stores/settings";
 import { useUI } from "../stores/ui";
 import { getSpectrumAnalyser } from "../lib/audio";
 import { shortTitle } from "../lib/format";
-import { trackMenuItems } from "../lib/trackActions";
+import { nowPlayingMenuItems } from "../lib/trackActions";
 import { A, STAR, twinkle } from "./eyeFx";
 import { DISCS, DISC_LABEL, currentDisc, pickDisc, setCurrentDisc, songBegan } from "./discs";
 import type { Track } from "../types";
@@ -242,7 +242,7 @@ export function Turntable({ track }: { track: Track }) {
     const b = moreRef.current;
     b?.querySelectorAll(".np-dt").forEach((d, i) => A(d, [{ transform: "translateY(0) rotate(0)" }, { transform: "translateY(-7px) rotate(180deg)", offset: 0.4 }, { transform: "translateY(0) rotate(360deg)" }], { duration: 620, delay: i * 110, easing: "ease-in-out" }));
     const r = b?.getBoundingClientRect();
-    useUI.getState().openContextMenu(r ? r.right - 8 : window.innerWidth / 2, r ? r.bottom + 4 : window.innerHeight / 2, trackMenuItems(track));
+    useUI.getState().openContextMenu(r ? r.right - 8 : window.innerWidth / 2, r ? r.bottom + 4 : window.innerHeight / 2, nowPlayingMenuItems(track));
   };
   const KNOBS = [[0, 8], [0, -9], [0, 3]] as const;
   const onEq = (): void => {

@@ -45,3 +45,26 @@
 .lb-row-lean .lb-ib { width: 28px; height: 28px; }
 .lb-row-lean .lb-ico { width: 20px; height: 20px; }
 .lb-row-lean .lb-tx b { font-size: 13px; font-weight: 600; }
+
+/* The library can be pulled wider or narrower from its edge; narrow, it is a strip of icons and covers. */
+.lb-aside { transition: width .34s cubic-bezier(.22, 1, .36, 1); }
+.lb-aside.is-pulling { transition: none; }
+.lb-grip { position: absolute; top: 0; bottom: 0; right: -7px; width: 14px; z-index: 30; cursor: col-resize; touch-action: none; outline: none; }
+.lb-grip::after { content: ""; position: absolute; top: 14px; bottom: 14px; left: 6px; width: 2px; border-radius: 2px; background: rgba(255, 255, 255, .0); transition: background .2s; }
+.lb-grip:hover::after, .lb-grip:focus-visible::after, .lb-aside.is-pulling .lb-grip::after { background: rgba(255, 255, 255, .35); }
+.lb-aside.is-pulling { user-select: none; }
+
+.lb-row { transition: padding .3s cubic-bezier(.22, 1, .36, 1), background-color .15s; }
+.lb-tx, .lb-pin, .lb-sm, .lb-head-tx, .lb-head-plus { transition: opacity .2s ease; }
+.lb-head-tx { white-space: nowrap; }
+.lb-compact .lb-tx, .lb-compact .lb-pin, .lb-compact .lb-sm, .lb-compact .lb-head-tx, .lb-compact .lb-head-plus { opacity: 0; pointer-events: none; }
+.lb-compact .lb-tx { overflow: hidden; }
+.lb-compact .lb-row { padding-left: 14px; padding-right: 0; }
+.lb-compact .lb-row:has(.lb-cover) { padding-left: 6px; }
+.lb-compact .lb-sep, .lb-compact .lb-sep-long { margin-left: 16px; margin-right: 16px; }
+.lb-head > button { transition: margin .3s cubic-bezier(.22, 1, .36, 1); }
+.lb.lb-compact .lb-head { padding-left: 0; padding-right: 0; }
+.lb.lb-compact .lb-head > button { margin-left: 28px; }
+.lb-tx { white-space: nowrap; }
+.lb-compact .lb-head-plus { width: 0; overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .lb-aside, .lb-row { transition: none; } }

@@ -364,7 +364,8 @@ test("no button anywhere in Settings trails off in dots; About shows the brand, 
     const about = h.$(".st-about");
     assert.ok(about.querySelector("img[alt='Blutheist']"), "the wordmark");
     assert.equal(about.querySelector(".st-about-version").textContent, "Version 1.0.1");
-    assert.match(about.querySelector(".st-about-meta").textContent, /Free and open source under GPL-3\.0/);
+    assert.match(about.querySelector(".ab-tag").textContent, /Beyond Music\. Beyond Ordinary\./);
+    assert.doesNotMatch(about.textContent, /GPL|NOTICE/);
   } finally {
     await h.close();
   }

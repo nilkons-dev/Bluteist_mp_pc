@@ -119,9 +119,9 @@ function harvest(page: ArtistPageData, artistId: string): ArtistBundle {
     thumb: page.artist.thumb ?? null,
     // Bounded for the persisted snapshot — mixes/stations/radios read the
     // top of this list, never the tail.
-    topSongs: (page.songs ?? []).slice(0, 24),
-    albums: albums.slice(0, 14),
-    related: related.slice(0, 12),
+    topSongs: (page.songs ?? []).slice(0, 40),
+    albums: albums.slice(0, 20),
+    related: related.slice(0, 16),
     fetchedAt: Date.now(),
   };
 }

@@ -410,7 +410,7 @@ function describeFeed(
       build: (ctx) => {
         const items: SectionItem[] = ctx.profile.heavyRotation
           .filter((r) => !ctx.hidden.has(r.track.id))
-          .slice(0, 16)
+          .slice(0, 24)
           .map((r) => ({ style: "track", track: r.track, note: `${r.listens} ${r.listens === 1 ? "play" : "plays"} lately` }));
         return { id: "heavy-rotation", title: "Heavy rotation", subtitle: "What you keep coming back to", layout: "list", priority: 0, items };
       },
@@ -424,7 +424,7 @@ function describeFeed(
       kind: "favorite-artists",
       priority: 64 + (profile.maturity === "strong" ? 6 : 0),
       build: (ctx) => {
-        const items = top.slice(0, 8).map((a) => ({
+        const items = top.slice(0, 12).map((a) => ({
           style: "artist" as const,
           artist: {
             id: a.artistId as string,
@@ -498,7 +498,7 @@ function describeFeed(
           .map((a) => bundleFor(ctx, a))
           .filter((b): b is ArtistBundle => !!b)
           .map((b, i) => dailyRotation(relatedSongPool(ctx, b), `today-${b.artistId}`, ctx.profile.daySeed + i));
-        const picked = takeTracks(ctx, pools.flat(), { count: 12, maxPerArtist: 2, unplayedOnly: true });
+        const picked = takeTracks(ctx, pools.flat(), { count: 20, maxPerArtist: 2, unplayedOnly: true });
         if (picked.length < 4) return null;
         return {
           id: "recommended-today",
@@ -557,7 +557,7 @@ function describeFeed(
       build: (ctx) => {
         const items: SectionItem[] = ctx.profile.dustOff
           .filter((d) => !ctx.hidden.has(d.track.id))
-          .slice(0, 16)
+          .slice(0, 24)
           .map((d) => ({ style: "track", track: d.track, note: `Last played ${monthYear(d.lastAt)}` }));
         return { id: "dust-off", title: "Dust these off", subtitle: "Songs you loved and haven't played in a while", layout: "list", priority: 0, items };
       },
@@ -609,12 +609,12 @@ function describeFeed(
           const b = bundleFor(ctx, a);
           if (!b) continue;
           for (const album of b.albums) {
-            if (seen.has(album.id) || ctx.usedAlbums.has(album.id) || items.length >= 8) continue;
+            if (seen.has(album.id) || ctx.usedAlbums.has(album.id) || items.length >= 14) continue;
             seen.add(album.id);
             ctx.usedAlbums.add(album.id);
             items.push({ style: "album", album: asRelease(album, b.name) });
           }
-          if (items.length >= 8) break;
+          if (items.length >= 14) break;
         }
         return items.length >= 4
           ? { id: "albums-for-you", title: "Albums featuring songs you like", layout: "row", priority: 0, items }
@@ -635,7 +635,7 @@ function describeFeed(
         const b = bundleFor(ctx, becauseAnchor);
         if (!b) return null;
         const pool = dailyRotation(relatedSongPool(ctx, b), `because-${b.artistId}`, ctx.profile.daySeed);
-        const picked = takeTracks(ctx, pool, { count: 8, maxPerArtist: 2, unplayedOnly: true });
+        const picked = takeTracks(ctx, pool, { count: 16, maxPerArtist: 2, unplayedOnly: true });
         if (picked.length < 4) return null;
         return {
           id: `because-${becauseAnchor.key}`,
@@ -660,7 +660,7 @@ function describeFeed(
           and light users get an extra slot: with little personal data yet,
           market popularity is the honest content they have. ---- */
   if (ytShelves) {
-    const slots = profile.maturity === "cold" || profile.maturity === "light" ? 3 : 2;
+    const slots = profile.maturity === "cold" || profile.maturity === "light" ? 6 : 5;
     // With the crate on Home, a shelf of playlists would only repeat it.
     const rows = crated ? ytShelves.filter((s) => !s.items.every((i) => i.kind === "playlist")) : ytShelves;
     rows.slice(0, slots).forEach((shelf, i) => {
@@ -686,7 +686,7 @@ function describeFeed(
 
 /* ------------------------------------------------------------------- build */
 
-const MAX_SECTIONS = 10;
+const MAX_SECTIONS = 16;
 
 export function buildHomeSections(args: {
   profile: TasteProfile;
