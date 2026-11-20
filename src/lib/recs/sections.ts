@@ -389,7 +389,7 @@ function describeFeed(
         layout: "moods",
         priority: 0,
         items: [],
-        moods: moods.slice(0, 8),
+        moods: (moods ?? []).slice(0, 8),
       }),
     });
   }

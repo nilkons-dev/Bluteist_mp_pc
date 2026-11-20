@@ -22,7 +22,7 @@ import { shortTitle } from "../lib/format";
 import { useHomeFeed } from "../lib/recs/feed";
 import { useDrag } from "../lib/dnd";
 import { historyMenuItems } from "../lib/trackActions";
-import type { HomeSection } from "../lib/recs/sections";
+import type { HomeSection, SectionItem } from "../lib/recs/sections";
 import { useHomeEngagement } from "../stores/homeEngagement";
 import { usePlayer } from "../stores/player";
 import { tintHoverHandlers, useUI } from "../stores/ui";
@@ -172,6 +172,20 @@ function SectionView({ section }: { section: HomeSection }) {
   );
 }
 
+/** A stable id for a section item, whichever variant of the union it is (used to detect swapped songs). */
+function firstItemKey(item: SectionItem): string {
+  switch (item.style) {
+    case "track":
+      return item.track.id;
+    case "album":
+      return item.album.id;
+    case "artist":
+      return item.artist.id;
+    default:
+      return item.id;
+  }
+}
+
 export function HomeView() {
   const { sections, profile } = useHomeFeed();
   // A refresh (the TopBar button) swaps the songs under the same rows and lets them settle in with one soft fade of the
@@ -180,7 +194,7 @@ export function HomeView() {
   const refresh = useUI((s) => s.homeReloadNonce);
   const rootRef = useRef<HTMLDivElement>(null);
   const waiting = useRef(false);
-  const signature = sections.map((x) => `${x.id}:${x.items.length}:${x.items[0] ? ((x.items[0].track?.id ?? x.items[0].album?.id ?? x.items[0].artist?.id ?? x.items[0].playlist?.id) as string) : ""}`).join("|");
+  const signature = sections.map((x) => `${x.id}:${x.items.length}:${x.items[0] ? firstItemKey(x.items[0]) : ""}`).join("|");
   const fade = (): void => {
     const el = rootRef.current;
     if (!el) return;
