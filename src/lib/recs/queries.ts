@@ -15,9 +15,9 @@ import type { Track } from "../../types";
 
 const TTL_MS = 6 * 3_600_000;
 const MAX_QUERIES = 10;
-const SONGS_KEPT = 24;
+const SONGS_KEPT = 40;
 /** How many of the latest searches Home reads. */
-export const QUERIES_READ = 3;
+export const QUERIES_READ = 4;
 
 interface QueryEntry {
   q: string;

@@ -138,3 +138,16 @@ export async function importFromText(text: string, name = "Imported playlist"): 
   }
   open({ name, songs, total: songs.length }, false);
 }
+
+/** The "paste a playlist link or a list of songs" dialog — the Create menu and the Spotify row both open it. */
+export function askToImportPlaylist(): void {
+  useUI.getState().openDialog({
+    title: "Import a playlist",
+    body: "Paste a Spotify playlist link, or songs one per line (Artist - Title). Blutheist finds each song on YouTube Music before you save. Spotify links are read from Spotify's public page, which isn't an official feature and may stop working.",
+    initialValue: "",
+    placeholder: "https://open.spotify.com/playlist/…\n\nor\n\nTame Impala - Loser\nColdplay - Yellow",
+    multiline: true,
+    confirmLabel: "Import",
+    onConfirm: (value) => void importFromText(value),
+  });
+}

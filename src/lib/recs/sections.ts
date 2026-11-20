@@ -453,7 +453,9 @@ function describeFeed(
       minItems: 6,
       build: (ctx) => {
         const lists = ranked.map((a) => dailyRotation(unplayedFirst(ctx.profile, bundleFor(ctx, a)?.topSongs.slice(0, 24) ?? []), `for-you-${a.key}`, ctx.profile.daySeed).slice(0, 16));
-        const picked = takeTracks(ctx, interleave(lists, ranked.map((a) => weightOf(a.score, rankedTop))), { count: SONGS, maxPerArtist: 4, exclude: rotation });
+        // The songs of your latest searches are woven in, so the very first row already leans the way you have been looking.
+        const asked = ctx.queries.slice(0, 3).map((e) => unplayedFirst(ctx.profile, e.songs).slice(0, 12));
+        const picked = takeTracks(ctx, interleave([...lists, ...asked], [...ranked.map((a) => weightOf(a.score, rankedTop)), ...asked.map(() => 1)]), { count: SONGS, maxPerArtist: 4, exclude: rotation });
         return {
           id: "songs-for-you",
           title: "Songs for you",
@@ -503,7 +505,8 @@ function describeFeed(
       build: (ctx) => {
         const fromQueries = ctx.queries.map((e) => unplayedFirst(ctx.profile, e.songs));
         const fromArtists = searchedArtists.map((a) => unplayedFirst(ctx.profile, bundleFor(ctx, a)?.topSongs.slice(0, 16) ?? []));
-        const picked = takeTracks(ctx, interleave([...fromQueries, ...fromArtists], [...fromQueries.map(() => 2), ...fromArtists.map(() => 1)]), {
+        // Newest search first, and the heaviest: two or three searches in the same vein are enough to fill the row with it.
+        const picked = takeTracks(ctx, interleave([...fromQueries, ...fromArtists], [...fromQueries.map((_, i) => (i === 0 ? 3 : 2)), ...fromArtists.map(() => 1)]), {
           count: SONGS,
           maxPerArtist: 3,
           exclude: rotation,
@@ -891,6 +894,8 @@ export function buildHomeSections(args: {
 
   const descriptors = describeFeed(profile, ytShelves, now, moods, market, artistPlaylists)
     .map((d) => (PINNED.has(d.kind) ? d : { ...d, priority: Math.min(93, d.priority + learnedBoost(taps[d.kind] ?? 0)) }))
+    // Once you have searched a couple of times, the songs of those searches lead the song rows: that is what you asked for just now.
+    .map((d) => (d.kind === "songs-searched" && queries.length > 0 ? { ...d, priority: 90 } : d))
     .sort((a, b) => laneOf(a.kind) - laneOf(b.kind) || b.priority - a.priority);
 
   const sections: HomeSection[] = [];

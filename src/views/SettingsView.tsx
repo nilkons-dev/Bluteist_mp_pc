@@ -856,6 +856,14 @@ function SoundPane() {
           />
         </Row>
       </Group>
+      <Group title="Opening">
+        <Row
+          icon={Clapperboard}
+          title="Launch sound"
+          note="The soft spatial sound under the opening animation (best on headphones). On by default"
+          toggle={{ checked: s.introSound, onChange: s.setIntroSound }}
+        />
+      </Group>
       <OutputDevice />
       <Group title="Equalizer">
         <Equalizer />
@@ -1004,12 +1012,6 @@ function DisplayPane() {
           title="Reduce animation"
           note="Cut crossfades and motion through the app"
           toggle={{ checked: s.reduceAnimation, onChange: s.setReduceAnimation }}
-        />
-        <Row
-          icon={Volume2}
-          title="Launch sound"
-          note="The soft cinematic sound under the opening animation (best on headphones)"
-          toggle={{ checked: s.introSound, onChange: s.setIntroSound }}
         />
         <Row
           icon={Droplets}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import { playPlaylist } from "../lib/playlist";
 import { browseMenuItems } from "../lib/trackActions";
 import { usePlayer } from "../stores/player";
@@ -9,10 +9,11 @@ import "./coverflow.css";
 
 /**
  * Playlists as a 3D coverflow (Home's "Playlists for you", a category's page). The focused cover stands large in the
- * middle, the ones either side turn away in depth. It drifts on its own (to and fro) until the pointer rests on it, and
- * can be moved with the arrow buttons, the arrow keys, a drag or swipe, a sideways scroll, or by resting the pointer at
- * either end. A cover lifts and tilts toward the pointer under it, with a soft glare; the focused one has a play button.
- * A click on a side cover brings it to the middle; a click on the middle one opens the playlist.
+ * middle, the ones either side turn away in depth. The row is endless: the last playlist is followed by the first, so
+ * it never runs out. It drifts on its own until the pointer rests on it, and can be moved with the arrow keys, a drag
+ * or swipe, a sideways scroll, or by resting the pointer toward either end (the nearer the end, the faster). A cover
+ * lifts and tilts toward the pointer under it, with a soft glare; the focused one has a play button. A click on a side
+ * cover brings it to the middle; a click on the middle one opens the playlist.
  *
  * Everything that moves is one animation-frame loop that writes straight to the cover elements (no render per frame);
  * it sleeps while the row is off screen. The look is in coverflow.css.
@@ -24,6 +25,10 @@ const AUTO_MS = 3200;
 const ZONE = 0.36;
 const MAXV = 11;
 const cl = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
+/** An index on the endless row: any whole number lands on one of the N covers. */
+const wrapIdx = (i: number, n: number): number => ((Math.round(i) % n) + n) % n;
+/** The shortest way round from a position to a cover, in covers: -N/2 .. N/2. */
+const around = (d: number, n: number): number => d - n * Math.round(d / n);
 const ease = (t: number): number => 1 - Math.pow(1 - t, 4);
 
 interface Hover {
@@ -45,9 +50,6 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
   const cards = useRef<Array<HTMLDivElement | null>>([]);
   const dims = useRef<Array<HTMLElement | null>>([]);
   const arts = useRef<Array<HTMLElement | null>>([]);
-  const barRef = useRef<HTMLDivElement>(null);
-  const hintL = useRef<HTMLDivElement>(null);
-  const hintR = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(() => Math.round((N - 1) / 2));
   const activeRef = useRef(active);
 
@@ -60,7 +62,6 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
     hoverIdx: -1,
     edgeVel: 0,
     lastAuto: 0,
-    dir: 1,
     started: 0,
     visible: false,
     playing: false,
@@ -83,8 +84,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
       (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) ||
       document.documentElement.classList.contains("reduce-motion");
     hov.current = Array.from({ length: N }, () => ({ hv: 0, tx: 0, ty: 0, mx: 0, my: 0, gx: 50, gy: 30, push: 0 }));
-    S.pos = cl(S.pos, 0, N - 1);
-    S.target = cl(S.target, 0, N - 1);
+    S.target = Math.round(S.pos);
     let raf = 0;
     let prev = performance.now();
     let w = stage.clientWidth;
@@ -110,11 +110,12 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
         const el = cards.current[i];
         const q = hov.current[i];
         if (!el || !q) continue;
-        const d = i - S.pos;
+        const d = around(i - S.pos, N);
         const a = Math.abs(d);
         const s = d < 0 ? -1 : 1;
         const on = i === h;
-        const op = cl(1 - Math.max(a - 7, 0) * 0.3, 0, 1);
+        // Fades out toward the far side of the endless row, where a cover would otherwise jump from one end to the other.
+        const op = Math.min(cl(1 - Math.max(a - 7, 0) * 0.3, 0, 1), N >= 4 ? cl((N / 2 - a) / 0.9, 0, 1) : 1);
         // Well out of sight: not drawn, and no work.
         if (op < 0.01 && !on) {
           if (el.style.visibility !== "hidden") el.style.visibility = "hidden";
@@ -129,7 +130,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
         q.ty += ((on ? q.my : 0) - q.ty) * kf;
         q.gx += (50 + q.mx * 50 - q.gx) * kf;
         q.gy += (50 + q.my * 50 - q.gy) * kf;
-        const dd = i - h;
+        const dd = h < 0 ? 0 : around(i - h, N);
         const pt = h < 0 || dd === 0 ? 0 : (dd < 0 ? -1 : 1) * Math.max(0, 1 - Math.abs(dd) / 4) * (small ? 10 : 26) * u;
         q.push += (pt - q.push) * ks;
 
@@ -157,7 +158,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
         }
         el.toggleAttribute("data-hov", q.hv > 0.05);
       }
-      const now = cl(Math.round(S.pos), 0, N - 1);
+      const now = wrapIdx(S.pos, N);
       if (now !== activeRef.current) {
         activeRef.current = now;
         setActive(now);
@@ -171,26 +172,26 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
       if (!S.started) S.started = nowMs;
       const intro = reduce ? 1 : cl((nowMs - S.started) / 1800, 0, 1);
 
-      // Drifts on its own (to and fro) until the pointer rests on it, a cover plays, or it is being moved.
-      const bar = barRef.current;
-      if (!S.hover && !S.dragging && !S.playing && intro >= 1 && !reduce) {
-        const e = nowMs - S.lastAuto;
-        if (bar) bar.style.transform = `scaleX(${Math.min(e / AUTO_MS, 1).toFixed(3)})`;
-        if (e > AUTO_MS) {
-          if (S.target >= N - 1) S.dir = -1;
-          else if (S.target <= 0) S.dir = 1;
-          S.target = cl(Math.round(S.target) + S.dir, 0, N - 1);
+      // Drifts on its own, always the same way round, until the pointer rests on it, a cover plays, or it is being moved.
+      if (!S.hover && !S.dragging && !S.playing && intro >= 1 && !reduce && N > 1) {
+        if (nowMs - S.lastAuto > AUTO_MS) {
+          S.target = Math.round(S.target) + 1;
           S.lastAuto = nowMs;
         }
       } else {
         S.lastAuto = nowMs;
-        if (bar) bar.style.transform = "scaleX(0)";
       }
-      // Pointer at an end: that end's covers are pulled in.
+      // Pointer toward an end: the row is pulled that way, without end.
       if (!S.dragging && S.edgeVel !== 0 && intro >= 1) {
-        S.pos = cl(S.pos + S.edgeVel * dt, 0, N - 1);
+        S.pos += S.edgeVel * dt;
         S.target = S.pos;
         S.lastAuto = nowMs;
+      }
+      // Keep the numbers small on a row that has been running a long while (the look only depends on the remainder).
+      if (Math.abs(S.pos) > N * 40) {
+        const k = N * Math.round(S.pos / N);
+        S.pos -= k;
+        S.target -= k;
       }
       if (!S.dragging) {
         S.pos += (S.target - S.pos) * (1 - Math.exp(-dt * 7.5));
@@ -233,7 +234,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
 
   const go = (i: number): void => {
     const S = st.current;
-    S.target = cl(Math.round(i), 0, N - 1);
+    S.target = Math.round(i);
     S.lastAuto = performance.now();
     S.wake();
   };
@@ -248,11 +249,9 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
     const S = st.current;
     if (S.edgeVel !== 0) {
       S.edgeVel = 0;
-      S.target = cl(Math.round(S.pos), 0, N - 1);
+      S.target = Math.round(S.pos);
       S.lastAuto = performance.now();
     }
-    hintL.current?.classList.remove("on");
-    hintR.current?.classList.remove("on");
   };
 
   /* ---- the pointer: an end pulls covers in; a drag moves the row; a cover under it lifts ---- */
@@ -264,8 +263,8 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
     if (S.dragging) {
       const dx = e.clientX - drag.current.sx;
       drag.current.moved = Math.max(drag.current.moved, Math.abs(dx));
-      S.pos = cl(drag.current.sp - dx / 80, -0.4, N - 0.6);
-      S.target = cl(Math.round(S.pos), 0, N - 1);
+      S.pos = drag.current.sp - dx / 80;
+      S.target = Math.round(S.pos);
       return;
     }
     const r = stage.getBoundingClientRect();
@@ -287,15 +286,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
       stopEdge();
       return;
     }
-    if ((v < 0 && S.pos <= 0.001) || (v > 0 && S.pos >= N - 1 - 0.001)) {
-      S.edgeVel = 0;
-      hintL.current?.classList.remove("on");
-      hintR.current?.classList.remove("on");
-      return;
-    }
     S.edgeVel = v * MAXV;
-    hintL.current?.classList.toggle("on", v < 0);
-    hintR.current?.classList.toggle("on", v > 0);
     S.wake();
   };
   const onOver = (e: ReactPointerEvent<HTMLDivElement>): void => {
@@ -327,7 +318,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
     if (!S.dragging) return;
     S.dragging = false;
     e.currentTarget.classList.remove("is-drag");
-    S.target = cl(Math.round(S.pos), 0, N - 1);
+    S.target = Math.round(S.pos);
     S.lastAuto = performance.now();
     S.wake();
     if (drag.current.moved < 6 && e.type === "pointerup") {
@@ -335,8 +326,8 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
       const hit = document.elementFromPoint(e.clientX, e.clientY);
       const i = cardAt(hit);
       if (i >= 0 && !(hit as HTMLElement).closest(".cf-play")) {
-        if (i === Math.round(S.target)) open(list[i]);
-        else go(i);
+        if (i === wrapIdx(S.target, N)) open(list[i]);
+        else go(Math.round(S.target) + around(i - wrapIdx(S.target, N), N));
       }
     }
   };
@@ -368,9 +359,9 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
       go(S.target - 1);
-    } else if (e.key === "Enter" && list[Math.round(S.target)]) {
+    } else if (e.key === "Enter" && list[wrapIdx(S.target, N)]) {
       e.preventDefault();
-      open(list[Math.round(S.target)]);
+      open(list[wrapIdx(S.target, N)]);
     }
   };
 
@@ -387,7 +378,6 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
   };
 
   if (N === 0) return null;
-  const now = list[cl(active, 0, N - 1)];
 
   return (
     <section className={className}>
@@ -486,33 +476,6 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
             );
           })}
         </div>
-        <div ref={hintL} className="cf-hint l" aria-hidden>
-          <ChevronLeft />
-        </div>
-        <div ref={hintR} className="cf-hint r" aria-hidden>
-          <ChevronRight />
-        </div>
-        <div className="cf-floor" />
-      </div>
-      <div className="cf-meta">
-        <div className="cf-now">
-          <small>Now focused</small>
-          <strong key={now.id}>{now.title}</strong>
-        </div>
-        <div className="cf-ctrl">
-          <button type="button" className="cf-btn" aria-label="Previous playlist" onClick={() => go(st.current.target - 1)}>
-            <ChevronLeft />
-          </button>
-          <div className="cf-count">
-            <b>{String(active + 1).padStart(2, "0")}</b> / {N}
-          </div>
-          <button type="button" className="cf-btn" aria-label="Next playlist" onClick={() => go(st.current.target + 1)}>
-            <ChevronRight />
-          </button>
-        </div>
-      </div>
-      <div className="cf-progress">
-        <div ref={barRef} />
       </div>
     </section>
   );

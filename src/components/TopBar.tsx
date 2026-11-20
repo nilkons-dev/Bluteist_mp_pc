@@ -46,6 +46,8 @@ import { StreakChip } from "./Streak";
 import { useUpdates } from "../lib/updates";
 import brandWord from "../assets/brand/blutheist-wordmark.png";
 import { EyeLogo } from "./EyeLogo";
+import { mountSearchFx } from "../lib/searchFx";
+import "./searchFx.css";
 
 /** Brand mark + wordmark composed inline so the spacing follows the bar height. The mark is the living eye
     logo (EyeLogo: its pupil follows the pointer); the wordmark is the brand's own artwork, white on the dark
@@ -152,6 +154,15 @@ export function CaptionButtons() {
   );
 }
 
+/** Replay a one-shot CSS animation class (the home ring turn, the compass spin). */
+function playOnce(el: HTMLElement | null, cls: string, ms: number): void {
+  if (!el) return;
+  el.classList.remove(cls);
+  void el.offsetWidth;
+  el.classList.add(cls);
+  window.setTimeout(() => el.classList.remove(cls), ms);
+}
+
 export function TopBar() {
   const query = useUI((s) => s.searchQuery);
   const setQuery = useUI((s) => s.setSearchQuery);
@@ -188,6 +199,19 @@ export function TopBar() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   /** the field + both dropdowns — blur is ignored while focus stays inside */
   const searchClusterRef = useRef<HTMLDivElement | null>(null);
+  const fieldRef = useRef<HTMLDivElement | null>(null);
+  const aquaRef = useRef<HTMLCanvasElement | null>(null);
+  const stringRef = useRef<HTMLCanvasElement | null>(null);
+  const zoneRef = useRef<HTMLDivElement | null>(null);
+  const homeRef = useRef<HTMLButtonElement | null>(null);
+  const compassRef = useRef<HTMLButtonElement | null>(null);
+
+  // The string along the bottom of the field and the little pool inside it (src/lib/searchFx.ts).
+  useEffect(() => {
+    const field = fieldRef.current, canvas = stringRef.current, aqua = aquaRef.current, zone = zoneRef.current, input = inputRef.current;
+    if (!field || !canvas || !aqua || !zone || !input) return;
+    return mountSearchFx({ field, canvas, aqua, zone, input });
+  }, []);
   const suggestListRef = useRef<HTMLDivElement | null>(null);
   /** the dropdowns' lights, as on every menu: one glides to the row under the pointer or the keys */
   const suggestLight = useMenuLight();
@@ -424,20 +448,36 @@ export function TopBar() {
           clusters), centred on the bar's vertical midline. */}
       <div className="absolute left-1/2 top-0 h-full -translate-x-1/2 flex items-center gap-3">
         <button
-          onClick={goHome}
+          ref={homeRef}
+          onClick={() => {
+            playOnce(homeRef.current, "go", 1000);
+            goHome();
+          }}
           title="Home"
           aria-label="Home"
           aria-current={view.name === "home" ? "page" : undefined}
-          className={`app-no-drag w-12 h-12 shrink-0 grid place-items-center rounded-full transition-colors ${
-            view.name === "home"
-              ? "bg-elevated text-ink-hi"
-              : "bg-panel text-ink-hi/75 hover:text-ink-hi hover:bg-ink-hi/[0.06]"
-          }`}
+          className={`app-no-drag sx-home ${view.name === "home" ? "is-on" : ""}`}
         >
-          <Home className="w-5 h-5" />
+          <svg viewBox="0 0 56 56" aria-hidden="true">
+            <circle className="ring" cx="28" cy="28" r="27.1" />
+            <g className="grooves">
+              <circle className="g1" cx="28" cy="28" r="23.2" />
+              <circle className="g2" cx="28" cy="28" r="19.6" />
+            </g>
+            <g className="hg" fill="none">
+              <path d="M19 28.5 28 20.5l9 8" />
+              <path d="M21.5 27v9.5h13V27" />
+              <path d="M26 36.5V31h4v5.5" />
+            </g>
+          </svg>
         </button>
-        <div ref={searchClusterRef} className="app-no-drag relative w-[min(474px,36vw)]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 text-ink-hi/55 pointer-events-none" />
+        <div ref={searchClusterRef} className="app-no-drag sx-search">
+          <div ref={fieldRef} className="sx-field" role="search">
+          <canvas ref={aquaRef} className="sx-aqua" aria-hidden="true" />
+          <svg className="sx-glass" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="m20 20-3.8-3.8" />
+          </svg>
           <input
             id="global-search"
             ref={inputRef}
@@ -465,10 +505,58 @@ export function TopBar() {
               setActiveIdx(-1);
             }}
             onKeyDown={onSearchKeyDown}
-            className={`w-full h-12 pl-12 rounded-full bg-panel border border-transparent text-[16px] text-ink-hi placeholder:text-ink-hi/45 outline-none hover:bg-ink-hi/[0.06] focus:border-ink-hi/25 focus:bg-ink-hi/[0.06] transition-all duration-150 ${
-              query.trim() !== "" ? "pr-[104px]" : "pr-[72px]"
-            }`}
+            autoComplete="off"
+            spellCheck={false}
+            aria-label="Search"
+            className="sx-input"
           />
+          <div className="sx-tail">
+            {query.trim() !== "" && (
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setQuery("");
+                  closeDropdown();
+                  setSuggests([]);
+                  setFieldFocused(false);
+                  inputRef.current?.blur();
+                  if (view.name === "search") navigate({ name: "home" });
+                }}
+                title="Clear search"
+                aria-label="Clear search"
+                className="sx-tb"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </button>
+            )}
+            <span className="sx-vline" />
+            <button
+              ref={compassRef}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                playOnce(compassRef.current, "spin", 1050);
+                navigate({ name: "explore" });
+              }}
+              title="Explore"
+              aria-label="Explore"
+              className={`sx-compass ${view.name === "explore" ? "is-on" : ""}`}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle className="cring" cx="12" cy="12" r="9.6" />
+                <path className="tick" d="M12 2.4v1.9M12 19.7v1.9M2.4 12h1.9M19.7 12h1.9" />
+                <g className="needle">
+                  <path className="np" d="M12 6.4 13.9 12H10.1z" />
+                  <path className="sp" d="M12 17.6 13.9 12H10.1z" />
+                  <circle className="pin" cx="12" cy="12" r="1.1" />
+                </g>
+              </svg>
+            </button>
+          </div>
+          <canvas ref={stringRef} aria-hidden="true" />
+          <div ref={zoneRef} className="sx-zone" aria-hidden="true" />
+          </div>
           {/* Type-ahead dropdown — the typed query, text completions (the
               arrow fills one in without searching), then rich rows in the
               queue's compact row style: round art for artists, rounded
@@ -476,7 +564,7 @@ export function TopBar() {
           {fieldFocused && suggestOpen && suggests.length > 0 && (
             <div
               ref={suggestListRef}
-              className="menu absolute left-0 right-0 top-full mt-2 z-50 max-h-[min(600px,calc(100vh_-_88px))] overflow-y-auto"
+              className="menu absolute left-0 right-0 top-full mt-4 z-50 max-h-[min(600px,calc(100vh_-_88px))] overflow-y-auto"
               style={{ "--menu-origin": "top center" } as React.CSSProperties}
               role="listbox"
               aria-label="Search suggestions"
@@ -560,7 +648,7 @@ export function TopBar() {
               per-row ✕. Choosing a row runs that search. */}
           {historyOpen && (
             <div
-              className="menu absolute left-0 right-0 top-full mt-2 z-50 max-h-[420px] overflow-y-auto"
+              className="menu absolute left-0 right-0 top-full mt-4 z-50 max-h-[420px] overflow-y-auto"
               style={{ "--menu-origin": "top center" } as React.CSSProperties}
               role="listbox"
               aria-label="Recent searches"
@@ -627,44 +715,6 @@ export function TopBar() {
               </div>
             </div>
           )}
-          {/* Spotify's right side of the field: clear (once there's text), a
-              hairline divider, and the Explore (browse) button. Clearing
-              from the results view would leave the empty search shell
-              behind, so it hops home instead; from any other view it just
-              wipes the field and stays put. */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2.5">
-            {query.trim() !== "" && (
-              <button
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setQuery("");
-                  closeDropdown();
-                  setSuggests([]);
-                  setFieldFocused(false);
-                  inputRef.current?.blur();
-                  if (view.name === "search") navigate({ name: "home" });
-                }}
-                title="Clear search"
-                aria-label="Clear search"
-                className="p-1.5 rounded-full text-ink-hi/55 hover:text-ink-hi hover:bg-ink-hi/[0.08] transition-colors"
-              >
-                <X className="w-[18px] h-[18px]" />
-              </button>
-            )}
-            <div className="h-6 w-px bg-ink-hi/20" />
-            <button
-              onClick={() => navigate({ name: "explore" })}
-              title="Explore"
-              aria-label="Explore"
-              className={`p-1.5 rounded-full transition-colors ${
-                view.name === "explore"
-                  ? "text-ink-hi bg-ink-hi/[0.10]"
-                  : "text-ink-hi/70 hover:text-ink-hi hover:bg-ink-hi/[0.08]"
-              }`}
-            >
-              <Compass className="w-[18px] h-[18px]" />
-            </button>
-          </div>
         </div>
       </div>
 

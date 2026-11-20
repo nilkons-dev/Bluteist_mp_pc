@@ -229,6 +229,37 @@
   return{begin,eye,pupil,boom,word,glance,blink,stop,release,setMuted,get muted(){return muted},unlock:ensure};
   })();
 
+  /* The same sound, already rendered (public/intro-sound.js holds it as a small ogg). Playing one ready-made buffer costs
+     the page nothing, where building the whole spatial graph live (dozens of HRTF panners and a long reverb) made the
+     eye and the wordmark stutter on slower machines. If it isn't there or can't be decoded, SFX above plays it live. */
+  const PRE=(()=>{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    let ctx=null,buf=null,node=null;
+    function bytes(){
+      const uri=window.__bluIntroSound;if(typeof uri!=='string')return null;
+      const b64=uri.slice(uri.indexOf(',')+1),bin=atob(b64),u=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+      return u.buffer}
+    function load(){
+      try{
+        if(!AC)return Promise.resolve(false);
+        const ab=bytes();if(!ab)return Promise.resolve(false);
+        ctx=new AC({latencyHint:'playback'});
+        return new Promise(res=>{
+          const ok=b=>{buf=b;res(true)},no=()=>res(false);
+          const r=ctx.decodeAudioData(ab,ok,no);if(r&&r.catch)r.catch(no)})
+      }catch(e){return Promise.resolve(false)}}
+    function play(){
+      if(!ctx||!buf)return;
+      if(ctx.state==='suspended')ctx.resume();
+      node=ctx.createBufferSource();node.buffer=buf;node.connect(ctx.destination);node.start(ctx.currentTime+.03)}
+    function release(){
+      try{node&&node.stop()}catch(e){}
+      try{ctx&&ctx.close()}catch(e){}
+      ctx=null;buf=null;node=null}
+    return{load,play,release}
+  })();
+
   // The sound is on unless it was turned off (localStorage "blutheist.introSound" = "off") or motion is reduced.
   var soundOn = !reduced && (function () { try { return localStorage.getItem("blutheist.introSound") !== "off"; } catch (e) { return true; } })();
   intro.sound = soundOn;
@@ -261,8 +292,16 @@
     var spk = wm.querySelector(".spk"), flare = wm.querySelector(".flare"), halo = wm.querySelector(".halo");
 
     // The audio device is opened now, so it is running by the time the first sound is due.
-    if (soundOn) { try { SFX.unlock(); } catch (e) { soundOn = false; } }
-    var sfx = function (name) { if (soundOn) { try { SFX[name](); } catch (e) { soundOn = false; } } };
+    // The ready-made sound is decoded first; only when that fails is the sound built live.
+    var usePre = false;
+    var preReady = soundOn ? PRE.load() : Promise.resolve(false);
+    var sfx = function (name) {
+      if (!soundOn) return;
+      try {
+        if (usePre) { if (name === "begin") PRE.play(); }
+        else SFX[name]();
+      } catch (e) { soundOn = false; }
+    };
     var px = 0, py = 0, tx = 0, ty = 0, pd = -320, running = true;
     function setLid(v) {
       eye.setAttribute("transform", "translate(0 600) scale(1 " + Math.max(v, 0.025) + ") translate(0 -600)");
@@ -344,6 +383,11 @@
         eye.setAttribute("opacity", 0);
         setLid(0);
         svg.style.transform = "scale(.9)";
+        if (soundOn) {
+          // decoding takes a few dozen ms; nothing has moved yet, so waiting for it costs no smoothness
+          usePre = await Promise.race([preReady, wait(600).then(function () { return false; })]);
+          if (!usePre) { PRE.release(); try { SFX.unlock(); } catch (e) { soundOn = false; } }
+        }
         sfx("begin");
         await wait(350);
         tween(0.9, 1, 2600, function (v) { svg.style.transform = "scale(" + v + ")"; }, E.out);
@@ -375,7 +419,7 @@
       } finally {
         intro.finished = true;
         // The last notes ring out a few seconds, then the audio device is let go.
-        if (soundOn) setTimeout(function () { try { SFX.release(); } catch (e) {} }, 5000);
+        if (soundOn) setTimeout(function () { try { if (usePre) PRE.release(); else SFX.release(); } catch (e) {} }, usePre ? 8000 : 5000);
       }
     }
     play().catch(function () {}).then(function () { intro.finished = true; resolveDone(); });

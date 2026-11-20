@@ -7,7 +7,7 @@
  * the top bar (home beside the search field).
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Folder, ImagePlus, ListPlus, Pin, PinOff, User } from "lucide-react";
+import { ClipboardList, Folder, ImagePlus, Link2, ListPlus, Pin, PinOff, User } from "lucide-react";
 import { isPinned, useLibrary, type PinnedSingleKey, type Playlist } from "../stores/library";
 import { playingFromRow, usePlayer } from "../stores/player";
 import { useUI } from "../stores/ui";
@@ -23,6 +23,8 @@ import { draggingFromPlaylist, dragHasAlbum, dragHasArtist, dragHasPlaylist, dra
 import { requireBridge } from "../lib/bridge";
 import { downloadAll, startDownload } from "../lib/downloads";
 import { askToConnectSpotify, useSpotify } from "../lib/spotify";
+import { askToImportPlaylist } from "../lib/importSongs";
+import { mountBloom } from "../lib/bloom";
 import { useEdgeFades } from "../lib/useEdgeFades";
 import { arrange, moveKey } from "../lib/libraryOrder";
 import { useSortable, type SortableRowProps } from "../lib/useSortable";
@@ -62,7 +64,42 @@ interface Entry {
   rows: LibRow[];
 }
 
+/** Flowers and a butterfly in the panel's bottom corner (src/lib/bloom.ts). They fade away while the panel is folded to its strip. */
+function LibraryBloom({ host, compact }: { host: React.RefObject<HTMLDivElement | null>; compact: boolean }) {
+  const bloomRef = useRef<HTMLCanvasElement | null>(null);
+  const flyRef = useRef<HTMLCanvasElement | null>(null);
+  const fx = useRef<ReturnType<typeof mountBloom> | null>(null);
+  useEffect(() => {
+    const side = host.current, bloom = bloomRef.current, fly = flyRef.current;
+    if (!side || !bloom || !fly) return;
+    const h = mountBloom({ side, bloom, fly });
+    fx.current = h;
+    return () => {
+      h.dispose();
+      fx.current = null;
+    };
+  }, [host]);
+  useEffect(() => {
+    const h = fx.current;
+    if (!h) return;
+    if (!compact) {
+      h.setActive(true);
+      return;
+    }
+    // let the fade finish before the loop is put to sleep
+    const id = window.setTimeout(() => h.setActive(false), 480);
+    return () => window.clearTimeout(id);
+  }, [compact]);
+  return (
+    <>
+      <canvas ref={bloomRef} className="lb-bloom" aria-hidden="true" />
+      <canvas ref={flyRef} className="lb-fly" aria-hidden="true" />
+    </>
+  );
+}
+
 function LibraryPill({ compact }: { compact: boolean }) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const liked = useLibrary((s) => s.liked);
   const playlists = useLibrary((s) => s.playlists);
   const folders = useLibrary((s) => s.folders);
@@ -492,6 +529,9 @@ function LibraryPill({ compact }: { compact: boolean }) {
     }
   };
 
+  /** the row that was tapped last: where the Spotify choices hang from */
+  const spotifyAnchor = useRef<HTMLElement | null>(null);
+
   const onClickRow = (r: LibRow): void => {
     switch (r.kind) {
       case "artist":
@@ -515,8 +555,20 @@ function LibraryPill({ compact }: { compact: boolean }) {
         navigate({ name: "replay" });
         break;
       case "spotify":
+        // Connected: the account's playlists open. Not yet: two ways in — import one playlist by its link, or connect the account.
         if (spotifyConnected) navigate({ name: "spotify" });
-        else askToConnectSpotify();
+        else {
+          const rc = spotifyAnchor.current?.getBoundingClientRect();
+          useUI.getState().openContextMenu(
+            rc ? rc.left + 14 : 120,
+            rc ? rc.bottom + 4 : 180,
+            [
+              { label: "Import playlist", note: "Paste a playlist link", icon: ClipboardList, action: askToImportPlaylist },
+              { label: "Connect Spotify", note: "Sign in to see all your playlists", icon: Link2, action: askToConnectSpotify },
+            ],
+            { owner: "lb-spotify" }
+          );
+        }
         break;
     }
   };
@@ -625,6 +677,7 @@ function LibraryPill({ compact }: { compact: boolean }) {
 
   /** one tap: the row flashes, its icon plays its motion, then the page opens */
   const tapRow = (e: React.MouseEvent<HTMLElement>, r: LibRow): void => {
+    spotifyAnchor.current = e.currentTarget;
     flashRow(e.currentTarget);
     const ib = e.currentTarget.querySelector(".lb-ib");
     if (ib && r.kind !== "artist") libFx[iconKindOf(r)](ib);
@@ -655,6 +708,7 @@ function LibraryPill({ compact }: { compact: boolean }) {
         onKeyDown={(e) => {
           if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
             e.preventDefault();
+            spotifyAnchor.current = e.currentTarget;
             onClickRow(r);
           } else drag?.onKeyDown(e);
         }}
@@ -735,6 +789,7 @@ function LibraryPill({ compact }: { compact: boolean }) {
 
   return (
     <div
+      ref={panelRef}
       className={`lb${compact ? " lb-compact" : ""} relative flex-1 min-h-0 flex flex-col glass-pill rounded-2xl overflow-hidden shadow-pill transition-shadow ${
         libHover ? "shadow-[0_0_44px_rgb(var(--accent)/0.14)]" : ""
       }`}
@@ -782,8 +837,9 @@ function LibraryPill({ compact }: { compact: boolean }) {
           className="pointer-events-none absolute inset-0 z-10 rounded-2xl ring-2 ring-inset ring-accent/50 bg-accent/[0.05]"
         />
       )}
+      <LibraryBloom host={panelRef} compact={compact} />
       {/* Header */}
-      <div className="lb-head flex items-center justify-between pl-[18px] pr-3 pt-3.5 h-[48px]">
+      <div className="lb-head lb-above flex items-center justify-between pl-[18px] pr-3 pt-3.5 h-[48px]">
         <button
           onClick={(e) => {
             bookFx(e.currentTarget);
@@ -801,7 +857,10 @@ function LibraryPill({ compact }: { compact: boolean }) {
         </div>
       </div>
 
-      <div className="pt-1">
+      {/* a long line under the header, so the menus below read as their own group */}
+      <div className="lb-sep lb-sep-long lb-above lb-sep-top" />
+
+      <div className="lb-above pt-1">
         {/* Home first, then the library's own shelves, always together, in this order: one list, one set of rows */}
         <div className="px-1 space-y-0.5">
           {fixedRow("overview", "Home", null, view.name === "home", () => navigate({ name: "home" }))}
@@ -813,11 +872,9 @@ function LibraryPill({ compact }: { compact: boolean }) {
 
       {/* Rows — drops bubble to the panel root, which imports playlists and
           artists anywhere they land; specific rows handle their own targets. */}
-      <div ref={scrollRef} className="edge-fades flex-1 min-h-0 overflow-y-auto px-1 pb-2">
+      <div ref={scrollRef} className="lb-above edge-fades flex-1 min-h-0 overflow-y-auto px-1 pb-2">
         {entries.length === 0 ? (
-          <div className="px-3 py-8 text-center text-[13px] text-ink-hi/55">
-            Nothing here yet — play a track to fill your library.
-          </div>
+          <div className="lb-empty">No playlists yet</div>
         ) : (
           <div ref={rowsRef} className="space-y-0.5">
             {entries.map((entry, i) => (
@@ -838,7 +895,7 @@ function LibraryPill({ compact }: { compact: boolean }) {
         )}
       </div>
 
-      <div className="lb-foot">
+      <div className="lb-foot lb-above">
         {fixedRow("about", "About", null, floating === "about", () => useUI.getState().openFloating("about"))}
         {fixedRow("settings", "Settings", null, view.name === "settings", () => useUI.getState().openSettings())}
       </div>

@@ -262,6 +262,16 @@ function useAppearance(): void {
     root.classList.toggle("reduce-blur", reduceDynamicBlur);
     root.classList.toggle("noglass", !liquidGlass);
   }, [reduceAnimation, reduceDynamicBlur, liquidGlass]);
+
+  // The launch animation runs before the app (public/intro.js), so it reads this one switch from localStorage.
+  const introSound = useSettings((s) => s.introSound);
+  useEffect(() => {
+    try {
+      localStorage.setItem("blutheist.introSound", introSound ? "on" : "off");
+    } catch {
+      /* no storage: the sound stays on */
+    }
+  }, [introSound]);
 }
 
 function CurrentView(): ReactNode {
