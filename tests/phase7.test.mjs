@@ -1,7 +1,7 @@
 // Phase 7: intro pre-rendered sound + toggle, endless coverflow, sidebar bloom + Spotify menu, search bar, search-led songs.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
 
@@ -31,19 +31,17 @@ test("coverflow: endless, compact, no Now focused bar, no edge shadows", () => {
   assert.match(css, /height: calc\(var\(--cf-card\) \* 1\.3\)/);
 });
 
-test("sidebar: bloom fades out when folded, line under the header, short empty text, Spotify choices", () => {
+test("sidebar: no bloom, line under the header, short empty text, Spotify choices", () => {
   const s = read("src/components/Sidebar.tsx");
-  assert.match(s, /mountBloom/);
+  assert.doesNotMatch(s, /mountBloom|LibraryBloom/);
+  assert.equal(existsSync(new URL("../src/lib/bloom.ts", import.meta.url)), false);
   assert.match(s, /lb-sep-top/);
   assert.match(s, /No playlists yet/);
   assert.doesNotMatch(s, /Nothing here yet/);
   assert.match(s, /Import playlist/);
   assert.match(s, /Connect Spotify/);
   const css = read("src/components/libraryEye.css");
-  assert.match(css, /\.lb-compact \.lb-bloom, \.lb-compact \.lb-fly \{ opacity: 0; \}/);
-  const b = read("src/lib/bloom.ts");
-  assert.match(b, /setActive/);
-  assert.match(b, /dispose/);
+  assert.doesNotMatch(css, /lb-bloom|lb-fly/);
   assert.match(read("src/lib/importSongs.ts"), /export function askToImportPlaylist/);
 });
 

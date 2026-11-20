@@ -59,23 +59,18 @@
 .lb-head-tx { white-space: nowrap; }
 .lb-compact .lb-tx, .lb-compact .lb-pin, .lb-compact .lb-sm, .lb-compact .lb-head-tx, .lb-compact .lb-head-plus { opacity: 0; pointer-events: none; }
 .lb-compact .lb-tx { overflow: hidden; }
-.lb-compact .lb-row { padding-left: 11px; padding-right: 0; }
-.lb-compact .lb-row:has(.lb-cover) { padding-left: 5px; }
-.lb-compact .lb-ib.lb-cover { width: 46px; height: 46px; }
-.lb-compact .lb-sep, .lb-compact .lb-sep-long { margin-left: 12px; margin-right: 12px; }
+.lb-compact .lb-row { padding-left: 14px; padding-right: 0; }
+.lb-compact .lb-row:has(.lb-cover) { padding-left: 6px; }
+.lb-compact .lb-sep, .lb-compact .lb-sep-long { margin-left: 16px; margin-right: 16px; }
 .lb-head > button { transition: margin .3s cubic-bezier(.22, 1, .36, 1); }
 .lb.lb-compact .lb-head { padding-left: 0; padding-right: 0; }
-.lb.lb-compact .lb-head > button { margin-left: 21px; }
+.lb.lb-compact .lb-head > button { margin-left: 28px; }
 .lb-tx { white-space: nowrap; }
 .lb-compact .lb-head-plus { width: 0; overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .lb-aside, .lb-row { transition: none; } }
 
-/* Flowers and a butterfly in the panel's corner (see lib/bloom). They sit behind the rows, and fade out when the panel folds to its strip. */
-.lb-bloom { position: absolute; right: 0; bottom: 0; width: 244px; height: 208px; pointer-events: none; z-index: 0; opacity: .6; transition: opacity .45s ease; }
-.lb-fly { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 20; opacity: .68; transition: opacity .45s ease; }
-.lb-compact .lb-bloom, .lb-compact .lb-fly { opacity: 0; }
 .lb-above { position: relative; z-index: 1; }
 .lb-sep-top { margin: 2px 12px 6px; }
-.lb-compact .lb-sep-top { margin-left: 12px; margin-right: 12px; }
+.lb-compact .lb-sep-top { margin-left: 16px; margin-right: 16px; }
 .lb-empty { padding: 18px 12px; text-align: center; font-size: 13px; color: rgb(255 255 255 / .45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity .2s ease; }
 .lb-compact .lb-empty { opacity: 0; }

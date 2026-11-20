@@ -24,7 +24,6 @@ import { requireBridge } from "../lib/bridge";
 import { downloadAll, startDownload } from "../lib/downloads";
 import { askToConnectSpotify, useSpotify } from "../lib/spotify";
 import { askToImportPlaylist } from "../lib/importSongs";
-import { mountBloom } from "../lib/bloom";
 import { useEdgeFades } from "../lib/useEdgeFades";
 import { arrange, moveKey } from "../lib/libraryOrder";
 import { useSortable, type SortableRowProps } from "../lib/useSortable";
@@ -62,40 +61,6 @@ interface Entry {
   /** "single:<key>", "artist:<id>", "playlist:<id>" or "folder:<id>" (lib/libraryOrder) */
   key: string;
   rows: LibRow[];
-}
-
-/** Flowers and a butterfly in the panel's bottom corner (src/lib/bloom.ts). They fade away while the panel is folded to its strip. */
-function LibraryBloom({ host, compact }: { host: React.RefObject<HTMLDivElement | null>; compact: boolean }) {
-  const bloomRef = useRef<HTMLCanvasElement | null>(null);
-  const flyRef = useRef<HTMLCanvasElement | null>(null);
-  const fx = useRef<ReturnType<typeof mountBloom> | null>(null);
-  useEffect(() => {
-    const side = host.current, bloom = bloomRef.current, fly = flyRef.current;
-    if (!side || !bloom || !fly) return;
-    const h = mountBloom({ side, bloom, fly });
-    fx.current = h;
-    return () => {
-      h.dispose();
-      fx.current = null;
-    };
-  }, [host]);
-  useEffect(() => {
-    const h = fx.current;
-    if (!h) return;
-    if (!compact) {
-      h.setActive(true);
-      return;
-    }
-    // let the fade finish before the loop is put to sleep
-    const id = window.setTimeout(() => h.setActive(false), 480);
-    return () => window.clearTimeout(id);
-  }, [compact]);
-  return (
-    <>
-      <canvas ref={bloomRef} className="lb-bloom" aria-hidden="true" />
-      <canvas ref={flyRef} className="lb-fly" aria-hidden="true" />
-    </>
-  );
 }
 
 function LibraryPill({ compact }: { compact: boolean }) {
@@ -837,7 +802,6 @@ function LibraryPill({ compact }: { compact: boolean }) {
           className="pointer-events-none absolute inset-0 z-10 rounded-2xl ring-2 ring-inset ring-accent/50 bg-accent/[0.05]"
         />
       )}
-      <LibraryBloom host={panelRef} compact={compact} />
       {/* Header */}
       <div className="lb-head lb-above flex items-center justify-between pl-[18px] pr-3 pt-3.5 h-[48px]">
         <button
@@ -905,14 +869,14 @@ function LibraryPill({ compact }: { compact: boolean }) {
 
 /* ============================================================ root */
 
-/** The library's width: open (328 to start with, 250 to 480 when pulled) or a narrow strip of icons and covers. */
+/** The library's width: open (250, and never wider: it can only be pulled narrower) or a narrow strip of icons and covers. */
 const LIB_KEY = "blutheist.libraryWidth";
-const LIB_STRIP = 62;
-const LIB_OPEN = 328;
-const LIB_MIN = 250;
-const LIB_MAX = 480;
+const LIB_STRIP = 76;
+const LIB_OPEN = 250;
+const LIB_MIN = 210;
+const LIB_MAX = 250;
 /** Pulled narrower than this, the library lets go of its words and shows only icons. */
-const LIB_SNAP = 150;
+const LIB_SNAP = 168;
 
 function readLibraryWidth(): number {
   try {

@@ -34,7 +34,7 @@ test("settings: eight animated icons, one per category; About says what the user
 
 test("library: pulled from its edge, folds to a strip, Home sits in the same list", () => {
   const sb = read("src/components/Sidebar.tsx");
-  assert.match(sb, /LIB_STRIP = 62/);
+  assert.match(sb, /LIB_STRIP = 76/);
   assert.match(sb, /role="separator"/);
   assert.match(sb, /lb-compact/);
   assert.doesNotMatch(sb, /<div className="lb-sep" \/>\s*\{\/\* the library/);

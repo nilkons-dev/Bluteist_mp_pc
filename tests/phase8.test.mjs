@@ -22,11 +22,10 @@ test("Home: songs first, no Browse chips or Because rows, artists last", () => {
   assert.match(read("src/views/HomeView.tsx"), /home-swap|fade/);
 });
 
-test("spectrum reads fine bands; coverflow and bloom stay cheap", () => {
+test("spectrum reads fine bands; coverflow stays cheap", () => {
   assert.match(read("src/lib/audio.ts"), /fftSize = 4096/);
   assert.match(read("src/components/Turntable.tsx"), /getFloatFrequencyData/);
   assert.match(read("src/components/coverflow.css"), /display:\s*none/);
-  assert.match(read("src/lib/bloom.ts"), /paint/);
 });
 
 test("idle timers sleep while the window is hidden", () => {

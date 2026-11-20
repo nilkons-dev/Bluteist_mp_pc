@@ -302,7 +302,7 @@
         else SFX[name]();
       } catch (e) { soundOn = false; }
     };
-    var px = 0, py = 0, tx = 0, ty = 0, pd = -320, running = true;
+    var px = 0, py = 0, tx = 0, ty = 0, pd = -320, running = true, lastPupil = "";
     function setLid(v) {
       eye.setAttribute("transform", "translate(0 600) scale(1 " + Math.max(v, 0.025) + ") translate(0 -600)");
     }
@@ -310,7 +310,9 @@
       if (!running) return;
       px += (tx - px) * 0.14;
       py += (ty - py) * 0.14;
-      pupilG.setAttribute("transform", "translate(" + px + " " + (py + pd) + ")");
+      // Written only when it has moved (to a tenth of a unit): a still pupil costs the page no repaint at all.
+      var pv = "translate(" + Math.round(px * 10) / 10 + " " + Math.round((py + pd) * 10) / 10 + ")";
+      if (pv !== lastPupil) { lastPupil = pv; pupilG.setAttribute("transform", pv); }
       requestAnimationFrame(loop);
     })();
 
@@ -323,7 +325,7 @@
         var i = d.firstChild;
         d.animate([{ transform: "translateX(" + (4 - k) * 16 + "%)" }, { transform: "translateX(0)" }], { duration: 1600, delay: k * step, easing: ez, fill: "both" });
         i.animate(
-          [{ transform: "translateY(115%) rotate(9deg) scale(1.08)", filter: "blur(10px)", opacity: 0 }, { transform: "translateY(0) rotate(0) scale(1)", filter: "blur(0)", opacity: 0.45 }],
+          [{ transform: "translateY(115%) rotate(9deg) scale(1.08)", filter: "blur(5px)", opacity: 0 }, { transform: "translateY(0) rotate(0) scale(1)", filter: "blur(0)", opacity: 0.45 }],
           { duration: 1250, delay: k * step, easing: ez, fill: "both" }
         );
         i.animate([{ opacity: 0.45 }, { opacity: 1 }], { duration: 800, delay: 950 + k * 70, easing: "ease-in-out", fill: "forwards" });
@@ -400,11 +402,17 @@
         tween(-320, 0, 950, function (v) { pd = v; }, E.back);
         await wait(250);
         sfx("boom");
-        tween(0, 1, 1300, function (v) { ripple.setAttribute("r", 100 + v * 520); ripple.setAttribute("opacity", 0.55 * (1 - v)); }, E.out);
+        // The ripple grows by transform (a thin ring that is scaled, never a bigger circle re-measured every frame).
+        ripple.setAttribute("vector-effect", "non-scaling-stroke");
+        ripple.style.transformOrigin = "627px 600px";
+        ripple.animate(
+          [{ transform: "scale(1)", opacity: 0.55 }, { transform: "scale(6.2)", opacity: 0 }],
+          { duration: 1300, easing: "cubic-bezier(.215,.61,.355,1)", fill: "both" }
+        );
         // the wordmark rises from beneath the logo
         stack.animate([{ transform: "translateY(" + wrap.offsetHeight / 2 + "px)" }, { transform: "translateY(0)" }], { duration: 1800, easing: "cubic-bezier(.22,1,.36,1)", fill: "both" });
         svg.animate(
-          [{ filter: "drop-shadow(0 0 0 rgba(255,255,255,0))" }, { filter: "drop-shadow(0 0 28px rgba(255,255,255,.55))", offset: 0.4 }, { filter: "drop-shadow(0 0 0 rgba(255,255,255,0))" }],
+          [{ filter: "drop-shadow(0 0 0 rgba(255,255,255,0))" }, { filter: "drop-shadow(0 0 16px rgba(255,255,255,.5))", offset: 0.4 }, { filter: "drop-shadow(0 0 0 rgba(255,255,255,0))" }],
           { duration: 2200, easing: "ease-in-out" }
         );
         setTimeout(function () { playWM(); sfx("word"); }, 500);

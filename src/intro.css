@@ -37,10 +37,15 @@ html.intro #intro::before {
 html.intro-wait #root {
   opacity: 0;
 }
+/* Nothing of the app is painted while the show plays (layout still runs, so it is ready when shown): the eye gets the whole frame budget. */
+html.intro-wait:not(.intro-warm) #root {
+  visibility: hidden;
+}
 
 /* Before the glide it is shown under the intro's ground (99.9% opaque), drawn but unseen; intro.ts waits for it. */
 html.intro-wait.intro-warm #root {
   opacity: 1;
+  visibility: visible;
 }
 
 /* intro.ts's probe: a dot under the dark ground, drawn in a frame after the app's first picture. */
