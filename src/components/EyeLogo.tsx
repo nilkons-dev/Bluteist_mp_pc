@@ -122,7 +122,7 @@ export function EyeLogo({ interactive = true, ...svgProps }: { interactive?: boo
     })();
     // Left alone for a while, it glances about.
     const idle = window.setInterval(() => {
-      if (!reduce() && !document.hidden && performance.now() - lastMove > 3000 && Math.random() < 0.25) {
+      if (!reduce() && !document.hidden && !document.documentElement.classList.contains("is-bg") && performance.now() - lastMove > 3000 && Math.random() < 0.25) {
         tx = (Math.random() * 2 - 1) * 80;
         ty = (Math.random() * 2 - 1) * 28;
         kick();

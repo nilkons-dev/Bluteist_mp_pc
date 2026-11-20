@@ -116,6 +116,7 @@ export function CoverWall({ turn, busy }: { turn: number; busy: boolean }) {
   useEffect(() => {
     if (hover) return;
     const id = window.setInterval(() => {
+      if (document.documentElement.classList.contains("is-bg")) return;
       idx.current = (idx.current + 1) % mid.length;
       setLit(mid[idx.current]);
     }, 5200);

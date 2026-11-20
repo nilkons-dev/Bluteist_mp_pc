@@ -41,7 +41,7 @@ const R=18;
 let W=0,H=0,base=0,focusAmt=0,focusTarget=0,running=false,dpr=1,last=0;
 
 function resize(){
-  dpr=Math.min(window.devicePixelRatio||1,3);
+  dpr=Math.min(window.devicePixelRatio||1,2);
   const r=canvas.getBoundingClientRect();W=r.width;H=r.height;base=H-10-.5;
   canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);kick();
 }
@@ -169,7 +169,7 @@ on(q,"input",e=>{
 
 let AW=0,AH=0;
 function aqResize(){
-  const d=Math.min(window.devicePixelRatio||1,3), r=aq.getBoundingClientRect();
+  const d=Math.min(window.devicePixelRatio||1,2), r=aq.getBoundingClientRect();
   AW=r.width;AH=r.height;aq.width=Math.round(AW*d);aq.height=Math.round(AH*d);actx.setTransform(d,0,0,d,0,0);
 }
 const ro2=new ResizeObserver(aqResize);ro2.observe(aq);
@@ -866,8 +866,14 @@ function interiorPath(B){
 }
 
 let aqLast=0;
+let hovering=false,aqSkip=0;
+on(search,"pointerenter",()=>{hovering=true});
+on(search,"pointerleave",()=>{hovering=false});
 function aquaFrame(now){
   if(dead)return;
+  // The pool drifts slowly: at rest it is drawn every other frame (its motion is time-based, so it looks the same);
+  // the moment the pointer is on the bar or it has focus, every frame.
+  if(!hovering&&focusAmt<.02&&(aqSkip^=1)){requestAnimationFrame(aquaFrame);return}
   const dt=aqLast?Math.min((now-aqLast)/16.667,3):1;aqLast=now;
   const t=reduce?0:now/1000;
   while(ripples.length&&now-ripples[0].t>2800)ripples.shift();

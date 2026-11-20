@@ -5487,3 +5487,14 @@ html.reduce-motion .fit-text {
 html.reduce-motion .edge-fades {
   transition: none;
 }
+
+/* Home after the refresh button: one soft fade of the page, on the compositor only. */
+.home-swap { animation: home-swap 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+@keyframes home-swap {
+  from { opacity: 0.35; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: none; }
+}
+.reduce-motion .home-swap { animation: none; }
+
+/* Window out of sight (src/lib/background.ts): every CSS animation holds still and carries on when it is back. */
+html.is-bg *, html.is-bg *::before, html.is-bg *::after { animation-play-state: paused !important; }

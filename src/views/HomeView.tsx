@@ -11,6 +11,7 @@
  * album/track cards, circular artist cards, mix cards with name bands, and
  * pastel radio tiles with contextual "reason" subtitles.
  */
+import { useEffect, useRef } from "react";
 import { Play } from "lucide-react";
 import { AlbumCard, ArtistCard, HomeShelfView, TrackCard } from "../components/Cards";
 import { Crate } from "../components/Crate";
@@ -173,14 +174,36 @@ function SectionView({ section }: { section: HomeSection }) {
 
 export function HomeView() {
   const { sections, profile } = useHomeFeed();
-  // A refresh (the TopBar button) draws every row anew: keyed by it, the rows slide in again, so it is seen to happen.
+  // A refresh (the TopBar button) swaps the songs under the same rows and lets them settle in with one soft fade of the
+  // whole page — nothing is torn down and rebuilt, so it stays smooth. The fade plays when the press happens and
+  // again once the new songs have arrived.
   const refresh = useUI((s) => s.homeReloadNonce);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const waiting = useRef(false);
+  const signature = sections.map((x) => `${x.id}:${x.items.length}:${x.items[0] ? ((x.items[0].track?.id ?? x.items[0].album?.id ?? x.items[0].artist?.id ?? x.items[0].playlist?.id) as string) : ""}`).join("|");
+  const fade = (): void => {
+    const el = rootRef.current;
+    if (!el) return;
+    el.classList.remove("home-swap");
+    void el.offsetWidth;
+    el.classList.add("home-swap");
+  };
+  useEffect(() => {
+    if (!refresh) return;
+    waiting.current = true;
+    fade();
+  }, [refresh]);
+  useEffect(() => {
+    if (!waiting.current) return;
+    waiting.current = false;
+    fade();
+  }, [signature]);
   // The glow at the top of the pane is global (components/CoverGlow): at rest
   // it shows the playing track's cover, and hovering any card on any view
   // shows that card's artwork instead.
 
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       {/* No greeting: Home opens straight on your music. The heading stays for screen readers. */}
       <h1 className="sr-only">Home</h1>
       <div className="relative space-y-10">
@@ -188,7 +211,7 @@ export function HomeView() {
         {sections.map((section) => (
           // A press inside a row counts for its kind: the rows you play from rise on your next visit.
           <div
-            key={`${refresh}:${section.id}`}
+            key={section.id}
             onClickCapture={(e) => {
               if ((e.target as HTMLElement).closest("button, [role='button'], a")) useHomeEngagement.getState().tap(section.kind);
             }}

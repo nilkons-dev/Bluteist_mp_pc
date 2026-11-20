@@ -375,7 +375,8 @@ function describeFeed(
   // The chips are the provider's own per-market moods & genres (passed in by
   // the feed once known). No moods yet → no chips yet: they arrive with the
   // next paint rather than flashing a hardcoded/fallback list.
-  if (profile.maturity === "cold" && moods && moods.length > 0) {
+  if (false as boolean) {
+    // Browse chips are gone from Home: only songs lead it now (the moods stay reachable in Explore).
     list.push({
       id: "browse",
       kind: "browse",
@@ -515,8 +516,8 @@ function describeFeed(
         const asked = ctx.queries.map((e) => e.q);
         return {
           id: "songs-searched",
-          title: asked.length === 1 ? `Because you searched “${asked[0]}”` : "From your searches",
-          subtitle: asked.length > 1 ? asked.slice(0, 3).map((q) => `“${q}”`).join(", ") : "Songs like the ones you look for",
+          title: "Songs you'll love",
+          subtitle: asked.length ? "In the vein of what you look for" : "Songs like the ones you look for",
           layout: "row",
           priority: 0,
           items: picked.map((track) => ({ style: "track", track })),
@@ -778,7 +779,7 @@ function describeFeed(
 
   /* ---- because you listened to [third anchor] ---- */
   const becauseAnchor = anchors[2] ?? anchors[1];
-  if (becauseAnchor && anchors.length >= 3) {
+  if (false as boolean && becauseAnchor && anchors.length >= 3) {
     list.push({
       id: `because-${becauseAnchor.key}`,
       kind: "because",
@@ -817,13 +818,15 @@ function describeFeed(
     // With the crate on Home, a shelf of playlists would only repeat it.
     const rows = crated ? ytShelves.filter((s) => !s.items.every((i) => i.kind === "playlist")) : ytShelves;
     rows.slice(0, slots).forEach((shelf, i) => {
+      // A shelf of artists (a "Top artists" chart) sinks to the very bottom of Home; shelves of songs ride with the song rows.
+      const artistShelf = shelf.items.length > 0 && shelf.items.every((it) => it.kind === "artist");
       list.push({
-        id: `yt-${i}-${shelf.title}`,
+        id: `yt-${artistShelf ? "artists-" : ""}${i}-${shelf.title}`,
         kind: "market",
         priority: profile.maturity === "cold" ? 60 - i : 24 - i,
         minItems: 0, // content rides the `shelf` field, not `items`
         build: () => ({
-          id: `yt-${i}-${shelf.title}`,
+          id: `yt-${artistShelf ? "artists-" : ""}${i}-${shelf.title}`,
           title: shelf.title,
           layout: "yt-shelf",
           priority: 0,
@@ -842,29 +845,35 @@ function describeFeed(
 const MAX_SECTIONS = 22;
 
 /**
- * Where a row sits whatever its score: 0 the top (what you just played, the crate, your mixes), 1 the four song rows,
- * 2 every other row of songs, then 3 the rows about artists and albums, which sink below the songs.
+ * Where a row sits whatever its score: 0 the top (what you just played, "Playlists for you"), 1 the song rows of the
+ * taste you play most, 2 other song rows (mixes, throwback, market), 3 rows about artists and albums, and 5 the
+ * artist rows ("Top artists"), always last. Artists never lead.
  */
-function laneOf(kind: string): number {
+function laneOf(kind: string, id = ""): number {
   switch (kind) {
     case "jump-back-in":
     case "playlists-for-you":
-    case "browse":
-    case "your-mixes":
       return 0;
     case "songs-for-you":
     case "songs-discover":
     case "songs-searched":
     case "songs-lately":
+    case "heavy-rotation":
+    case "recommended-today":
       return 1;
-    case "favorite-artists":
+    case "your-mixes":
+    case "dust-off":
+      return 2;
     case "more-like":
     case "new-from-your-artists":
     case "stations":
     case "albums-for-you":
       return 3;
+    case "favorite-artists":
+      return 5;
     default:
-      return 2;
+      // market shelves: songs after the other song rows, artist charts at the very bottom
+      return id.startsWith("yt-artists-") ? 5 : 2;
   }
 }
 
@@ -896,7 +905,7 @@ export function buildHomeSections(args: {
     .map((d) => (PINNED.has(d.kind) ? d : { ...d, priority: Math.min(93, d.priority + learnedBoost(taps[d.kind] ?? 0)) }))
     // Once you have searched a couple of times, the songs of those searches lead the song rows: that is what you asked for just now.
     .map((d) => (d.kind === "songs-searched" && queries.length > 0 ? { ...d, priority: 90 } : d))
-    .sort((a, b) => laneOf(a.kind) - laneOf(b.kind) || b.priority - a.priority);
+    .sort((a, b) => laneOf(a.kind, a.id) - laneOf(b.kind, b.id) || b.priority - a.priority);
 
   const sections: HomeSection[] = [];
   for (const d of descriptors) {

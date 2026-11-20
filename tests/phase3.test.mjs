@@ -44,7 +44,7 @@ test("the spectrum analyser is a silent side branch of the existing graph", () =
 
 test("the turntable reads real audio and is still when nothing plays", () => {
   const t = read("src/components/Turntable.tsx");
-  assert.match(t, /getByteFrequencyData/);
+  assert.match(t, /getFloatFrequencyData/);
   assert.match(t, /playingRef\.current && live \? Math\.max\(BASE, live\[i\]\) : BASE/);
   assert.doesNotMatch(t, /Math\.random\(\)/, "no simulated bars");
   assert.match(t, /songBegan\(track\.id\)/);

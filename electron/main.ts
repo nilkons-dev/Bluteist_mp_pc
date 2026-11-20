@@ -387,6 +387,19 @@ function createWindow(): void {
     });
   }
 
+  // Out of sight (the tray, minimised) the page stops drawing: its animation loops and CSS animations are put to sleep
+  // (src/lib/background.ts) and wake when the window is back. Timers keep running, so playback is untouched.
+  const pushHidden = (): void => {
+    const w = mainWindow;
+    if (!w || w.isDestroyed()) return;
+    const hidden = !w.isVisible() || w.isMinimized();
+    void w.webContents.executeJavaScript(`window.__bluSetBg && window.__bluSetBg(${hidden})`).catch(() => undefined);
+  };
+  mainWindow.on("show", pushHidden);
+  mainWindow.on("hide", pushHidden);
+  mainWindow.on("minimize", pushHidden);
+  mainWindow.on("restore", pushHidden);
+
   // Keep the renderer's maximize/restore button icon in sync.
   const sendMaximized = (): void => {
     if (mainWindow && !mainWindow.isDestroyed()) {

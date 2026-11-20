@@ -151,9 +151,11 @@ const feedBundles = () =>
 test("the feed: your mixes are one per side, then the song rows and heavy rotation; every mix three parts familiar to one part new", () => {
   const sections = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW });
   const ids = sections.map((s) => s.id);
-  assert.deepEqual(ids.slice(0, 2), ["jump-back-in", "your-mixes"], ids.join(" → "));
+  assert.deepEqual(ids.slice(0, 2), ["jump-back-in", "songs-for-you"], ids.join(" → "));
+  assert.equal(ids.some((id) => /^(browse|because)/.test(id)), false, "no Browse chips, no Because rows");
+  assert.equal(ids.at(-1), "favorite-artists", "artists come last");
   assert.ok(ids.indexOf("heavy-rotation") > ids.indexOf("songs-for-you"), "the song rows come before heavy rotation");
-  const mixes = sections[1].items;
+  const mixes = sections.find((x) => x.id === "your-mixes").items;
   assert.deepEqual(mixes.filter((i) => i.style === "side").map((i) => i.letter), ["A", "B"]);
   const sideA = mixes[0];
   assert.match(sideA.caption, /Sid Sriram|Arijit Singh/);
@@ -170,8 +172,7 @@ test("the feed: rows you play from rise within their place, never above the pinn
   const base = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW }).map((s) => s.id);
   assert.ok(base.indexOf("favorite-artists") > base.indexOf("more-like-arijit singh"), base.join(" → "));
   const tapped = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW, taps: { "favorite-artists": 20 } }).map((s) => s.id);
-  assert.ok(tapped.indexOf("favorite-artists") < tapped.indexOf("more-like-arijit singh"), tapped.join(" → "));
-  assert.ok(tapped.indexOf("favorite-artists") > tapped.indexOf("dust-off"), "an artist row never climbs above the song rows");
+  assert.equal(tapped.at(-1), "favorite-artists", "an artist row never climbs, however much it is played: " + tapped.join(" → "));
   const eager = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW, taps: { "dust-off": 500 } }).map((s) => s.id);
   assert.equal(eager[0], "jump-back-in", "what you just played stays first");
   assert.ok(eager.indexOf("dust-off") > eager.indexOf("songs-for-you"), "the song rows stay ahead");

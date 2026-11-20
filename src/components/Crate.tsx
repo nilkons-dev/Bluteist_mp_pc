@@ -18,7 +18,7 @@ import "./coverflow.css";
  * Everything that moves is one animation-frame loop that writes straight to the cover elements (no render per frame);
  * it sleeps while the row is off screen. The look is in coverflow.css.
  */
-const MAX = 60;
+const MAX = 40;
 /** Milliseconds each cover stays in the middle while it drifts on its own. */
 const AUTO_MS = 3200;
 /** Edge-hover scroll: the share of the row at each end that scrolls, and the fastest it goes (covers a second). */
@@ -40,6 +40,8 @@ interface Hover {
   gx: number;
   gy: number;
   push: number;
+  /** true while this cover has hover motion in it (so a resting cover costs nothing) */
+  hot: boolean;
 }
 
 export function Crate({ title, playlists, className = "" }: { title: string; playlists: PlaylistCard[]; className?: string }) {
@@ -83,7 +85,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
     const reduce =
       (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) ||
       document.documentElement.classList.contains("reduce-motion");
-    hov.current = Array.from({ length: N }, () => ({ hv: 0, tx: 0, ty: 0, mx: 0, my: 0, gx: 50, gy: 30, push: 0 }));
+    hov.current = Array.from({ length: N }, () => ({ hv: 0, tx: 0, ty: 0, mx: 0, my: 0, gx: 50, gy: 30, push: 0, hot: false }));
     S.target = Math.round(S.pos);
     let raf = 0;
     let prev = performance.now();
@@ -116,12 +118,18 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
         const on = i === h;
         // Fades out toward the far side of the endless row, where a cover would otherwise jump from one end to the other.
         const op = Math.min(cl(1 - Math.max(a - 7, 0) * 0.3, 0, 1), N >= 4 ? cl((N / 2 - a) / 0.9, 0, 1) : 1);
-        // Well out of sight: not drawn, and no work.
+        // Well out of sight: not drawn (no box, no layer), and no work.
         if (op < 0.01 && !on) {
-          if (el.style.visibility !== "hidden") el.style.visibility = "hidden";
+          if (el.style.display !== "none") {
+            el.style.display = "none";
+            el.style.willChange = "auto";
+          }
           continue;
         }
-        if (el.style.visibility === "hidden") el.style.visibility = "";
+        if (el.style.display === "none") {
+          el.style.display = "";
+          el.style.willChange = "transform, opacity";
+        }
         const st0 = reduce ? 1 : ease(cl(intro * 1.6 - (Math.abs(i - (N - 1) / 2) / N) * 0.9, 0, 1));
 
         // hover physics (smoothed)
@@ -148,15 +156,20 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
         el.style.pointerEvents = op * st0 < 0.05 ? "none" : "auto";
         const dim = dims.current[i];
         if (dim) dim.style.opacity = cl(Math.min(a, 3) * 0.11 - q.hv * 0.16, 0, 0.5).toFixed(3);
-        el.style.setProperty("--hv", q.hv.toFixed(3));
-        const art = arts.current[i];
-        if (art) {
-          art.style.setProperty("--mx", `${q.gx.toFixed(1)}%`);
-          art.style.setProperty("--my", `${q.gy.toFixed(1)}%`);
-          art.style.setProperty("--px", `${(-q.tx * 7).toFixed(2)}px`);
-          art.style.setProperty("--py", `${(-q.ty * 7).toFixed(2)}px`);
+        // The hover look (glare, parallax) is only written while a cover has any: the others stay as they are.
+        const hot = on || q.hv > 0.003 || Math.abs(q.tx) + Math.abs(q.ty) > 0.003;
+        if (hot || q.hot) {
+          el.style.setProperty("--hv", q.hv.toFixed(3));
+          const art = arts.current[i];
+          if (art) {
+            art.style.setProperty("--mx", `${q.gx.toFixed(1)}%`);
+            art.style.setProperty("--my", `${q.gy.toFixed(1)}%`);
+            art.style.setProperty("--px", `${(-q.tx * 7).toFixed(2)}px`);
+            art.style.setProperty("--py", `${(-q.ty * 7).toFixed(2)}px`);
+          }
+          el.toggleAttribute("data-hov", q.hv > 0.05);
+          q.hot = hot;
         }
-        el.toggleAttribute("data-hov", q.hv > 0.05);
       }
       const now = wrapIdx(S.pos, N);
       if (now !== activeRef.current) {

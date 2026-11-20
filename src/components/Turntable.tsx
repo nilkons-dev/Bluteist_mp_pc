@@ -134,33 +134,38 @@ export function Turntable({ track }: { track: Track }) {
     const ro = typeof ResizeObserver !== "undefined" && cv ? new ResizeObserver(() => { size(); kick.current(); }) : null;
     if (ro && cv) ro.observe(cv);
 
-    const makeBuf = (n: number) => new Uint8Array(n);
-    let data = makeBuf(0);
-    /** the heard level of each bar: log-spaced bands from ~45 Hz up to ~16 kHz */
+    let data = new Float32Array(0);
+    /**
+     * The heard level of each bar: 30 log-spaced bands from 40 Hz to ~16 kHz, read in decibels from a 4096-point
+     * analysis (about 11 Hz a bin, so even the lowest bands get bins of their own and no two bars read the same ones).
+     * Music falls away about 4.5 dB an octave, so each band is tilted up 3 dB an octave: bass, mids and treble then
+     * move on their own, each by what it is doing, not all together.
+     */
     const levels = (): number[] | null => {
       if (!analyser.current) analyser.current = getSpectrumAnalyser();
       const an = analyser.current;
       if (!an) return null;
-      if (data.length !== an.frequencyBinCount) data = makeBuf(an.frequencyBinCount);
-      an.getByteFrequencyData(data);
+      if (data.length !== an.frequencyBinCount) data = new Float32Array(an.frequencyBinCount);
+      an.getFloatFrequencyData(data);
       const nyq = an.context.sampleRate / 2, per = nyq / data.length;
-      const f0 = 45, f1 = Math.min(16000, nyq * 0.95);
+      const f0 = 40, f1 = Math.min(16000, nyq * 0.95);
       const out: number[] = [];
       for (let i = 0; i < BARS; i++) {
         const lo = f0 * Math.pow(f1 / f0, i / BARS), hi = f0 * Math.pow(f1 / f0, (i + 1) / BARS);
         const a = Math.max(0, Math.floor(lo / per)), b = Math.max(a, Math.min(data.length - 1, Math.ceil(hi / per) - 1));
-        let sum = 0, mx = 0;
+        let sum = 0, mx = -140;
         for (let k = a; k <= b; k++) {
-          sum += data[k];
-          if (data[k] > mx) mx = data[k];
+          const d = Math.max(-140, data[k]);
+          sum += d;
+          if (d > mx) mx = d;
         }
-        const avg = sum / (b - a + 1);
-        const v = (avg * 0.5 + mx * 0.5) / 255;
-        out.push(Math.min(1, Math.pow(v, 1.35) * (0.9 + 0.55 * (i / BARS))));
+        const db = (sum / (b - a + 1)) * 0.4 + mx * 0.6 + 3 * Math.log2(Math.sqrt(lo * hi) / 100);
+        const v = Math.max(0, Math.min(1, (db + 78) / 56));
+        out.push(Math.pow(v, 1.5));
       }
       // The bars are scaled to what this song actually reaches (a slowly falling reference), so a quiet one still fills the frame.
       const top = Math.max(...out);
-      S.ref = Math.max(0.5, top, S.ref * 0.996);
+      S.ref = Math.max(0.55, top, S.ref * 0.995);
       return out.map((v) => Math.min(1, (v / S.ref) * 0.97));
     };
 
@@ -172,7 +177,7 @@ export function Turntable({ track }: { track: Track }) {
       for (let i = 0; i < BARS; i++) {
         const tg = playingRef.current && live ? Math.max(BASE, live[i]) : BASE;
         const before = S.v[i];
-        S.v[i] += (tg - S.v[i]) * (tg > S.v[i] ? 0.38 : 0.1);
+        S.v[i] += (tg - S.v[i]) * (tg > S.v[i] ? 0.5 : 0.13);
         S.pk[i] = Math.max(S.v[i], S.pk[i] - dt * 0.4);
         if (Math.abs(S.v[i] - before) > 0.0005 || Math.abs(S.v[i] - tg) > 0.003 || S.pk[i] - S.v[i] > 0.003) moving = true;
         const h = Math.max(3, S.v[i] * (H - 6)), x = i * (w + gap), b = H, c = Math.min(4, h);

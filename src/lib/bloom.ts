@@ -41,7 +41,7 @@ const W=244, H=208;
 let DPR=1,TX=0,TY=0;           // device pixel ratio + the head-tilt vector of the flower being drawn (for petal parallax)
 let BG="#0c0c0d";   // petals are filled with the panel colour first so layers hide each other; the panel itself is glass, so a fixed near-black is used
 function setup(){
-  const dpr=Math.min(window.devicePixelRatio||1,2);DPR=dpr;
+  const dpr=Math.max(2,Math.min(window.devicePixelRatio||1,2));DPR=dpr;   // always drawn at 2x and scaled down: thin petal edges stay steady (no shimmer) at 100% / 125% / 150% display scaling
   cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
   cv.style.width=W+"px";cv.style.height=H+"px";
   ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -920,7 +920,6 @@ function edgeFade(){                          // soft corner fade painted once o
 let running=false,active=false,half=false,slow=0,fast=0,skip=0;
 function frame(ms){
   if(dead||!active||document.hidden){running=false;last=0;return}
-  if(half&&(skip^=1)){requestAnimationFrame(frame);return}   // heavy frame times: run at half rate (the physics is time-based, so it looks the same)
   const w0=performance.now();
   if(++FC%30===0)fitFly();
   const t=ms/1000,dt=last?clamp((ms-last)/16.667,.2,3):1;last=ms;nowT=t;
@@ -955,8 +954,12 @@ function frame(ms){
     if(p.a<=0||p.y<-6)pollen.splice(i,1);
   }
 
-  ctx.clearRect(0,0,W,H);
+  // The flowers are the heavy part to draw and sway slowly: when frames get expensive they are redrawn every other
+  // frame (the physics above still runs every frame, so the motion is the same), while the butterfly stays at full rate.
+  const paint=!(half&&(skip^=1));
   const boost=reduce?0:1+.4*excite;let ci=0;
+  if(paint){
+  ctx.clearRect(0,0,W,H);
   for(const c of chains){
     if(c.tendril)continue;                                  // vines come last
     // atmospheric depth: every layer drawn after this one sits in front, so what is behind dims a touch
@@ -974,8 +977,10 @@ function frame(ms){
   }
   for(const p of petals)drawPetalFall(p);
   edgeFade();
+  }
   butterfly(t,dt);
   const cost=performance.now()-w0;
+  if(!paint){requestAnimationFrame(frame);return}
   if(!half){if(cost>9){if(++slow>40){half=true;slow=0;fast=0}}else slow=Math.max(0,slow-1)}
   else{if(cost<4.5){if(++fast>240){half=false;fast=0;slow=0}}else fast=Math.max(0,fast-1)}
   requestAnimationFrame(frame);

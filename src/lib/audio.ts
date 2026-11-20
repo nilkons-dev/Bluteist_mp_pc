@@ -638,8 +638,8 @@ function applyEq(): void {
     // Spectrum tap: reads the same signal the speakers get (local files and streams alike, both come through the
     // proxy with CORS) and outputs nowhere.
     spectrumAnalyser = ctx.createAnalyser();
-    spectrumAnalyser.fftSize = 1024;
-    spectrumAnalyser.smoothingTimeConstant = 0.4;
+    spectrumAnalyser.fftSize = 4096;
+    spectrumAnalyser.smoothingTimeConstant = 0.5;
     spectrumAnalyser.minDecibels = -85;
     spectrumAnalyser.maxDecibels = -18;
     makeup.connect(spectrumAnalyser);
