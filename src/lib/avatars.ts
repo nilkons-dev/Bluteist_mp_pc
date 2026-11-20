@@ -1,27 +1,17 @@
 /**
- * The twenty profile pictures that come with the app. Everyone gets one at random when their profile is made
+ * The ten profile pictures that come with the app. Everyone gets one at random when their profile is made
  * (a guest's, a new account's) and can change it later, to another of these or to a picture of their own.
  */
-import a01 from "../assets/avatars/01_raven_moon.webp";
-import a02 from "../assets/avatars/02_red_cassette.webp";
-import a03 from "../assets/avatars/03_dj_turntable.webp";
-import a04 from "../assets/avatars/04_electric_guitar.webp";
-import a05 from "../assets/avatars/05_oni_mask.webp";
-import a06 from "../assets/avatars/06_wolf_eclipse.webp";
-import a07 from "../assets/avatars/07_piano_keys.webp";
-import a08 from "../assets/avatars/08_black_rose.webp";
-import a09 from "../assets/avatars/09_neon_city.webp";
-import a10 from "../assets/avatars/10_robot_microphone.webp";
-import a11 from "../assets/avatars/11_mystic_moth.webp";
-import a12 from "../assets/avatars/12_fox_speaker.webp";
-import a13 from "../assets/avatars/13_prism_waveform.webp";
-import a14 from "../assets/avatars/14_crowned_skull.webp";
-import a15 from "../assets/avatars/15_metronome.webp";
-import a16 from "../assets/avatars/16_koi_moon.webp";
-import a17 from "../assets/avatars/17_pocket_watch.webp";
-import a18 from "../assets/avatars/18_red_violin.webp";
-import a19 from "../assets/avatars/19_night_butterfly.webp";
-import a20 from "../assets/avatars/20_radio_tower.webp";
+import a01 from "../assets/avatars/01_leaping_cat.webp";
+import a02 from "../assets/avatars/02_big_ears.webp";
+import a03 from "../assets/avatars/03_sleepy_cat.webp";
+import a04 from "../assets/avatars/04_hypno_cat.webp";
+import a05 from "../assets/avatars/05_curious_cat.webp";
+import a06 from "../assets/avatars/06_long_legs.webp";
+import a07 from "../assets/avatars/07_sly_cat.webp";
+import a08 from "../assets/avatars/08_peeping_cat.webp";
+import a09 from "../assets/avatars/09_grumpy_cat.webp";
+import a10 from "../assets/avatars/10_shy_cat.webp";
 
 export interface BuiltInAvatar {
   id: string;
@@ -30,26 +20,16 @@ export interface BuiltInAvatar {
 }
 
 export const AVATARS: ReadonlyArray<BuiltInAvatar> = [
-  { id: "01_raven_moon", name: "Raven Moon", src: a01 },
-  { id: "02_red_cassette", name: "Red Cassette", src: a02 },
-  { id: "03_dj_turntable", name: "Dj Turntable", src: a03 },
-  { id: "04_electric_guitar", name: "Electric Guitar", src: a04 },
-  { id: "05_oni_mask", name: "Oni Mask", src: a05 },
-  { id: "06_wolf_eclipse", name: "Wolf Eclipse", src: a06 },
-  { id: "07_piano_keys", name: "Piano Keys", src: a07 },
-  { id: "08_black_rose", name: "Black Rose", src: a08 },
-  { id: "09_neon_city", name: "Neon City", src: a09 },
-  { id: "10_robot_microphone", name: "Robot Microphone", src: a10 },
-  { id: "11_mystic_moth", name: "Mystic Moth", src: a11 },
-  { id: "12_fox_speaker", name: "Fox Speaker", src: a12 },
-  { id: "13_prism_waveform", name: "Prism Waveform", src: a13 },
-  { id: "14_crowned_skull", name: "Crowned Skull", src: a14 },
-  { id: "15_metronome", name: "Metronome", src: a15 },
-  { id: "16_koi_moon", name: "Koi Moon", src: a16 },
-  { id: "17_pocket_watch", name: "Pocket Watch", src: a17 },
-  { id: "18_red_violin", name: "Red Violin", src: a18 },
-  { id: "19_night_butterfly", name: "Night Butterfly", src: a19 },
-  { id: "20_radio_tower", name: "Radio Tower", src: a20 },
+  { id: "01_leaping_cat", name: "Leaping Cat", src: a01 },
+  { id: "02_big_ears", name: "Big Ears", src: a02 },
+  { id: "03_sleepy_cat", name: "Sleepy Cat", src: a03 },
+  { id: "04_hypno_cat", name: "Hypno Cat", src: a04 },
+  { id: "05_curious_cat", name: "Curious Cat", src: a05 },
+  { id: "06_long_legs", name: "Long Legs", src: a06 },
+  { id: "07_sly_cat", name: "Sly Cat", src: a07 },
+  { id: "08_peeping_cat", name: "Peeping Cat", src: a08 },
+  { id: "09_grumpy_cat", name: "Grumpy Cat", src: a09 },
+  { id: "10_shy_cat", name: "Shy Cat", src: a10 },
 ];
 
 /**
@@ -75,7 +55,7 @@ export function avatarSrc(choice: AvatarChoice | null | undefined): string | nul
   return AVATARS.find((a) => a.id === choice.slice(2))?.src ?? null;
 }
 
-/** One of the twenty, at random (the number source is a parameter so a test can steer it). */
+/** One of the ten, at random (the number source is a parameter so a test can steer it). */
 export function randomAvatarChoice(rand: () => number = Math.random): AvatarChoice {
   const i = Math.min(AVATARS.length - 1, Math.max(0, Math.floor(rand() * AVATARS.length)));
   return builtInChoice(AVATARS[i].id);

@@ -69,6 +69,8 @@ interface SettingsState {
 
   /* Appearance */
   reduceAnimation: boolean;
+  /** the sound under the launch animation */
+  introSound: boolean;
   reduceDynamicBlur: boolean;
   liquidGlass: boolean;
   fullBleedArtwork: boolean;
@@ -111,6 +113,7 @@ interface SettingsState {
   setLoudnessLevel(level: LoudnessLevel): void;
   setMatchLanguage(language: MatchLanguage | ""): void;
   setReduceAnimation(v: boolean): void;
+  setIntroSound(v: boolean): void;
   setReduceDynamicBlur(v: boolean): void;
   setLiquidGlass(v: boolean): void;
   setFullBleedArtwork(v: boolean): void;
@@ -151,6 +154,7 @@ export const useSettings = create<SettingsState>()(
       matchLanguage: "",
 
       reduceAnimation: false,
+      introSound: true,
       reduceDynamicBlur: false,
       liquidGlass: true,
       fullBleedArtwork: true,
@@ -194,6 +198,15 @@ export const useSettings = create<SettingsState>()(
       setLoudnessLevel: (loudnessLevel) => set({ loudnessLevel }),
       setMatchLanguage: (matchLanguage) => set({ matchLanguage }),
       setReduceAnimation: (reduceAnimation) => set({ reduceAnimation }),
+      setIntroSound: (introSound) => {
+        // The launch animation runs before the app is up, so it reads this from localStorage (public/intro.js).
+        try {
+          localStorage.setItem("blutheist.introSound", introSound ? "on" : "off");
+        } catch {
+          /* no storage: the sound stays as it was */
+        }
+        set({ introSound });
+      },
       setReduceDynamicBlur: (reduceDynamicBlur) => set({ reduceDynamicBlur }),
       setLiquidGlass: (liquidGlass) => set({ liquidGlass }),
       setFullBleedArtwork: (fullBleedArtwork) => set({ fullBleedArtwork }),

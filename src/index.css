@@ -3245,9 +3245,11 @@ html.noglass .chrome-glass {
   left: calc(var(--ob-gutter) + 500px);
   right: 4%;
   background: center / cover no-repeat;
-  filter: blur(110px) saturate(1.3);
+  filter: blur(90px) saturate(1.3);
   opacity: 0;
   transition: opacity 1.6s var(--ob-ease);
+  will-change: opacity;
+  contain: paint;
 }
 .ob-light-art.is-on {
   opacity: 0.5;
@@ -3289,7 +3291,7 @@ html.noglass .chrome-glass {
   inset: 0;
   perspective: 2200px;
   perspective-origin: 55% 50%;
-  animation: ob-drum-in 1.6s var(--ob-ease) 0.1s both;
+  animation: ob-drum-in 1.6s var(--ob-ease) 0.1s backwards;
 }
 @keyframes ob-drum-in {
   from {
@@ -3309,48 +3311,74 @@ html.noglass .chrome-glass {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
+  /* The rows are each a layer of their own on this plane; the covers inside a row are flat (one layer per row, not per cover). */
   transform-style: preserve-3d;
   transform: translate(-47%, -50%) rotateX(22deg) rotateY(-20deg) rotateZ(-7deg) scale(1.34);
 }
 .ob-wall-row {
+  position: relative;
   display: flex;
   gap: var(--gap);
   width: max-content;
-  transform-style: preserve-3d;
   will-change: transform;
+  backface-visibility: hidden;
   cursor: grab;
   touch-action: none;
   user-select: none;
   pointer-events: auto;
 }
+/* The row with a lifted cover paints over its neighbours. */
+.ob-wall-row:has(.is-hot) {
+  z-index: 2;
+}
 .ob-wall-row.is-drag {
   cursor: grabbing;
 }
+/* The tile is the box the pointer rests on: it never moves. The card inside it is what lifts. */
 .ob-tile {
   position: relative;
   flex: none;
   width: var(--tile);
   height: var(--tile);
+  pointer-events: auto;
+}
+.ob-tile.is-hot {
+  z-index: 3;
+}
+.ob-card {
+  position: absolute;
+  inset: 0;
   border-radius: 12px;
   overflow: hidden;
   background: rgb(var(--panel));
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  pointer-events: none;
+  transform: translate3d(0, 0, 0) scale(1);
   transition:
-    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 0.5s ease,
-    box-shadow 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  filter: brightness(0.78);
-  pointer-events: auto;
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
-/* A glare that follows the pointer across the hovered cover. */
-.ob-tile::after {
+/* Dimmed by a dark layer over the cover (cheap), not by a filter on every cover. */
+.ob-card::before {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 2;
+  background: #000;
+  opacity: 0.22;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+/* A glare that follows the pointer across the hovered cover. */
+.ob-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
   opacity: 0;
   pointer-events: none;
-  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgb(255 255 255 / 0.32), rgb(255 255 255 / 0) 62%);
-  transition: opacity 0.3s;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgb(255 255 255 / 0.3), rgb(255 255 255 / 0) 62%);
+  transition: opacity 0.35s ease;
 }
 /* A cover fades in once it has loaded (CoverWall adds .is-in), never popping in late. */
 .ob-tile-art {
@@ -3366,20 +3394,34 @@ html.noglass .chrome-glass {
 .ob-tile-art.is-in {
   opacity: 1;
 }
-.ob-tile.is-lit {
-  filter: brightness(1);
+.ob-tile.is-lit .ob-card::before {
+  opacity: 0;
 }
 @media (hover: hover) {
-  .ob-tile:hover {
-    transform: translateY(-16px) scale(1.08);
-    filter: brightness(1.08);
+  .ob-tile.is-hot .ob-card {
+    transform: translate3d(0, -14px, 0) scale(1.07);
     box-shadow:
       inset 0 0 0 1px rgb(255 255 255 / 0.25),
-      0 18px 40px rgb(0 0 0 / 0.55);
+      0 16px 30px rgb(0 0 0 / 0.5);
   }
-  .ob-tile:hover::after {
+  .ob-tile.is-hot .ob-card::before {
+    opacity: 0;
+  }
+  .ob-tile.is-hot .ob-card::after {
     opacity: 1;
   }
+}
+/* Frames came slowly: the blur behind the words and the glare go, and the words' side is darkened instead. */
+.ob-stage[data-lite] .ob-stage-blur {
+  display: none;
+}
+.ob-stage[data-lite]::before {
+  background:
+    linear-gradient(to right, rgb(var(--base) / 0.88) 0%, rgb(var(--base) / 0.7) calc(var(--ob-gutter) + 330px), rgb(var(--base) / 0) 62%),
+    linear-gradient(to bottom, rgb(var(--base) / 0.55) 0%, rgb(var(--base) / 0) 16%, rgb(var(--base) / 0) 80%, rgb(var(--base) / 0.6) 100%);
+}
+.ob-stage[data-lite] .ob-card::after {
+  display: none;
 }
 
 /* Entrances: a step's parts settle into place in reading order; stepping back they
@@ -3470,7 +3512,8 @@ html.noglass .chrome-glass {
   .ob-wall-row {
     animation: none;
   }
-  .ob-tile,
+  .ob-card,
+  .ob-card::before,
   .ob-tile-art,
   .ob-light-art,
   .ob-btn,
@@ -3489,7 +3532,8 @@ html.reduce-motion .ob-stage-in,
 html.reduce-motion .ob-wall-row {
   animation: none;
 }
-html.reduce-motion .ob-tile,
+html.reduce-motion .ob-card,
+html.reduce-motion .ob-card::before,
 html.reduce-motion .ob-tile-art,
 html.reduce-motion .ob-light-art,
 html.reduce-motion .ob-btn,

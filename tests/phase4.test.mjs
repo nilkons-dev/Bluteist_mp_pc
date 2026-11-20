@@ -14,11 +14,11 @@ async function load(entry) {
   return import(out);
 }
 
-test("twenty avatars ship, every one resolves, and the random pick is always one of them", async () => {
+test("ten avatars ship, every one resolves, and the random pick is always one of them", async () => {
   const a = await load("src/lib/avatars.ts");
-  assert.equal(a.AVATARS.length, 20);
-  assert.equal(readdirSync(new URL("../src/assets/avatars", import.meta.url)).length, 20);
-  assert.equal(new Set(a.AVATARS.map((x) => x.id)).size, 20);
+  assert.equal(a.AVATARS.length, 10);
+  assert.equal(readdirSync(new URL("../src/assets/avatars", import.meta.url)).length, 10);
+  assert.equal(new Set(a.AVATARS.map((x) => x.id)).size, 10);
   for (const x of a.AVATARS) assert.ok(a.avatarSrc(a.builtInChoice(x.id)));
   const seen = new Set();
   for (let i = 0; i < 2000; i++) {
@@ -26,7 +26,7 @@ test("twenty avatars ship, every one resolves, and the random pick is always one
     assert.ok(a.isAvatarChoice(c));
     seen.add(c);
   }
-  assert.equal(seen.size, 20, "all twenty come up");
+  assert.equal(seen.size, 10, "all ten come up");
   assert.ok(a.isAvatarChoice(a.randomAvatarChoice(() => 0.9999999)));
   assert.ok(a.isAvatarChoice(a.randomAvatarChoice(() => 0)));
 });

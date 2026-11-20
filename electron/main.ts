@@ -340,6 +340,8 @@ function createWindow(): void {
       nodeIntegration: false,
       sandbox: true,
       spellcheck: false,
+      // The launch intro plays its sound with no click before it (Web Audio would otherwise stay suspended until one).
+      autoplayPolicy: "no-user-gesture-required",
       // Closed, the window is hidden (always on macOS, in the tray on
       // Windows) and can stay hidden for hours while music plays: on macOS
       // it plays on, and from the Windows tray the menu, the media keys or

@@ -1006,6 +1006,12 @@ function DisplayPane() {
           toggle={{ checked: s.reduceAnimation, onChange: s.setReduceAnimation }}
         />
         <Row
+          icon={Volume2}
+          title="Launch sound"
+          note="The soft cinematic sound under the opening animation (best on headphones)"
+          toggle={{ checked: s.introSound, onChange: s.setIntroSound }}
+        />
+        <Row
           icon={Droplets}
           title="Reduce dynamic blur"
           note="Fill glass surfaces solid instead of blurring"

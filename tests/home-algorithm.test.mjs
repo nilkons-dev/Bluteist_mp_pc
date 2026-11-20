@@ -148,10 +148,11 @@ const feedBundles = () =>
     ].map((b) => [b.artistId, b])
   );
 
-test("the feed: your mixes are one per side, then heavy rotation; every mix three parts familiar to one part new", () => {
+test("the feed: your mixes are one per side, then the song rows and heavy rotation; every mix three parts familiar to one part new", () => {
   const sections = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW });
   const ids = sections.map((s) => s.id);
-  assert.deepEqual(ids.slice(0, 3), ["jump-back-in", "your-mixes", "heavy-rotation"], ids.join(" → "));
+  assert.deepEqual(ids.slice(0, 2), ["jump-back-in", "your-mixes"], ids.join(" → "));
+  assert.ok(ids.indexOf("heavy-rotation") > ids.indexOf("songs-for-you"), "the song rows come before heavy rotation");
   const mixes = sections[1].items;
   assert.deepEqual(mixes.filter((i) => i.style === "side").map((i) => i.letter), ["A", "B"]);
   const sideA = mixes[0];
@@ -165,13 +166,15 @@ test("the feed: your mixes are one per side, then heavy rotation; every mix thre
   assert.equal(sections.every((s) => typeof s.kind === "string" && s.kind), true, "every row carries its kind");
 });
 
-test("the feed: rows you play from rise, but never above the pinned rows", () => {
+test("the feed: rows you play from rise within their place, never above the pinned rows or the song rows", () => {
   const base = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW }).map((s) => s.id);
-  assert.ok(base.indexOf("stations") > base.indexOf("dust-off"), base.join(" → "));
-  const tapped = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW, taps: { stations: 20 } }).map((s) => s.id);
-  assert.ok(tapped.indexOf("stations") < tapped.indexOf("dust-off"), tapped.join(" → "));
+  assert.ok(base.indexOf("favorite-artists") > base.indexOf("more-like-arijit singh"), base.join(" → "));
+  const tapped = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW, taps: { "favorite-artists": 20 } }).map((s) => s.id);
+  assert.ok(tapped.indexOf("favorite-artists") < tapped.indexOf("more-like-arijit singh"), tapped.join(" → "));
+  assert.ok(tapped.indexOf("favorite-artists") > tapped.indexOf("dust-off"), "an artist row never climbs above the song rows");
   const eager = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW, taps: { "dust-off": 500 } }).map((s) => s.id);
   assert.equal(eager[0], "jump-back-in", "what you just played stays first");
+  assert.ok(eager.indexOf("dust-off") > eager.indexOf("songs-for-you"), "the song rows stay ahead");
 });
 
 test("the feed: a 'Not interested' song is gone from every row and mix", () => {

@@ -13,7 +13,6 @@ test("cover wall: no tilt toward the pointer; rows are pulled by hand", () => {
   const css = read("src/index.css");
   assert.doesNotMatch(css, /ob-wall-left|ob-wall-right/);
   assert.match(css, /rotateX\(22deg\) rotateY\(-20deg\) rotateZ\(-7deg\)/);
-  assert.match(css, /\.ob-tile:hover \{\s*transform: translateY\(-16px\)/);
 });
 
 test("settings: eight animated icons, one per category; About says what the user wrote", () => {
@@ -43,13 +42,6 @@ test("library: pulled from its edge, folds to a strip, Home sits in the same lis
   assert.match(css, /\.lb-compact \.lb-tx/);
 });
 
-test("playlist stack replaces the crate shelf", () => {
-  const c = read("src/components/Crate.tsx");
-  assert.doesNotMatch(c, /ShelfScroller/);
-  assert.match(c, /className=\{`ps-row/);
-  assert.match(read("src/components/crate.css"), /\.ps-card\.is-up \.ps-back/);
-});
-
 test("rows and the panel glow are grey and white, never cover colours", () => {
   const css = read("src/index.css");
   assert.match(css, /\.tl-light::before,\s*\.tl-playing::before \{[^}]*rgb\(255 255 255 \/ 0\.12\)/);
@@ -67,13 +59,13 @@ test("Play next on the playing song goes on to the next one", () => {
 
 test("home brings more suggestions", () => {
   const s = read("src/lib/recs/sections.ts");
-  assert.match(s, /MAX_SECTIONS = 16/);
+  assert.match(s, /MAX_SECTIONS = 22/);
   assert.match(s, /count: 20/);
 });
 
 test("new class prefixes (si-, ps-, ab-) do not collide with index.css", () => {
   const app = read("src/index.css");
-  const css = read("src/components/settingsIcons.css") + read("src/components/crate.css") + read("src/components/about.css");
-  const names = [...new Set([...css.matchAll(/\.((?:si|ps|ab)-[a-z0-9-]+)/g)].map((m) => m[1]))];
+  const css = read("src/components/settingsIcons.css") + read("src/components/coverflow.css") + read("src/components/about.css");
+  const names = [...new Set([...css.matchAll(/\.((?:si|cf|ab)-[a-z0-9-]+)/g)].map((m) => m[1]))];
   for (const c of names) assert.equal(new RegExp(`\\.${c}\\b`).test(app), false, c);
 });

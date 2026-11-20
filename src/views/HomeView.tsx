@@ -173,6 +173,8 @@ function SectionView({ section }: { section: HomeSection }) {
 
 export function HomeView() {
   const { sections, profile } = useHomeFeed();
+  // A refresh (the TopBar button) draws every row anew: keyed by it, the rows slide in again, so it is seen to happen.
+  const refresh = useUI((s) => s.homeReloadNonce);
   // The glow at the top of the pane is global (components/CoverGlow): at rest
   // it shows the playing track's cover, and hovering any card on any view
   // shows that card's artwork instead.
@@ -186,7 +188,7 @@ export function HomeView() {
         {sections.map((section) => (
           // A press inside a row counts for its kind: the rows you play from rise on your next visit.
           <div
-            key={section.id}
+            key={`${refresh}:${section.id}`}
             onClickCapture={(e) => {
               if ((e.target as HTMLElement).closest("button, [role='button'], a")) useHomeEngagement.getState().tap(section.kind);
             }}

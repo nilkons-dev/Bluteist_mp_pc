@@ -15,7 +15,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { requireBridge } from "../../lib/bridge";
 import { storage } from "../persist";
 import { seedArtistAbout } from "../artistAbout";
-import type { Album, Artist, ArtistPageData, HomeItem, Track } from "../../types";
+import type { Album, Artist, ArtistPageData, HomeItem, PlaylistCard, Track } from "../../types";
 
 export interface ArtistBundle {
   artistId: string;
@@ -24,10 +24,18 @@ export interface ArtistBundle {
   topSongs: Track[];
   albums: Album[];
   related: Artist[];
+  /** the playlists the artist's page shows ("Playlists by X", "Featured on"); absent in bundles cached by older versions */
+  playlists?: PlaylistCard[];
   fetchedAt: number;
 }
 
 const TTL_MS = 12 * 3_600_000;
+
+/** A manual refresh (reloadHomeFeed) marks every bundle fetched before now as stale: still painted, but fetched again. */
+let staleBefore = 0;
+export function markBundlesStale(): void {
+  staleBefore = Date.now();
+}
 
 /* ---------------------------------------------------- persisted bundle cache */
 /* Bundles live in a disk-backed store (same channel as the artist-identity
@@ -113,6 +121,15 @@ function harvest(page: ArtistPageData, artistId: string): ArtistBundle {
     related.push(artist);
   }
 
+  const playlists: PlaylistCard[] = [];
+  const seenPlaylists = new Set<string>();
+  for (const item of items) {
+    const pl = item.kind === "playlist" ? item.playlist : undefined;
+    if (!pl || !pl.thumb || seenPlaylists.has(pl.id)) continue;
+    seenPlaylists.add(pl.id);
+    playlists.push(pl);
+  }
+
   return {
     artistId,
     name: page.artist.name,
@@ -122,6 +139,7 @@ function harvest(page: ArtistPageData, artistId: string): ArtistBundle {
     topSongs: (page.songs ?? []).slice(0, 40),
     albums: albums.slice(0, 20),
     related: related.slice(0, 16),
+    playlists: playlists.slice(0, 12),
     fetchedAt: Date.now(),
   };
 }
@@ -129,7 +147,7 @@ function harvest(page: ArtistPageData, artistId: string): ArtistBundle {
 export async function getArtistBundle(artistId: string): Promise<ArtistBundle | null> {
   if (!artistId) return null;
   const hit = useBundleCache.getState().byId[artistId];
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.bundle;
+  if (hit && Date.now() - hit.at < TTL_MS && hit.at >= staleBefore) return hit.bundle;
 
   const pending = inflight.get(artistId);
   if (pending) return pending;
@@ -137,7 +155,7 @@ export async function getArtistBundle(artistId: string): Promise<ArtistBundle | 
   const task = (async () => {
     try {
       const page = await requireBridge().getArtist(artistId);
-      if (!page?.artist) return null;
+      if (!page?.artist) return hit?.bundle ?? null;
       const bundle = harvest(page, artistId);
       useBundleCache.getState().put(artistId, bundle);
       // The artist page carries the About-panel fields too — seed the
@@ -146,7 +164,8 @@ export async function getArtistBundle(artistId: string): Promise<ArtistBundle | 
       seedArtistAbout(page, artistId);
       return bundle;
     } catch {
-      return null;
+      // Offline during a refresh: the last copy is still better than none.
+      return hit?.bundle ?? null;
     } finally {
       inflight.delete(artistId);
     }

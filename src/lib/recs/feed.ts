@@ -22,11 +22,12 @@ import { requireBridge } from "../../lib/bridge";
 import { storage } from "../persist";
 import { hiddenNow, tapsNow, useHomeEngagement } from "../../stores/homeEngagement";
 import { useUI } from "../../stores/ui";
-import type { HomeShelf, PlaylistCard } from "../../types";
+import type { HomeShelf, PlaylistCard, Track } from "../../types";
 import { FALLBACK_MOODS } from "../../../electron/moods";
-import { getArtistBundle, peekBundle, pruneBundles, useBundleCacheVersion, type ArtistBundle } from "./candidates";
+import { markBundlesStale, getArtistBundle, peekBundle, pruneBundles, useBundleCacheVersion, type ArtistBundle } from "./candidates";
 import { useTasteProfile, type ArtistSignal, type TasteProfile } from "./profile";
 import { buildHomeSections, type HomeSection } from "./sections";
+import { latestQueries, loadQuerySongs, markQueriesStale, peekQuerySongs, useQueryCacheVersion } from "./queries";
 import { coverRead } from "../palette";
 
 /* ------------------------------------------------------- youtube feed cache */
@@ -224,6 +225,8 @@ async function orchestrate(profile: TasteProfile, apply: (sections: HomeSection[
   pruneBundles();
   // Home's crate takes the market's playlists whatever the maturity; they load alongside the artist pages.
   const marketLoad = loadMarketShelves();
+  // The songs your latest searches found, fetched alongside the artist pages.
+  const queryLoad = loadQuerySongs(latestQueries(profile.searches));
 
   // Wave 1 — identity. Names the meta cache knows resolve for free.
   const focus = focusArtists(profile);
@@ -245,7 +248,7 @@ async function orchestrate(profile: TasteProfile, apply: (sections: HomeSection[
   await Promise.all(seeds.map((a) => getArtistBundle(a.artistId as string)));
 
   const seedIds = seeds.map((a) => a.artistId as string);
-  apply(buildHomeSections({ profile, bundles: collectBundles(profile, seedIds), ytShelves: null, market: cachedMarketShelves(), ...yourHome() }));
+  apply(buildHomeSections({ profile, bundles: collectBundles(profile, seedIds), ytShelves: null, market: cachedMarketShelves(), ...yourHome(profile) }));
 
   // Wave 3 — related artists' pages feed the discovery pools; YouTube's own
   // feed covers cold start and pads a thin feed.
@@ -259,22 +262,34 @@ async function orchestrate(profile: TasteProfile, apply: (sections: HomeSection[
   const feedThin = collectBundles(profile, [...seedIds, ...relatedIds]).size < 2;
   const wantYt = feedThin || profile.maturity === "cold" || profile.maturity === "light";
   const market = await marketLoad;
+  await queryLoad;
   apply(
     buildHomeSections({
       profile,
       bundles: collectBundles(profile, [...seedIds, ...relatedIds]),
       ytShelves: wantYt ? market : null,
       market,
-      ...yourHome(),
+      ...yourHome(profile),
     })
   );
 }
 
 /** How you use Home, read at build time: the rows you play from (they rise) and your "Not interested" songs. */
-function yourHome(): { taps: Record<string, number>; hidden: Set<string> } {
+function yourHome(profile: TasteProfile): {
+  taps: Record<string, number>;
+  hidden: Set<string>;
+  queries: Array<{ q: string; songs: Track[] }>;
+  variant: number;
+} {
   const s = useHomeEngagement.getState();
   const now = Date.now();
-  return { taps: tapsNow(s.taps, now), hidden: hiddenNow(s.hiddenTracks, now) };
+  return {
+    taps: tapsNow(s.taps, now),
+    hidden: hiddenNow(s.hiddenTracks, now),
+    // What your latest searches found, as kept so far (a search not fetched yet joins on the next rebuild).
+    queries: peekQuerySongs(latestQueries(profile.searches)),
+    variant: refreshVariant,
+  };
 }
 
 /* --------------------------------------------------------------------- hook */
@@ -290,8 +305,16 @@ function yourHome(): { taps: Record<string, number>; hidden: Set<string> } {
 export function reloadHomeFeed(): void {
   ytShelvesStale = true;
   chartsStale = true;
+  // The artist pages and the searched songs are fetched again (what is kept still paints meanwhile), and every
+  // pick that rotates is drawn anew: a refresh always shows a different Home, built from what you play and search now.
+  markBundlesStale();
+  markQueriesStale();
+  refreshVariant += 1;
   useUI.getState().bumpHomeReload();
 }
+
+/** Counts manual refreshes; the builder turns it into a fresh draw of the day's rotation. */
+let refreshVariant = 0;
 
 /**
  * What Home leads with: the first of its picked playlists whose cover has real
@@ -324,6 +347,7 @@ export function useHomeFeed(): { sections: HomeSection[]; profile: TasteProfile 
   // A "Not interested" takes the song off Home at once; taps reorder rows only on the next rebuild,
   // so a row never jumps away from under the pointer that just used it.
   const hiddenVersion = useHomeEngagement((s) => s.hiddenVersion);
+  const queriesVersion = useQueryCacheVersion();
   const [sections, setSections] = useState<HomeSection[]>([]);
   const runSeq = useRef(0);
   const signature = profile?.signature ?? "";
@@ -355,7 +379,7 @@ export function useHomeFeed(): { sections: HomeSection[]; profile: TasteProfile 
         ytShelves: profile.maturity === "cold" || profile.maturity === "light" ? cachedMarketShelves() : null,
         moods: moodsCache?.titles ?? undefined,
         market: cachedMarketShelves(),
-        ...yourHome(),
+        ...yourHome(profile),
       })
     );
 
@@ -365,6 +389,8 @@ export function useHomeFeed(): { sections: HomeSection[]; profile: TasteProfile 
     // artist signal exists (a single play counts), the personalized
     // orchestration below takes over and the market shelves become filler.
     if (profile.artists.length === 0) {
+      // Searches alone already say what to put on Home: their songs land as a row when fetched (queriesVersion).
+      void loadQuerySongs(latestQueries(profile.searches));
       void Promise.all([loadMarketShelves(), loadMoodTitles()]).then(([shelves, moodTitles]) => {
         apply(
           buildHomeSections({
@@ -375,7 +401,7 @@ export function useHomeFeed(): { sections: HomeSection[]; profile: TasteProfile 
             // country list, and only after the provider had its chance.
             moods: (moodTitles ?? FALLBACK_MOODS.map((m) => m.title)) as string[],
             market: shelves,
-            ...yourHome(),
+            ...yourHome(profile),
           })
         );
       });
@@ -389,7 +415,7 @@ export function useHomeFeed(): { sections: HomeSection[]; profile: TasteProfile 
     // Re-run when the underlying signals move, when the user asks for a
     // manual refresh from the TopBar, or when a disk-backed cache lands.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature, reloadNonce, bundlesVersion, marketVersion, hiddenVersion]);
+  }, [signature, reloadNonce, bundlesVersion, marketVersion, hiddenVersion, queriesVersion]);
 
   return { sections, profile };
 }

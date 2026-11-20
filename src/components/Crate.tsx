@@ -1,122 +1,393 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { FitText } from "./FitText";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { playPlaylist } from "../lib/playlist";
 import { browseMenuItems } from "../lib/trackActions";
+import { usePlayer } from "../stores/player";
 import { useUI } from "../stores/ui";
 import type { PlaylistCard } from "../types";
-import "./crate.css";
+import "./coverflow.css";
 
 /**
- * Playlists as a stack of cards (Home's "Playlists for you", a category's page). The cards sit in a row, a little
- * overlapped and leaning; the one under the pointer (or reached with the arrow keys) comes forward and grows, its
- * neighbours move aside, the rest dim, and a card slides up from behind it with the playlist's name. The card tilts
- * toward the pointer with a soft sheen. A click opens the playlist; right-click has its options.
+ * Playlists as a 3D coverflow (Home's "Playlists for you", a category's page). The focused cover stands large in the
+ * middle, the ones either side turn away in depth. It drifts on its own (to and fro) until the pointer rests on it, and
+ * can be moved with the arrow buttons, the arrow keys, a drag or swipe, a sideways scroll, or by resting the pointer at
+ * either end. A cover lifts and tilts toward the pointer under it, with a soft glare; the focused one has a play button.
+ * A click on a side cover brings it to the middle; a click on the middle one opens the playlist.
  *
- * The motion is a small spring loop on each card's position (no re-render per frame); the look is in crate.css.
+ * Everything that moves is one animation-frame loop that writes straight to the cover elements (no render per frame);
+ * it sleeps while the row is off screen. The look is in coverflow.css.
  */
-const MAX = 16;
+const MAX = 60;
+/** Milliseconds each cover stays in the middle while it drifts on its own. */
+const AUTO_MS = 3200;
+/** Edge-hover scroll: the share of the row at each end that scrolls, and the fastest it goes (covers a second). */
+const ZONE = 0.36;
+const MAXV = 11;
 const cl = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
+const ease = (t: number): number => 1 - Math.pow(1 - t, 4);
 
-type Spring = { v: number[] | null; tx: number; ty: number };
+interface Hover {
+  hv: number;
+  tx: number;
+  ty: number;
+  mx: number;
+  my: number;
+  gx: number;
+  gy: number;
+  push: number;
+}
 
 export function Crate({ title, playlists, className = "" }: { title: string; playlists: PlaylistCard[]; className?: string }) {
   const navigate = useUI((s) => s.navigate);
   const list = playlists.slice(0, MAX);
   const N = list.length;
-  const rowRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const cards = useRef<Array<HTMLDivElement | null>>([]);
-  const tilts = useRef<Array<HTMLDivElement | null>>([]);
-  const faces = useRef<Array<HTMLDivElement | null>>([]);
-  const springs = useRef<Spring[]>([]);
-  const ptr = useRef({ x: 0, y: 0 });
-  // -1: no card up.
-  const [hv, setHv] = useState(-1);
-  const hvRef = useRef(-1);
-  hvRef.current = hv;
-  const shown = hv >= 0 ? list[hv] : undefined;
+  const dims = useRef<Array<HTMLElement | null>>([]);
+  const arts = useRef<Array<HTMLElement | null>>([]);
+  const barRef = useRef<HTMLDivElement>(null);
+  const hintL = useRef<HTMLDivElement>(null);
+  const hintR = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(() => Math.round((N - 1) / 2));
+  const activeRef = useRef(active);
+
+  // What the loop and the handlers share.
+  const st = useRef({
+    pos: (N - 1) / 2,
+    target: Math.round((N - 1) / 2),
+    hover: false,
+    dragging: false,
+    hoverIdx: -1,
+    edgeVel: 0,
+    lastAuto: 0,
+    dir: 1,
+    started: 0,
+    visible: false,
+    playing: false,
+    wake: (): void => undefined,
+  });
+  const hov = useRef<Hover[]>([]);
+
+  // The playlist this row started, and whether that is still what is playing.
+  const [owned, setOwned] = useState<{ id: string; first: string } | null>(null);
+  const first = usePlayer((s) => s.queue[0]?.id ?? "");
+  const playing = usePlayer((s) => s.playing);
+  const playingId = owned && owned.first === first && playing ? owned.id : null;
+  st.current.playing = playingId !== null;
 
   useEffect(() => {
-    const row = rowRef.current;
-    if (!row || N === 0) return;
-    const reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let W = row.clientWidth, S = 120;
+    const stage = stageRef.current;
+    const S = st.current;
+    if (!stage || N === 0) return;
+    const reduce =
+      (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) ||
+      document.documentElement.classList.contains("reduce-motion");
+    hov.current = Array.from({ length: N }, () => ({ hv: 0, tx: 0, ty: 0, mx: 0, my: 0, gx: 50, gy: 30, push: 0 }));
+    S.pos = cl(S.pos, 0, N - 1);
+    S.target = cl(S.target, 0, N - 1);
+    let raf = 0;
+    let prev = performance.now();
+    let w = stage.clientWidth;
+    let card = 200;
     const size = (): void => {
-      W = row.clientWidth;
-      S = cl(W < 640 ? W * 0.24 : W * 0.12, 96, 150);
-      row.style.setProperty("--ps-s", `${S}px`);
+      w = stage.clientWidth;
+      card = w < 720 ? 150 : w < 1000 ? 176 : 200;
+      stage.style.setProperty("--cf-card", `${card}px`);
     };
     size();
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(size) : null;
-    ro?.observe(row);
-    springs.current = Array.from({ length: N }, () => ({ v: null, tx: 0, ty: 0 }));
-    const M = (N - 1) / 2;
-    const t0 = performance.now();
-    let raf = 0;
-    const frame = (now: number): void => {
-      const t = (now - t0) / 1000;
-      const h = hvRef.current;
-      const push = S * 0.62;
-      const step = Math.max(22, Math.min(S * 0.78, (W - S * 1.5 - 2 * push) / Math.max(1, N - 1)));
+    ro?.observe(stage);
+
+    const layout = (dt: number, intro: number): void => {
+      const small = w < 720;
+      const u = card / 200;
+      const centerGap = (small ? 118 : 190) * u;
+      const sp = (small ? 34 : 52) * u;
+      const h = S.dragging ? -1 : S.hoverIdx;
+      const kf = 1 - Math.exp(-dt * 11);
+      const ks = 1 - Math.exp(-dt * 7);
       for (let i = 0; i < N; i++) {
-        const el = cards.current[i], tl = tilts.current[i], face = faces.current[i], c = springs.current[i];
-        if (!el || !tl || !face || !c) continue;
-        const d = i - M, dd = h >= 0 ? i - h : 0, on = i === h;
-        const x = d * step + (h >= 0 ? Math.sign(dd) * push * (1 - Math.exp(-Math.abs(dd) * 1.4)) : 0);
-        // x, y, z, (unused), turn about y, scale, opacity
-        let T = [x, S * 0.35 + (reduce ? 0 : Math.sin(t * 0.8 + i * 0.7) * 2.5), 0, 0, h >= 0 ? cl(-dd * 14, -40, 40) : cl(-d * 6, -24, 24), 1, 1];
-        if (on) T = [x, S * 0.35 - S * 0.12, 140, 0, 0, 1.42, 1];
-        if (!reduce && t < 0.2 + i * 0.07) T = [0, S * 0.9, 0, 0, 0, 0.7, 0];
-        if (!c.v) c.v = [0, S * 0.9, 0, 0, 0, 0.7, 0];
-        for (let k = 0; k < 7; k++) c.v[k] += (T[k] - c.v[k]) * (reduce ? 0.35 : 0.13);
-        const v = c.v;
-        el.style.transform = `translate3d(${W / 2 + v[0] - S / 2}px,${v[1]}px,${v[2]}px) rotateY(${v[4]}deg) scale(${v[5]})`;
-        el.style.opacity = String(v[6]);
-        el.style.zIndex = String(on ? 100 : Math.round(50 - Math.abs(h >= 0 ? dd : d) * 3));
-        let tx = 0, ty = 0;
-        if (on && !reduce) {
-          const r = el.getBoundingClientRect();
-          tx = cl((ptr.current.x - r.left - r.width / 2) / (r.width / 2), -1, 1);
-          ty = cl((ptr.current.y - r.top - r.height / 2) / (r.height / 2), -1, 1);
+        const el = cards.current[i];
+        const q = hov.current[i];
+        if (!el || !q) continue;
+        const d = i - S.pos;
+        const a = Math.abs(d);
+        const s = d < 0 ? -1 : 1;
+        const on = i === h;
+        const op = cl(1 - Math.max(a - 7, 0) * 0.3, 0, 1);
+        // Well out of sight: not drawn, and no work.
+        if (op < 0.01 && !on) {
+          if (el.style.visibility !== "hidden") el.style.visibility = "hidden";
+          continue;
         }
-        c.tx += (tx - c.tx) * 0.15;
-        c.ty += (ty - c.ty) * 0.15;
-        tl.style.transform = `rotateX(${-c.ty * 7}deg) rotateY(${c.tx * 9}deg)`;
-        face.style.setProperty("--mx", `${(c.tx * 0.5 + 0.5) * 100}%`);
-        face.style.setProperty("--my", `${(c.ty * 0.5 + 0.5) * 100}%`);
-        face.style.setProperty("--sh", on ? "0.4" : "0");
+        if (el.style.visibility === "hidden") el.style.visibility = "";
+        const st0 = reduce ? 1 : ease(cl(intro * 1.6 - (Math.abs(i - (N - 1) / 2) / N) * 0.9, 0, 1));
+
+        // hover physics (smoothed)
+        q.hv += ((on ? 1 : 0) - q.hv) * kf;
+        q.tx += ((on ? q.mx : 0) - q.tx) * kf;
+        q.ty += ((on ? q.my : 0) - q.ty) * kf;
+        q.gx += (50 + q.mx * 50 - q.gx) * kf;
+        q.gy += (50 + q.my * 50 - q.gy) * kf;
+        const dd = i - h;
+        const pt = h < 0 || dd === 0 ? 0 : (dd < 0 ? -1 : 1) * Math.max(0, 1 - Math.abs(dd) / 4) * (small ? 10 : 26) * u;
+        q.push += (pt - q.push) * ks;
+
+        const near = Math.min(a, 1);
+        const far = Math.max(a - 1, 0);
+        const x = s * (near * centerGap + far * sp) * st0 + q.push;
+        const ry = -s * near * 40 * st0;
+        const z = (-near * 70 - far * 14) * st0 * u + (1 - st0) * -200 + q.hv * 80;
+        let sc = 1.22 - near * 0.34 - Math.min(far, 6) * 0.012;
+        sc = (1 + (sc - 1) * st0 - (1 - st0) * 0.2) * (1 + q.hv * 0.07);
+        const y = (1 - st0) * 40 - q.hv * 14;
+        el.style.transform = `translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,${z.toFixed(2)}px) rotateY(${(ry + q.tx * 13).toFixed(2)}deg) rotateX(${(-q.ty * 11).toFixed(2)}deg) scale(${sc.toFixed(3)})`;
+        el.style.opacity = (op * st0).toFixed(3);
+        el.style.zIndex = String(1000 - Math.round(a * 10) + (on ? 5000 : 0));
+        el.style.pointerEvents = op * st0 < 0.05 ? "none" : "auto";
+        const dim = dims.current[i];
+        if (dim) dim.style.opacity = cl(Math.min(a, 3) * 0.11 - q.hv * 0.16, 0, 0.5).toFixed(3);
+        el.style.setProperty("--hv", q.hv.toFixed(3));
+        const art = arts.current[i];
+        if (art) {
+          art.style.setProperty("--mx", `${q.gx.toFixed(1)}%`);
+          art.style.setProperty("--my", `${q.gy.toFixed(1)}%`);
+          art.style.setProperty("--px", `${(-q.tx * 7).toFixed(2)}px`);
+          art.style.setProperty("--py", `${(-q.ty * 7).toFixed(2)}px`);
+        }
+        el.toggleAttribute("data-hov", q.hv > 0.05);
       }
+      const now = cl(Math.round(S.pos), 0, N - 1);
+      if (now !== activeRef.current) {
+        activeRef.current = now;
+        setActive(now);
+      }
+    };
+    const frame = (nowMs: number): void => {
+      raf = 0;
+      if (!S.visible) return;
+      const dt = Math.min((nowMs - prev) / 1000, 0.05);
+      prev = nowMs;
+      if (!S.started) S.started = nowMs;
+      const intro = reduce ? 1 : cl((nowMs - S.started) / 1800, 0, 1);
+
+      // Drifts on its own (to and fro) until the pointer rests on it, a cover plays, or it is being moved.
+      const bar = barRef.current;
+      if (!S.hover && !S.dragging && !S.playing && intro >= 1 && !reduce) {
+        const e = nowMs - S.lastAuto;
+        if (bar) bar.style.transform = `scaleX(${Math.min(e / AUTO_MS, 1).toFixed(3)})`;
+        if (e > AUTO_MS) {
+          if (S.target >= N - 1) S.dir = -1;
+          else if (S.target <= 0) S.dir = 1;
+          S.target = cl(Math.round(S.target) + S.dir, 0, N - 1);
+          S.lastAuto = nowMs;
+        }
+      } else {
+        S.lastAuto = nowMs;
+        if (bar) bar.style.transform = "scaleX(0)";
+      }
+      // Pointer at an end: that end's covers are pulled in.
+      if (!S.dragging && S.edgeVel !== 0 && intro >= 1) {
+        S.pos = cl(S.pos + S.edgeVel * dt, 0, N - 1);
+        S.target = S.pos;
+        S.lastAuto = nowMs;
+      }
+      if (!S.dragging) {
+        S.pos += (S.target - S.pos) * (1 - Math.exp(-dt * 7.5));
+        if (Math.abs(S.target - S.pos) < 0.0005) S.pos = S.target;
+      }
+      layout(dt, intro);
       raf = requestAnimationFrame(frame);
     };
-    raf = requestAnimationFrame(frame);
+    const wake = (): void => {
+      if (!raf && S.visible) {
+        prev = performance.now();
+        raf = requestAnimationFrame(frame);
+      }
+    };
+    S.wake = wake;
+    // Asleep while it is off screen.
+    const io =
+      typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver((entries) => {
+            S.visible = entries.some((e) => e.isIntersecting);
+            if (S.visible) {
+              S.lastAuto = performance.now();
+              wake();
+            }
+          })
+        : null;
+    if (io) io.observe(stage);
+    else {
+      S.visible = true;
+      wake();
+    }
     return () => {
       cancelAnimationFrame(raf);
+      io?.disconnect();
       ro?.disconnect();
+      S.visible = false;
+      S.wake = () => undefined;
     };
   }, [N]);
 
-  const at = (target: EventTarget): number => {
-    const el = (target as HTMLElement).closest?.("[data-ps]");
-    const i = el ? Number(el.getAttribute("data-ps")) : -1;
-    return Number.isInteger(i) && i < N ? i : -1;
+  const go = (i: number): void => {
+    const S = st.current;
+    S.target = cl(Math.round(i), 0, N - 1);
+    S.lastAuto = performance.now();
+    S.wake();
   };
-  const hover = (e: ReactPointerEvent<HTMLElement>): void => {
-    ptr.current = { x: e.clientX, y: e.clientY };
-    const i = at(e.target);
-    if (i >= 0 && i !== hvRef.current) setHv(i);
+  const cardAt = (target: EventTarget | null): number => {
+    const el = (target as HTMLElement | null)?.closest?.("[data-cf]");
+    const i = el ? Number(el.getAttribute("data-cf")) : -1;
+    return Number.isInteger(i) && i >= 0 && i < N ? i : -1;
   };
   const open = (p: PlaylistCard): void => navigate({ name: "ytplaylist", param: p.id });
+
+  const stopEdge = (): void => {
+    const S = st.current;
+    if (S.edgeVel !== 0) {
+      S.edgeVel = 0;
+      S.target = cl(Math.round(S.pos), 0, N - 1);
+      S.lastAuto = performance.now();
+    }
+    hintL.current?.classList.remove("on");
+    hintR.current?.classList.remove("on");
+  };
+
+  /* ---- the pointer: an end pulls covers in; a drag moves the row; a cover under it lifts ---- */
+  const drag = useRef({ sx: 0, sp: 0, moved: 0 });
+  const onMove = (e: ReactPointerEvent<HTMLDivElement>): void => {
+    const S = st.current;
+    if (e.pointerType !== "mouse" && !S.dragging) return;
+    const stage = e.currentTarget;
+    if (S.dragging) {
+      const dx = e.clientX - drag.current.sx;
+      drag.current.moved = Math.max(drag.current.moved, Math.abs(dx));
+      S.pos = cl(drag.current.sp - dx / 80, -0.4, N - 0.6);
+      S.target = cl(Math.round(S.pos), 0, N - 1);
+      return;
+    }
+    const r = stage.getBoundingClientRect();
+    const f = (e.clientX - r.left) / Math.max(1, r.width);
+    let v = 0;
+    if (f < ZONE) v = -Math.pow((ZONE - f) / ZONE, 0.85);
+    else if (f > 1 - ZONE) v = Math.pow((f - (1 - ZONE)) / ZONE, 0.85);
+    const i = cardAt(e.target);
+    if (i >= 0) {
+      const c = (e.target as HTMLElement).closest<HTMLElement>("[data-cf]");
+      const q = hov.current[i];
+      if (c && q) {
+        const cr = c.getBoundingClientRect();
+        q.mx = cl(((e.clientX - cr.left) / Math.max(1, cr.width)) * 2 - 1, -1, 1);
+        q.my = cl(((e.clientY - cr.top) / Math.max(1, cr.height)) * 2 - 1, -1, 1);
+      }
+    }
+    if (v === 0) {
+      stopEdge();
+      return;
+    }
+    if ((v < 0 && S.pos <= 0.001) || (v > 0 && S.pos >= N - 1 - 0.001)) {
+      S.edgeVel = 0;
+      hintL.current?.classList.remove("on");
+      hintR.current?.classList.remove("on");
+      return;
+    }
+    S.edgeVel = v * MAXV;
+    hintL.current?.classList.toggle("on", v < 0);
+    hintR.current?.classList.toggle("on", v > 0);
+    S.wake();
+  };
+  const onOver = (e: ReactPointerEvent<HTMLDivElement>): void => {
+    if (e.pointerType !== "mouse") return;
+    const i = cardAt(e.target);
+    if (i >= 0) st.current.hoverIdx = i;
+  };
+  const onOut = (e: ReactPointerEvent<HTMLDivElement>): void => {
+    const to = cardAt(e.relatedTarget);
+    if (to >= 0) return;
+    st.current.hoverIdx = -1;
+  };
+  const onDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
+    if ((e.target as HTMLElement).closest(".cf-play")) return;
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    const S = st.current;
+    S.dragging = true;
+    S.edgeVel = 0;
+    drag.current = { sx: e.clientX, sp: S.pos, moved: 0 };
+    e.currentTarget.classList.add("is-drag");
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* a pointer that is already gone */
+    }
+  };
+  const onUp = (e: ReactPointerEvent<HTMLDivElement>): void => {
+    const S = st.current;
+    if (!S.dragging) return;
+    S.dragging = false;
+    e.currentTarget.classList.remove("is-drag");
+    S.target = cl(Math.round(S.pos), 0, N - 1);
+    S.lastAuto = performance.now();
+    S.wake();
+    if (drag.current.moved < 6 && e.type === "pointerup") {
+      // A click: on a side cover it brings that one to the middle, on the middle one it opens it.
+      const hit = document.elementFromPoint(e.clientX, e.clientY);
+      const i = cardAt(hit);
+      if (i >= 0 && !(hit as HTMLElement).closest(".cf-play")) {
+        if (i === Math.round(S.target)) open(list[i]);
+        else go(i);
+      }
+    }
+  };
+  const onWheel = (e: WheelEvent): void => {
+    // Only a sideways scroll moves the row; the page keeps its own up-and-down scroll.
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || Math.abs(e.deltaX) < 6) return;
+    e.preventDefault();
+    const S = st.current as typeof st.current & { wt?: number };
+    const now = performance.now();
+    if (now - (S.wt ?? 0) > 140) {
+      go(S.target + (e.deltaX > 0 ? 1 : -1));
+      S.wt = now;
+    }
+  };
+  // Not a React handler: React's wheel listeners are passive, and this one has to cancel the page's sideways pan.
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [N]);
+
   const onKey = (e: ReactKeyboardEvent<HTMLElement>): void => {
-    const k = hv >= 0 ? hv : Math.round((N - 1) / 2);
+    const S = st.current;
     if (e.key === "ArrowRight") {
       e.preventDefault();
-      setHv(cl(k + 1, 0, N - 1));
+      go(S.target + 1);
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
-      setHv(cl(k - 1, 0, N - 1));
-    } else if ((e.key === "Enter" || e.key === " ") && hv >= 0) {
+      go(S.target - 1);
+    } else if (e.key === "Enter" && list[Math.round(S.target)]) {
       e.preventDefault();
-      open(list[hv]);
-    } else if (e.key === "Escape") setHv(-1);
+      open(list[Math.round(S.target)]);
+    }
   };
+
+  const togglePlay = (p: PlaylistCard): void => {
+    const pl = usePlayer.getState();
+    if (owned?.id === p.id && owned.first === (pl.queue[0]?.id ?? "")) {
+      pl.setPlaying(!pl.playing);
+      return;
+    }
+    void playPlaylist(p.id).then(() => {
+      const q = usePlayer.getState().queue;
+      if (q[0]) setOwned({ id: p.id, first: q[0].id });
+    });
+  };
+
+  if (N === 0) return null;
+  const now = list[cl(active, 0, N - 1)];
 
   return (
     <section className={className}>
@@ -124,24 +395,28 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
         {title} <span className="text-[14px] font-medium text-ink-faint tabular-nums">{playlists.length}</span>
       </h2>
       <div
-        ref={rowRef}
+        ref={stageRef}
         role="listbox"
         tabIndex={0}
-        aria-label={`${title}. Use the arrow keys to move.`}
-        className={`ps-row${hv >= 0 ? " has-hover" : ""}`}
-        onPointerMove={hover}
-        onPointerDown={hover}
-        onPointerLeave={() => setHv(-1)}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHv(-1);
+        aria-label={`${title}. Use the left and right arrow keys to move.`}
+        className="cf-stage"
+        onPointerMove={onMove}
+        onPointerOver={onOver}
+        onPointerOut={onOut}
+        onPointerDown={onDown}
+        onPointerUp={onUp}
+        onPointerCancel={onUp}
+        onMouseEnter={() => {
+          st.current.hover = true;
+        }}
+        onMouseLeave={() => {
+          st.current.hover = false;
+          st.current.hoverIdx = -1;
+          stopEdge();
         }}
         onKeyDown={onKey}
-        onClick={(e) => {
-          const i = at(e.target);
-          if (i >= 0) open(list[i]);
-        }}
         onContextMenu={(e) => {
-          const i = at(e.target);
+          const i = cardAt(e.target);
           if (i < 0) return;
           const p = list[i];
           const items = browseMenuItems({ browseId: p.id, title: p.title, subtitle: p.subtitle ?? "", thumb: p.thumb, type: "playlist" });
@@ -150,51 +425,94 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
           useUI.getState().openContextMenu(e.clientX, e.clientY, items);
         }}
       >
-        {list.map((p, i) => (
-          <div
-            key={p.id}
-            data-ps={i}
-            role="option"
-            aria-selected={i === hv}
-            aria-label={p.title}
-            className={`ps-card${i === hv ? " is-up" : ""}`}
-            ref={(el) => {
-              cards.current[i] = el;
-            }}
-          >
-            <div
-              className="ps-tilt"
-              ref={(el) => {
-                tilts.current[i] = el;
-              }}
-            >
-              <div className="ps-back">
-                <div className="ps-inside">
-                  <em>PLAYLIST</em>
-                  <span>{p.title}</span>
-                </div>
-              </div>
+        <div className="cf-rail">
+          {list.map((p, i) => {
+            const isPlaying = playingId === p.id;
+            return (
               <div
-                className="ps-face"
+                key={p.id}
+                data-cf={i}
+                role="option"
+                aria-selected={i === active}
+                aria-label={p.title}
+                className={`cf-card${i === active ? " is-active" : ""}${isPlaying ? " is-playing" : ""}`}
+                style={{ opacity: 0 }}
                 ref={(el) => {
-                  faces.current[i] = el;
+                  cards.current[i] = el;
                 }}
               >
-                <img src={p.thumb} alt="" draggable={false} />
-                <b className="ps-sheen" />
+                <div
+                  className="cf-face"
+                  ref={(el) => {
+                    arts.current[i] = el;
+                  }}
+                >
+                  <img src={p.thumb} alt="" draggable={false} decoding="async" onError={(e) => (e.currentTarget.style.visibility = "hidden")} />
+                  <div
+                    className="cf-dim"
+                    ref={(el) => {
+                      dims.current[i] = el;
+                    }}
+                  />
+                  <div className="cf-shade" />
+                  <div className="cf-sheen" />
+                  <div className="cf-glare" />
+                  <div className="cf-edge" />
+                  <div className="cf-label">
+                    <b>{p.title}</b>
+                  </div>
+                  <div className="cf-eq" aria-hidden>
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                  <button
+                    type="button"
+                    className={`cf-play${isPlaying ? " is-playing" : ""}`}
+                    aria-label={isPlaying ? `Pause ${p.title}` : `Play ${p.title}`}
+                    title={isPlaying ? "Pause" : "Play"}
+                    tabIndex={i === active ? 0 : -1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePlay(p);
+                    }}
+                  >
+                    <Play className="cf-ic cf-ic-play" strokeWidth={2.2} />
+                    <Pause className="cf-ic cf-ic-pause" strokeWidth={0} />
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
+        <div ref={hintL} className="cf-hint l" aria-hidden>
+          <ChevronLeft />
+        </div>
+        <div ref={hintR} className="cf-hint r" aria-hidden>
+          <ChevronRight />
+        </div>
+        <div className="cf-floor" />
       </div>
-      {/* Keyed by the lifted playlist, so each new name slides in; empty at rest, its height kept so nothing below jumps. */}
-      <div key={shown?.id ?? "rest"} className="crate-caption">
-        {shown && (
-          <>
-            <FitText mode="auto" text={shown.title} className="text-[15px] font-semibold text-ink-hi" />
-            <FitText mode="auto" text={shown.subtitle ?? ""} className="text-[13px] text-ink-dim" />
-          </>
-        )}
+      <div className="cf-meta">
+        <div className="cf-now">
+          <small>Now focused</small>
+          <strong key={now.id}>{now.title}</strong>
+        </div>
+        <div className="cf-ctrl">
+          <button type="button" className="cf-btn" aria-label="Previous playlist" onClick={() => go(st.current.target - 1)}>
+            <ChevronLeft />
+          </button>
+          <div className="cf-count">
+            <b>{String(active + 1).padStart(2, "0")}</b> / {N}
+          </div>
+          <button type="button" className="cf-btn" aria-label="Next playlist" onClick={() => go(st.current.target + 1)}>
+            <ChevronRight />
+          </button>
+        </div>
+      </div>
+      <div className="cf-progress">
+        <div ref={barRef} />
       </div>
     </section>
   );
