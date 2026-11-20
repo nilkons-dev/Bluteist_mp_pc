@@ -6,13 +6,13 @@
  * http://www.apache.org/licenses/LICENSE-2.0
  * Blutheist keeps running with its window closed. The window that comes back is the same one, its page still
  * loaded, so the launch intro (index.html) only plays again after a real quit. Changed from the original: the tray
- * carries the transport, closing to it pauses the music, and Windows only hides while the tray icon is there
+ * carries the transport, closing to it keeps the music playing, and Windows only hides while the tray icon is there
  * to bring it back.
  */
 
 import type { MenuCommand, MenuPlaybackState, MenuTemplate } from "./mac-menu";
 
-/** "tray": hide the window in the Windows tray and pause the music. */
+/** "tray": hide the window in the Windows tray; the music keeps playing. */
 export type CloseAction = "close" | "hide" | "tray" | "leave-fullscreen";
 
 /**
@@ -20,7 +20,7 @@ export type CloseAction = "close" | "hide" | "tray" | "leave-fullscreen";
  * - macOS hides the window and the music plays on, as Mac music players do (the Dock brings it back). In
  *   native fullscreen it leaves fullscreen instead: a window hidden there leaves its Space behind, black.
  * - Windows closes to the tray while Settings' "Close to tray" is on and the tray icon is there: Blutheist keeps
- *   running, quiet until you press play (the tray, the media keys or the miniplayer can). Without the icon
+ *   running and the music plays on (the tray menu, the media keys or the miniplayer control it). Without the icon
  *   nothing could bring the window back or quit, so it closes (and Blutheist quits) as it always did.
  */
 export function closeAction(o: {

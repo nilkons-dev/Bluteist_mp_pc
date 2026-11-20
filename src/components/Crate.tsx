@@ -77,6 +77,11 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
   const playing = usePlayer((s) => s.playing);
   const playingId = owned && owned.first === first && playing ? owned.id : null;
   st.current.playing = playingId !== null;
+  const isPlayingRow = playingId !== null;
+  useEffect(() => {
+    st.current.lastAuto = performance.now();
+    st.current.wake();
+  }, [isPlayingRow]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -100,7 +105,9 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(size) : null;
     ro?.observe(stage);
 
-    const layout = (dt: number, intro: number): void => {
+    /** Lays the covers out; true while anything is still moving (so the loop knows when it may sleep). */
+    const layout = (dt: number, intro: number): boolean => {
+      let busy = false;
       const small = w < 720;
       const u = card / 200;
       const centerGap = (small ? 118 : 190) * u;
@@ -141,6 +148,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
         const dd = h < 0 ? 0 : around(i - h, N);
         const pt = h < 0 || dd === 0 ? 0 : (dd < 0 ? -1 : 1) * Math.max(0, 1 - Math.abs(dd) / 4) * (small ? 10 : 26) * u;
         q.push += (pt - q.push) * ks;
+        if (st0 < 1 || Math.abs(q.hv - (on ? 1 : 0)) > 0.002 || Math.abs(q.tx) + Math.abs(q.ty) > 0.003 || Math.abs(pt - q.push) > 0.05) busy = true;
 
         const near = Math.min(a, 1);
         const far = Math.max(a - 1, 0);
@@ -176,6 +184,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
         activeRef.current = now;
         setActive(now);
       }
+      return busy;
     };
     const frame = (nowMs: number): void => {
       raf = 0;
@@ -210,10 +219,21 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
         S.pos += (S.target - S.pos) * (1 - Math.exp(-dt * 7.5));
         if (Math.abs(S.target - S.pos) < 0.0005) S.pos = S.target;
       }
-      layout(dt, intro);
-      raf = requestAnimationFrame(frame);
+      const moving = layout(dt, intro) || S.dragging || S.edgeVel !== 0 || intro < 1 || Math.abs(S.target - S.pos) > 0.0005 || S.hoverIdx >= 0;
+      if (moving) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+      // Everything has settled: sleep instead of rewriting identical transforms 60 times a second. Only the
+      // slow auto-drift needs a wake-up, so that gets a timer; every pointer event wakes the loop itself.
+      if (!S.hover && !S.playing && !reduce && N > 1) {
+        idle = window.setTimeout(wake, Math.max(40, AUTO_MS - (performance.now() - S.lastAuto)) + 20);
+      }
     };
+    let idle = 0;
     const wake = (): void => {
+      window.clearTimeout(idle);
+      idle = 0;
       if (!raf && S.visible) {
         prev = performance.now();
         raf = requestAnimationFrame(frame);
@@ -238,6 +258,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
     }
     return () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(idle);
       io?.disconnect();
       ro?.disconnect();
       S.visible = false;
@@ -278,6 +299,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
       drag.current.moved = Math.max(drag.current.moved, Math.abs(dx));
       S.pos = drag.current.sp - dx / 80;
       S.target = Math.round(S.pos);
+      S.wake();
       return;
     }
     const r = stage.getBoundingClientRect();
@@ -305,12 +327,16 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
   const onOver = (e: ReactPointerEvent<HTMLDivElement>): void => {
     if (e.pointerType !== "mouse") return;
     const i = cardAt(e.target);
-    if (i >= 0) st.current.hoverIdx = i;
+    if (i >= 0) {
+      st.current.hoverIdx = i;
+      st.current.wake();
+    }
   };
   const onOut = (e: ReactPointerEvent<HTMLDivElement>): void => {
     const to = cardAt(e.relatedTarget);
     if (to >= 0) return;
     st.current.hoverIdx = -1;
+    st.current.wake();
   };
   const onDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
     if ((e.target as HTMLElement).closest(".cf-play")) return;
@@ -319,6 +345,7 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
     S.dragging = true;
     S.edgeVel = 0;
     drag.current = { sx: e.clientX, sp: S.pos, moved: 0 };
+    S.wake();
     e.currentTarget.classList.add("is-drag");
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -411,11 +438,14 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
         onPointerCancel={onUp}
         onMouseEnter={() => {
           st.current.hover = true;
+          st.current.wake();
         }}
         onMouseLeave={() => {
           st.current.hover = false;
           st.current.hoverIdx = -1;
+          st.current.lastAuto = performance.now();
           stopEdge();
+          st.current.wake();
         }}
         onKeyDown={onKey}
         onContextMenu={(e) => {

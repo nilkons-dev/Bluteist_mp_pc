@@ -41,7 +41,7 @@ const W=244, H=208;
 let DPR=1,TX=0,TY=0;           // device pixel ratio + the head-tilt vector of the flower being drawn (for petal parallax)
 let BG="#0c0c0d";   // petals are filled with the panel colour first so layers hide each other; the panel itself is glass, so a fixed near-black is used
 function setup(){
-  const dpr=Math.max(2,Math.min(window.devicePixelRatio||1,2));DPR=dpr;   // always drawn at 2x and scaled down: thin petal edges stay steady (no shimmer) at 100% / 125% / 150% display scaling
+  const dpr=Math.max(1,Math.min(window.devicePixelRatio||1,1.25));DPR=dpr;   // light: 1x–1.25x keeps the canvas small on old/low-end GPUs   // always drawn at 2x and scaled down: thin petal edges stay steady (no shimmer) at 100% / 125% / 150% display scaling
   cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
   cv.style.width=W+"px";cv.style.height=H+"px";
   ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -97,9 +97,7 @@ function build(){
     {bx:148,len:92,a0:-1.05,a1:-0.42,w:.06,delay:0.5,dur:1.2,leaf:[.18,.95,7,15,5.2,.9],lk:["fern","lobed","round","needle"],no:true},
     {bx:232,len:90,a0:0.3,a1:-0.6,w:.06,delay:0.58,dur:1.2,leaf:[.2,.95,6,13,4.6,.9],lk:["fern","fan","round"],no:true},
     {bx:194,len:120,a0:-0.5,a1:0.12,w:.06,delay:0.66,dur:1.2,leaf:[.15,.95,8,14,4.8,.9],lk:["fern","trifoliate","lance"],no:true},
-    {bx:124,len:76,a0:-1.2,a1:-0.72,w:.06,delay:0.72,dur:1.2,leaf:[.2,.9,5,13,4.4,.9],lk:["needle","round","lobed"],no:true},
     {bx:170,len:104,a0:-0.85,a1:-0.3,w:.06,delay:0.78,dur:1.2,leaf:[.15,.95,7,15,5,.9],lk:["fern","fern","fan"],no:true},
-    {bx:214,len:108,a0:-0.2,a1:0.25,w:.06,delay:0.84,dur:1.2,leaf:[.15,.95,7,14,4.8,.9],lk:["lobed","fern","needle"],no:true},
     // flowers, back → front
     {bx:132,len:118,a0:-0.95,a1:-0.55,w:0.05,delay:0.9,dur:1.79,type:"lavender",R:10,leaf:[.2,.6,4,14,3.6,.8],lk:["lance","needle"]},
     {bx:222,len:124,a0:-0.28,a1:0.08,w:0.05,delay:0.96,dur:1.82,type:"lavender",R:9,leaf:[.2,.6,4,14,3.6,.8],lk:["needle","lance"]},
@@ -110,24 +108,13 @@ function build(){
     {bx:158,len:104,a0:-0.78,a1:-0.28,w:0.05,delay:1.26,dur:1.72,type:"rose",R:13.5,leaf:[.3,.7,3,17,5.5,1.0],lk:["trifoliate","serrate"]},
     {bx:228,len:112,a0:-0.1,a1:0.2,w:0.05,delay:1.32,dur:1.76,type:"cosmos",R:12.5,leaf:[.3,.7,3,16,5,.95],lk:["needle","fern","lance"]},
     {bx:176,len:90,a0:-1.0,a1:-0.5,w:0.05,delay:1.38,dur:1.65,type:"daisy",R:11,leaf:[.35,.7,2,14,4.6,1.0],lk:["round","fan","lance"]},
-    {bx:142,len:96,a0:-1.1,a1:-0.7,w:0.05,delay:1.44,dur:1.68,type:"gyp",R:10,leaf:[.3,.7,3,12,4,.9],lk:["fern","needle"]},
-    {bx:218,len:90,a0:-0.5,a1:0.1,w:0.05,delay:1.5,dur:1.65,type:"gyp",R:9,leaf:[.3,.7,3,12,4,.9],lk:["needle","fern"]},
     {bx:154,len:72,a0:-0.95,a1:-0.5,w:0.05,delay:1.56,dur:1.56,type:"dahlia",R:10.5,leaf:[.4,.7,2,12,4,.9],lk:["serrate","fan"]},
     {bx:196,len:100,a0:-0.6,a1:-0.1,w:0.05,delay:1.62,dur:1.7,type:"cosmos",R:10.5,leaf:[.3,.7,3,14,4.6,1.0],lk:["fern","lance","needle"]},
-    {bx:236,len:96,a0:-0.4,a1:0.05,w:0.05,delay:1.68,dur:1.68,type:"tulip",R:8.2,leaf:[.25,.6,3,20,5.5,.55],lk:["lance"]},
     {bx:121,len:80,a0:-1.15,a1:-0.75,w:0.05,delay:1.74,dur:1.6,type:"lily",R:10,leaf:[.2,.6,3,18,4,.7],lk:["lance"]},
-    {bx:204,len:78,a0:-0.25,a1:0.05,w:0.05,delay:1.8,dur:1.59,type:"bud",R:7,leaf:[.4,.7,2,12,4,.9],lk:["round","fan"]},
-    {bx:164,len:60,a0:-0.8,a1:-0.25,w:0.05,delay:1.86,dur:1.5,type:"blossom",R:8.5,leaf:[.4,.7,2,11,4,1.0],lk:["heart","round","fan"]},
-    {bx:132,len:64,a0:-1.1,a1:-0.7,w:0.05,delay:1.92,dur:1.52,type:"hydrangea",R:9.5,leaf:[.4,.7,2,12,4.4,1.0],lk:["heart","lobed"]},
-    {bx:238,len:70,a0:-0.35,a1:0.15,w:0.05,delay:1.98,dur:1.55,type:"peony",R:9.5,leaf:[.4,.7,2,12,4.4,1.0],lk:["round","serrate","trifoliate"]},
-    {bx:184,len:62,a0:-0.7,a1:-0.2,w:0.05,delay:2.04,dur:1.51,type:"daisy",R:9,leaf:[.4,.7,2,11,4,1.0],lk:["round","fan"]},
     // ground cover: short, stiff, leafy tufts that keep the base of the bouquet full while the heads sway
     {bx:112,len:40,a0:-1.3,a1:-1.0,w:.03,delay:.4,dur:1.0,k:.16,flex:.3,leaf:[.1,.95,7,14,4.6,1.0],lk:["fern","lance","round"],no:true},
-    {bx:134,len:32,a0:-1.0,a1:-.55,w:.03,delay:.45,dur:1.0,k:.16,flex:.3,leaf:[.1,.95,6,13,4.4,1.0],lk:["round","serrate","fern"],no:true},
     {bx:156,len:36,a0:-.8,a1:-.3,w:.03,delay:.5,dur:1.0,k:.16,flex:.3,leaf:[.1,.95,7,14,4.6,1.0],lk:["lance","fern","heart"],no:true},
-    {bx:178,len:30,a0:-.6,a1:-.1,w:.03,delay:.55,dur:1.0,k:.16,flex:.3,leaf:[.1,.95,6,13,4.4,1.0],lk:["fern","round","lobed"],no:true},
     {bx:200,len:38,a0:-.35,a1:.1,w:.03,delay:.6,dur:1.0,k:.16,flex:.3,leaf:[.1,.95,7,14,4.6,1.0],lk:["lance","serrate","fern"],no:true},
-    {bx:222,len:34,a0:-.2,a1:.3,w:.03,delay:.65,dur:1.0,k:.16,flex:.3,leaf:[.1,.95,6,13,4.4,1.0],lk:["fern","heart","round"],no:true},
     {bx:240,len:30,a0:-.1,a1:.45,w:.03,delay:.7,dur:1.0,k:.16,flex:.3,leaf:[.1,.95,6,12,4.2,1.0],lk:["round","fan","fern"],no:true}
   ];
   stems.forEach((s,i)=>{
@@ -692,7 +679,7 @@ let SR=null,CR=null,EP=0,FD=1;                // cached layout rects (reading th
 function fitFly(force){
   const r=side.getBoundingClientRect();CR=cv.getBoundingClientRect();EP++;
   if(!force&&SR&&r.left===SR.left&&r.top===SR.top&&r.width===SR.width&&r.height===SR.height)return;
-  SR=r;VW=innerWidth;VH=innerHeight;FD=Math.min(devicePixelRatio||1,1.5);
+  SR=r;VW=innerWidth;VH=innerHeight;FD=1;
   const s=fcv.style;s.width=r.width+"px";s.height=r.height+"px";   // the canvas covers only the sidebar → far fewer pixels
   fcv.width=Math.round(r.width*FD);fcv.height=Math.round(r.height*FD);
 }
@@ -918,8 +905,15 @@ function edgeFade(){                          // soft corner fade painted once o
   ctx.save();ctx.globalCompositeOperation="destination-in";ctx.translate(W,H);ctx.scale(1.12*W,1.08*H);ctx.fillStyle=MG;ctx.fillRect(-1,-1,1,1);ctx.restore();
 }
 let running=false,active=false,half=false,slow=0,fast=0,skip=0;
+let lastRun=0,lastPaint=0;
+const awake=()=>!document.hidden&&document.hasFocus();
+function kick(){if(active&&!running&&!dead&&awake()){running=true;last=0;lastRun=0;requestAnimationFrame(frame)}}
+on(window,"focus",kick);on(document,"visibilitychange",kick);
 function frame(ms){
-  if(dead||!active||document.hidden){running=false;last=0;return}
+  if(dead||!active||!awake()){running=false;last=0;return}
+  // ~30 fps is plenty for slow-swaying flowers and halves the work on every machine (60 Hz → 30 fps)
+  if(lastRun&&ms-lastRun<30){requestAnimationFrame(frame);return}
+  lastRun=ms;
   const w0=performance.now();
   if(++FC%30===0)fitFly();
   const t=ms/1000,dt=last?clamp((ms-last)/16.667,.2,3):1;last=ms;nowT=t;
@@ -956,7 +950,7 @@ function frame(ms){
 
   // The flowers are the heavy part to draw and sway slowly: when frames get expensive they are redrawn every other
   // frame (the physics above still runs every frame, so the motion is the same), while the butterfly stays at full rate.
-  const paint=!(half&&(skip^=1));
+  const paint=ms-lastPaint>=(half||root.classList.contains("perf-lite")?110:55);if(paint)lastPaint=ms;   // flowers repaint at ~18 fps (~9 fps when frames run long); the butterfly keeps the full loop rate
   const boost=reduce?0:1+.4*excite;let ci=0;
   if(paint){
   ctx.clearRect(0,0,W,H);
@@ -980,14 +974,14 @@ function frame(ms){
   }
   butterfly(t,dt);
   const cost=performance.now()-w0;
-  if(!paint){requestAnimationFrame(frame);return}
-  if(!half){if(cost>9){if(++slow>40){half=true;slow=0;fast=0}}else slow=Math.max(0,slow-1)}
+  if(!paint){requestAnimationFrame(frame);return}   // only frames that repainted the flowers say how heavy they are
+  if(!half){if(cost>6){if(++slow>20){half=true;slow=0;fast=0}}else slow=Math.max(0,slow-1)}
   else{if(cost<4.5){if(++fast>240){half=false;fast=0;slow=0}}else fast=Math.max(0,fast-1)}
   requestAnimationFrame(frame);
 }
 function setActive(v){
   active=!!v;
-  if(active&&!running&&!dead){running=true;last=0;requestAnimationFrame(frame)}
+  kick()
 }
   return {
     setActive,

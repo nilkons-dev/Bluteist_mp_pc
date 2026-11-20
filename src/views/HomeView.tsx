@@ -220,7 +220,7 @@ export function HomeView() {
     <div ref={rootRef} className="relative">
       {/* No greeting: Home opens straight on your music. The heading stays for screen readers. */}
       <h1 className="sr-only">Home</h1>
-      <div className="relative space-y-10">
+      <div className="relative space-y-7">
 
         {sections.map((section) => (
           // A press inside a row counts for its kind: the rows you play from rise on your next visit.
@@ -236,7 +236,7 @@ export function HomeView() {
 
         {/* Stats still loading on a cold app launch — hold the layout. */}
         {!profile && (
-          <div className="space-y-10">
+          <div className="space-y-7">
             <ShelfSkeleton />
             <ShelfSkeleton />
           </div>

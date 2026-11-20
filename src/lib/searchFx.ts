@@ -866,14 +866,17 @@ function interiorPath(B){
 }
 
 let aqLast=0;
-let hovering=false,aqSkip=0;
+let hovering=false,aqDrawn=0;
 on(search,"pointerenter",()=>{hovering=true});
 on(search,"pointerleave",()=>{hovering=false});
 function aquaFrame(now){
   if(dead)return;
   // The pool drifts slowly: at rest it is drawn every other frame (its motion is time-based, so it looks the same);
   // the moment the pointer is on the bar or it has focus, every frame.
-  if(!hovering&&focusAmt<.02&&(aqSkip^=1)){requestAnimationFrame(aquaFrame);return}
+  // (about 20 fps at rest; paused outright while the window is unfocused or hidden, and picked up again on focus)
+  if(document.hidden||!document.hasFocus()){aqLast=0;requestAnimationFrame(aquaFrame);return}
+  if(!hovering&&focusAmt<.02&&now-aqDrawn<48){requestAnimationFrame(aquaFrame);return}
+  aqDrawn=now;
   const dt=aqLast?Math.min((now-aqLast)/16.667,3):1;aqLast=now;
   const t=reduce?0:now/1000;
   while(ripples.length&&now-ripples[0].t>2800)ripples.shift();

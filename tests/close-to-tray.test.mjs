@@ -1,6 +1,6 @@
 /**
  * Close to tray (electron/close-to-tray.ts): what closing the main window does on each platform, and the
- * Windows tray icon's menu. main.ts acts on these ("tray": hide and pause the music); the window coming back is
+ * Windows tray icon's menu. main.ts acts on these ("tray": hide, the music plays on); the window coming back is
  * the same one, page loaded, so the launch intro only plays after a real quit.
  */
 import { test } from "node:test";
@@ -23,7 +23,7 @@ test("macOS hides the window (the music plays on), and leaves native fullscreen 
   assert.equal(closeAction({ ...OPEN, platform: "darwin", closeToTray: false, trayShown: false }), "hide");
 });
 
-test("Windows closes to the tray, music paused, only while the setting is on and the tray icon is there", () => {
+test("Windows closes to the tray, music playing on, only while the setting is on and the tray icon is there", () => {
   assert.equal(closeAction({ ...OPEN, platform: "win32" }), "tray");
   assert.equal(closeAction({ ...OPEN, platform: "win32", fullScreen: true }), "tray", "fullscreen too: no Spaces on Windows");
   assert.equal(closeAction({ ...OPEN, platform: "win32", closeToTray: false }), "close", "setting off: close quits, as before");

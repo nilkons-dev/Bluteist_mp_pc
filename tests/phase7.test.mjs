@@ -28,7 +28,7 @@ test("coverflow: endless, compact, no Now focused bar, no edge shadows", () => {
   assert.doesNotMatch(c, /Now focused|cf-hint|cf-meta|cf-progress/);
   const css = read("src/components/coverflow.css");
   assert.doesNotMatch(css, /cf-hint|cf-meta|cf-floor/);
-  assert.match(css, /height: calc\(var\(--cf-card\) \* 1\.5\)/);
+  assert.match(css, /height: calc\(var\(--cf-card\) \* 1\.3\)/);
 });
 
 test("sidebar: bloom fades out when folded, line under the header, short empty text, Spotify choices", () => {

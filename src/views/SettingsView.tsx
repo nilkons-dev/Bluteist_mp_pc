@@ -819,7 +819,7 @@ function PlaybackPane() {
           <Row
             icon={PanelBottom}
             title="Close to tray"
-            note="Closing the window pauses the music; quit from the tray icon"
+            note="Closing the window keeps the music playing in the tray; quit from the tray icon"
             toggle={{ checked: s.closeToTray, onChange: s.setCloseToTray }}
           />
         </Group>

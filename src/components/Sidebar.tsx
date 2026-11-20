@@ -907,12 +907,12 @@ function LibraryPill({ compact }: { compact: boolean }) {
 
 /** The library's width: open (328 to start with, 250 to 480 when pulled) or a narrow strip of icons and covers. */
 const LIB_KEY = "blutheist.libraryWidth";
-const LIB_STRIP = 76;
+const LIB_STRIP = 62;
 const LIB_OPEN = 328;
 const LIB_MIN = 250;
 const LIB_MAX = 480;
 /** Pulled narrower than this, the library lets go of its words and shows only icons. */
-const LIB_SNAP = 168;
+const LIB_SNAP = 150;
 
 function readLibraryWidth(): number {
   try {

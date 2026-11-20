@@ -91,7 +91,7 @@ interface SettingsState {
   /* Miscellaneous */
   dontRepeatSuggestions: boolean;
   hideVolumeBar: boolean;
-  /** Windows: closing the window hides Blutheist in the tray, music paused (electron/close-to-tray.ts). This device's own. */
+  /** Windows: closing the window hides Blutheist in the tray, the music plays on (electron/close-to-tray.ts). This device's own. */
   closeToTray: boolean;
 
   setDownloadDir(dir: string | null): void;

@@ -259,7 +259,12 @@ function useAppearance(): void {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("reduce-motion", reduceAnimation);
-    root.classList.toggle("reduce-blur", reduceDynamicBlur);
+    // Older / low-end machines (4 or fewer CPU threads, or 4 GB of RAM or less) get the cheap glass and the slower
+    // decorative loops automatically: live backdrop blur is the most expensive thing the compositor does here.
+    const nav = navigator as Navigator & { deviceMemory?: number };
+    const lowEnd = (nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 4;
+    root.classList.toggle("perf-lite", lowEnd);
+    root.classList.toggle("reduce-blur", reduceDynamicBlur || lowEnd);
     root.classList.toggle("noglass", !liquidGlass);
   }, [reduceAnimation, reduceDynamicBlur, liquidGlass]);
 

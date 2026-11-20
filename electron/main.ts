@@ -228,7 +228,7 @@ function applyThumbar(): boolean {
 
 /**
  * Windows: with "Close to tray" on, closing the main window hides it here
- * with the music paused, Blutheist still running. A click brings back the same
+ * with the music still playing, Blutheist still running. A click brings back the same
  * window; the right-click menu (close-to-tray.ts) has the transport and Quit
  * Blutheist, its Play or Pause following the same menu:push-state as the
  * thumbbar. Windows only: macOS has the Dock.
@@ -487,7 +487,7 @@ function createWindow(): void {
   // button and Cmd+W, and the music plays on (Apple Music / Spotify
   // behaviour); the Dock brings it back via the activate handler. Windows,
   // with "Close to tray" on: the close button, Alt+F4 and the taskbar's Close
-  // window put it in the tray with the music paused; the tray icon brings it
+  // window put it in the tray with the music playing on; the tray icon brings it
   // back. Only a real quit (Cmd+Q, Dock → Quit, the tray's Quit Blutheist)
   // destroys it.
   mainWindow.on("close", (event) => {
@@ -507,8 +507,7 @@ function createWindow(): void {
       win.setFullScreen(false);
       return;
     }
-    // The same pause as the player's own button (an absolute pause: never starts anything).
-    if (action === "tray") menuWiring().sendCommand("pause");
+    // Hidden in the tray, the music plays on; only the tray's "Quit Blutheist" ends it.
     win.hide();
   });
 
