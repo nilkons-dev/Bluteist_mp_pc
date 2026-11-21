@@ -421,8 +421,8 @@ export function Crate({ title, playlists, className = "" }: { title: string; pla
 
   return (
     <section className={className}>
-      <h2 className="section-title text-[21px] mb-1 flex items-baseline gap-2">
-        {title} <span className="text-[14px] font-medium text-ink-faint tabular-nums">{playlists.length}</span>
+      <h2 className="section-title text-[21px] mb-1">
+        {title}
       </h2>
       <div
         ref={stageRef}

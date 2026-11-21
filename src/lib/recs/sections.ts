@@ -33,7 +33,7 @@ import { artistKeyOf, artistsInLine, rankByTaste } from "./taste";
 
 /* ------------------------------------------------------------------ types */
 
-export type SectionLayout = "tiles" | "row" | "circles" | "mixes" | "radios" | "yt-shelf" | "moods" | "crate" | "list";
+export type SectionLayout = "songrows" | "row" | "circles" | "mixes" | "radios" | "yt-shelf" | "moods" | "crate" | "list";
 
 export type SectionItem =
   /** `note`: a list row's side line ("6 plays lately") */
@@ -65,6 +65,8 @@ export interface HomeSection {
   moods?: string[];
   /** layout "crate" records */
   playlists?: PlaylistCard[];
+  /** layout "songrows": the stacked song rows, top to bottom */
+  rows?: Track[][];
 }
 
 interface BuildCtx {
@@ -304,8 +306,8 @@ interface Descriptor {
   build: (ctx: BuildCtx) => Omit<HomeSection, "kind"> | null;
 }
 
-/** Rows that keep their place whatever you tap: what you just played, the crate, and the cold-start chips. */
-const PINNED = new Set(["jump-back-in", "playlists-for-you", "browse"]);
+/** Rows that keep their place whatever you tap: the crate, the four song rows, and the cold-start chips. */
+const PINNED = new Set(["playlists-for-you", "songs-love", "browse"]);
 
 /** Up to +10 for the rows you play from (taps fade over ~10 days); never past the pinned rows. */
 function learnedBoost(taps: number): number {
@@ -326,28 +328,6 @@ function describeFeed(
   // Who the artist rows lean on: the artists you're into lately first, then your long-term favourites.
   const lately = artistsWithIds(profile.lately);
   const anchors = [...lately, ...top.filter((a) => !lately.some((l) => l.key === a.key))];
-
-  /* ---- jump back in — the tiles, straight from history ---- */
-  if (profile.recentlyPlayed.length >= 4) {
-    const lastAt = profile.artists.reduce((m, a) => Math.max(m, a.lastPlayedAt ?? 0), 0);
-    const hoursSince = lastAt ? (now - lastAt) / 3_600_000 : Infinity;
-    list.push({
-      id: "jump-back-in",
-      kind: "jump-back-in",
-      priority: 95 + (hoursSince < 8 ? 5 : 0),
-      build: (ctx) => ({
-        id: "jump-back-in",
-        title: "Jump back in",
-        layout: "tiles",
-        priority: 0,
-        // "Not interested" means off Home, the tiles included.
-        items: ctx.profile.recentlyPlayed
-          .filter((t) => !ctx.hidden.has(t.id))
-          .slice(0, 6)
-          .map((track) => ({ style: "track", track })),
-      }),
-    });
-  }
 
   /* ---- playlists for you — the market's playlists as a crate, right under
           the tiles, whatever the maturity; the ones whose artists you play
@@ -445,6 +425,89 @@ function describeFeed(
   const ranked = artistsWithIds(profile.artists).slice(0, 10);
   const rankedTop = ranked[0]?.score ?? 1;
 
+  /* ---- songs you'll love — four stacked rows of nothing but songs, right under the playlists.
+          Row 1 follows what you search for, row 2 the artists you play most, row 3 what you have played lately and
+          its neighbours, row 4 songs new to you in the same vein. Every row is topped up to a long run from the rest
+          of your taste and the market's songs, so even a first launch opens on a wall of music. No song repeats. ---- */
+  {
+    const ROW_COUNT = 4;
+    const ROW_SONGS = 36;
+    const ROW_MIN = 8;
+    const marketShelves = (market ?? [])
+      .map((sh) => sh.items.flatMap((it) => (it.kind === "track" && it.track ? [it.track] : [])))
+      .filter((t) => t.length >= 6);
+    const searchedArtists = ranked.filter((a) => a.searchHits > 0);
+    const latelyTop = artistsWithIds(profile.lately).slice(0, 6);
+    list.push({
+      id: "songs-love",
+      kind: "songs-love",
+      priority: 93,
+      minItems: ROW_MIN,
+      build: (ctx) => {
+        const day = ctx.profile.daySeed;
+        const songsOf = (a: ArtistSignal): Track[] => unplayedFirst(ctx.profile, bundleFor(ctx, a)?.topSongs ?? []);
+        const nearOf = (a: ArtistSignal, salt: string): Track[] => {
+          const b = bundleFor(ctx, a);
+          return b ? dailyRotation(relatedSongPool(ctx, b).filter((t) => !ctx.profile.playedTrackIds.has(t.id)), `love-${salt}-${a.key}`, day) : [];
+        };
+
+        const fromQueries = ctx.queries.map((e) => unplayedFirst(ctx.profile, e.songs));
+        const fromSearched = searchedArtists.map(songsOf);
+        const own = latelyTop.map((a) => dailyRotation(songsOf(a), `love-lately-${a.key}`, day));
+        const near = latelyTop.map((a) => nearOf(a, "lately"));
+        const pools: Track[][] = [
+          // 1. what you look for: the newest search weighs most
+          interleave([...fromQueries, ...fromSearched], [...fromQueries.map((_, i) => (i === 0 ? 3 : 2)), ...fromSearched.map(() => 1)]),
+          // 2. the artists you play most, the ones you play most more often
+          interleave(
+            ranked.map((a) => dailyRotation(songsOf(a), `love-top-${a.key}`, day)),
+            ranked.map((a) => weightOf(a.score, rankedTop))
+          ),
+          // 3. what you have been playing lately, with the artists next to it
+          interleave([...own, ...near], [...own.map(() => 2), ...near.map(() => 1)]),
+          // 4. new to you: songs of the artists next to your favourites
+          interleave(ranked.slice(0, 6).map((a) => nearOf(a, "new"))),
+        ];
+        // A first launch has no taste yet: the market's own song shelves (charts, trending) become the rows.
+        marketShelves.forEach((songs, i) => pools.push(dailyRotation(songs, `love-market-${i}`, day)));
+
+        // Everything else that can fill a row out: the same sources, plus the market's songs.
+        const reserve = interleave([
+          ...ctx.queries.map((e) => e.songs),
+          ...[...ctx.bundles.values()].map((b) => dailyRotation(b.topSongs, `love-reserve-${b.artistId ?? ""}`, day)),
+          ...marketShelves.map((songs, i) => dailyRotation(songs, `love-reserve-m${i}`, day)),
+        ]);
+
+        const rows: Track[][] = [];
+        for (const pool of pools) {
+          if (rows.length >= ROW_COUNT) break;
+          const row = takeTracks(ctx, pool, { count: ROW_SONGS, maxPerArtist: 3 });
+          if (row.length) rows.push(row);
+        }
+        // A thin row is topped up from the reserve; a still-thin one is dropped; missing rows are cut from what is left.
+        for (const row of rows) {
+          if (row.length < ROW_SONGS) row.push(...takeTracks(ctx, reserve, { count: ROW_SONGS - row.length, maxPerArtist: 3 }));
+        }
+        let kept = rows.filter((r) => r.length >= ROW_MIN);
+        while (kept.length < ROW_COUNT) {
+          const extra = takeTracks(ctx, reserve, { count: ROW_SONGS, maxPerArtist: 3 });
+          if (extra.length < ROW_MIN) break;
+          kept = [...kept, extra];
+        }
+        if (!kept.length) return null;
+        return {
+          id: "songs-love",
+          title: "Songs you'll love",
+          subtitle: ctx.queries.length || ranked.length ? "In the vein of what you play and look for" : "Popular right now, to start you off",
+          layout: "songrows",
+          priority: 0,
+          items: kept.flat().map((track) => ({ style: "track" as const, track })),
+          rows: kept,
+        };
+      },
+    });
+  }
+
   // 1. Picked for you — the artists you play most, in turn, the ones you play most more often.
   if (ranked.length >= 1) {
     list.push({
@@ -487,37 +550,6 @@ function describeFeed(
           id: "songs-discover",
           title: "New to you",
           subtitle: "Songs you haven't played, close to what you do",
-          layout: "row",
-          priority: 0,
-          items: picked.map((track) => ({ style: "track", track })),
-        };
-      },
-    });
-  }
-
-  // 3. From your searches — the kinds of songs you look for.
-  {
-    const searchedArtists = ranked.filter((a) => a.searchHits > 0);
-    list.push({
-      id: "songs-searched",
-      kind: "songs-searched",
-      priority: 85,
-      minItems: 6,
-      build: (ctx) => {
-        const fromQueries = ctx.queries.map((e) => unplayedFirst(ctx.profile, e.songs));
-        const fromArtists = searchedArtists.map((a) => unplayedFirst(ctx.profile, bundleFor(ctx, a)?.topSongs.slice(0, 16) ?? []));
-        // Newest search first, and the heaviest: two or three searches in the same vein are enough to fill the row with it.
-        const picked = takeTracks(ctx, interleave([...fromQueries, ...fromArtists], [...fromQueries.map((_, i) => (i === 0 ? 3 : 2)), ...fromArtists.map(() => 1)]), {
-          count: SONGS,
-          maxPerArtist: 3,
-          exclude: rotation,
-        });
-        if (!picked.length) return null;
-        const asked = ctx.queries.map((e) => e.q);
-        return {
-          id: "songs-searched",
-          title: "Songs you'll love",
-          subtitle: asked.length ? "In the vein of what you look for" : "Songs like the ones you look for",
           layout: "row",
           priority: 0,
           items: picked.map((track) => ({ style: "track", track })),
@@ -851,12 +883,11 @@ const MAX_SECTIONS = 22;
  */
 function laneOf(kind: string, id = ""): number {
   switch (kind) {
-    case "jump-back-in":
     case "playlists-for-you":
+    case "songs-love":
       return 0;
     case "songs-for-you":
     case "songs-discover":
-    case "songs-searched":
     case "songs-lately":
     case "heavy-rotation":
     case "recommended-today":
@@ -903,8 +934,6 @@ export function buildHomeSections(args: {
 
   const descriptors = describeFeed(profile, ytShelves, now, moods, market, artistPlaylists)
     .map((d) => (PINNED.has(d.kind) ? d : { ...d, priority: Math.min(93, d.priority + learnedBoost(taps[d.kind] ?? 0)) }))
-    // Once you have searched a couple of times, the songs of those searches lead the song rows: that is what you asked for just now.
-    .map((d) => (d.kind === "songs-searched" && queries.length > 0 ? { ...d, priority: 90 } : d))
     .sort((a, b) => laneOf(a.kind, a.id) - laneOf(b.kind, b.id) || b.priority - a.priority);
 
   const sections: HomeSection[] = [];

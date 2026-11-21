@@ -29,6 +29,7 @@ import { useTasteProfile, type ArtistSignal, type TasteProfile } from "./profile
 import { buildHomeSections, type HomeSection } from "./sections";
 import { latestQueries, loadQuerySongs, markQueriesStale, peekQuerySongs, useQueryCacheVersion } from "./queries";
 import { coverRead } from "../palette";
+import { afterIntro } from "../introGate";
 
 /* ------------------------------------------------------- youtube feed cache */
 /* Stale-while-revalidate: a manual refresh marks the caches stale and the
@@ -390,8 +391,13 @@ export function useHomeFeed(): { sections: HomeSection[]; profile: TasteProfile 
     // orchestration below takes over and the market shelves become filler.
     if (profile.artists.length === 0) {
       // Searches alone already say what to put on Home: their songs land as a row when fetched (queriesVersion).
-      void loadQuerySongs(latestQueries(profile.searches));
-      void Promise.all([loadMarketShelves(), loadMoodTitles()]).then(([shelves, moodTitles]) => {
+      // (held until the launch intro has handed over: the network and parsing would share its frames)
+      void afterIntro()
+        .then(() => {
+          void loadQuerySongs(latestQueries(profile.searches));
+          return Promise.all([loadMarketShelves(), loadMoodTitles()]);
+        })
+        .then(([shelves, moodTitles]) => {
         apply(
           buildHomeSections({
             profile,
@@ -408,10 +414,16 @@ export function useHomeFeed(): { sections: HomeSection[]; profile: TasteProfile 
       return;
     }
 
+    let cancelled = false;
     const timer = window.setTimeout(() => {
-      void orchestrate(profile, apply);
+      void afterIntro().then(() => {
+        if (!cancelled) void orchestrate(profile, apply);
+      });
     }, 250);
-    return () => window.clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
     // Re-run when the underlying signals move, when the user asks for a
     // manual refresh from the TopBar, or when a disk-backed cache lands.
     // eslint-disable-next-line react-hooks/exhaustive-deps

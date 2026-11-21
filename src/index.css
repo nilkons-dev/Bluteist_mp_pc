@@ -5498,3 +5498,10 @@ html.reduce-motion .edge-fades {
 
 /* Window out of sight (src/lib/background.ts): every CSS animation holds still and carries on when it is back. */
 html.is-bg *, html.is-bg *::before, html.is-bg *::after { animation-play-state: paused !important; }
+
+/* Home's "Songs you'll love": four song rows packed close. Cards outside the visible part of a row are not laid out or
+   painted until they scroll near (content-visibility), so 140+ covers cost no more than one row did. */
+.song-rows { display: flex; flex-direction: column; }
+.song-row + .song-row { margin-top: -6px; }
+.song-row .shelf-scroll { padding-bottom: 0; gap: 6px; }
+.song-row .shelf-scroll > * { content-visibility: auto; contain-intrinsic-size: auto 184px auto 252px; }

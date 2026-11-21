@@ -284,12 +284,16 @@
       d.appendChild(i);
       wm.appendChild(d);
     }
-    ["spk", "flare"].forEach(function (c) {
-      var x = document.createElement("div");
-      x.className = c;
-      wm.appendChild(x);
-    });
-    var spk = wm.querySelector(".spk"), flare = wm.querySelector(".flare"), halo = wm.querySelector(".halo");
+    // The sparkle sits in a wrapper of its own: the wrapper pulses, the picture inside flares in, so the two
+    // motions never share one element (each is a plain compositor transform, nothing is repainted per frame).
+    var spkw = document.createElement("div");
+    spkw.className = "spkw";
+    spkw.appendChild(document.createElement("div")).className = "spk";
+    wm.appendChild(spkw);
+    var flare = document.createElement("div");
+    flare.className = "flare";
+    wm.appendChild(flare);
+    var spk = spkw.firstChild, halo = wm.querySelector(".halo");
 
     // The audio device is opened now, so it is running by the time the first sound is due.
     // The ready-made sound is decoded first; only when that fails is the sound built live.
@@ -348,7 +352,7 @@
         { duration: 1200, delay: t + 150, easing: "ease-out", fill: "both" }
       );
       // After the flare the sparkle keeps pulsing until the hand-over (finish() eases it to rest).
-      intro.pulse = spk.animate(
+      intro.pulse = spkw.animate(
         [{ transform: "scale(1) rotate(0)" }, { transform: "scale(1.18) rotate(20deg)" }, { transform: "scale(1) rotate(0)" }],
         { duration: 2800, delay: t + 1400, iterations: Infinity, easing: "ease-in-out" }
       );
@@ -368,7 +372,7 @@
     intro.finish = function () {
       running = false;
       if (intro.pulse) {
-        var el = spk, from = getComputedStyle(el).transform;
+        var el = spkw, from = getComputedStyle(el).transform;
         intro.pulse.cancel();
         intro.pulse = null;
         if (from && from !== "none") el.animate([{ transform: from }, { transform: "none" }], { duration: 260, easing: "ease-out" });

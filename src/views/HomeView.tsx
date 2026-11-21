@@ -7,71 +7,19 @@
  * whole job is to render whatever the engine chose — new section types and
  * reorderings appear without touching this file.
  *
- * Visual language follows the reference layouts: quick-resume tiles, square
+ * Visual language follows the reference layouts: stacked song rows, square
  * album/track cards, circular artist cards, mix cards with name bands, and
  * pastel radio tiles with contextual "reason" subtitles.
  */
-import { useEffect, useRef } from "react";
-import { Play } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { AlbumCard, ArtistCard, HomeShelfView, TrackCard } from "../components/Cards";
 import { Crate } from "../components/Crate";
 import { EyebrowHeader, MixCard, RadioCard, SideCard, TrackColumns, homeTrackMenu } from "../components/recCards";
-import { Artwork, Shelf, ShelfScroller, ShelfSkeleton } from "../components/primitives";
-import { FitText } from "../components/FitText";
-import { shortTitle } from "../lib/format";
+import { Shelf, ShelfScroller, ShelfSkeleton } from "../components/primitives";
 import { useHomeFeed } from "../lib/recs/feed";
-import { useDrag } from "../lib/dnd";
-import { historyMenuItems } from "../lib/trackActions";
 import type { HomeSection, SectionItem } from "../lib/recs/sections";
 import { useHomeEngagement } from "../stores/homeEngagement";
-import { usePlayer } from "../stores/player";
-import { tintHoverHandlers, useUI } from "../stores/ui";
-import type { Track } from "../types";
-
-/** Quick-resume tiles — the compact 2×3 grid straight from history. Hovering
-    a tile shows its artwork in the panel's glow (components/CoverGlow), and
-    every tile is a drag source for the library. */
-function QuickTile({ track }: { track: Track }) {
-  const playQueue = usePlayer((s) => s.playQueue);
-  const drag = useDrag({ track });
-  const open = (): void => playQueue([track], 0);
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={open}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          open();
-        }
-      }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        useUI.getState().openContextMenu(e.clientX, e.clientY, historyMenuItems(track));
-      }}
-      {...tintHoverHandlers(track.thumb)}
-      {...drag.props}
-      className={`fit-host group flex items-center gap-3 h-16 pr-3 rounded-lg bg-ink-hi/[0.03] text-left hover:bg-ink-hi/[0.08] transition-all overflow-hidden cursor-pointer select-none ${
-        drag.dragging ? "opacity-40" : ""
-      }`}
-    >
-      <Artwork src={track.thumb} className="h-16 w-16 rounded-none shrink-0" iconClassName="w-5 h-5" alt="" />
-      <div className="min-w-0 flex-1">
-        <FitText
-          lines={2}
-          text={shortTitle(track.title)}
-          full={track.title}
-          className="text-[13px] font-medium leading-[1.3] text-ink group-hover:text-ink-hi transition-colors"
-        />
-        <FitText text={track.artist} className="text-xs text-ink-faint mt-0.5" />
-      </div>
-      <span className="w-9 h-9 rounded-full bg-primary text-on-primary grid place-items-center shadow-elev opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        <Play className="w-4 h-4 fill-current ml-0.5" />
-      </span>
-    </div>
-  );
-}
+import { useUI } from "../stores/ui";
 
 /** Cold-start browse chips — the honest fallback while taste is unknown. */
 function MoodChips({ moods }: { moods: string[] }) {
@@ -112,19 +60,24 @@ function SectionView({ section }: { section: HomeSection }) {
     return <Crate title={section.title} playlists={section.playlists} className="animate-slide-up" />;
   }
 
-  const body = (() => {
-    if (section.layout === "tiles") {
-      const tileTracks = section.items.flatMap((it) => (it.style === "track" ? [it.track] : []));
-      return (
-        <div className="tile-host">
-          <div className="tile-grid">
-            {tileTracks.map((t) => (
-              <QuickTile key={t.id} track={t} />
-            ))}
-          </div>
+  if (section.layout === "songrows" && section.rows) {
+    return (
+      <Shelf title={section.title} subtitle={section.subtitle}>
+        {/* Four rows packed close, so the page reads as one big wall of songs. */}
+        <div className="song-rows">
+          {section.rows.map((row, r) => (
+            <ShelfScroller key={`${section.id}-${r}`} className="song-row">
+              {row.map((track) => (
+                <TrackCard key={`${r}-${track.id}`} track={track} menu={() => homeTrackMenu(track)} />
+              ))}
+            </ShelfScroller>
+          ))}
         </div>
-      );
-    }
+      </Shelf>
+    );
+  }
+
+  const body = (() => {
     if (section.layout === "moods") {
       return <MoodChips moods={section.moods ?? []} />;
     }
@@ -186,8 +139,22 @@ function firstItemKey(item: SectionItem): string {
   }
 }
 
+/** "Good morning" / "Good afternoon" / "Good evening" by the hour on this computer's clock. */
+function greetingFor(now: Date): string {
+  const h = now.getHours();
+  if (h >= 5 && h < 12) return "Good morning";
+  if (h >= 12 && h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 export function HomeView() {
   const { sections, profile } = useHomeFeed();
+  // The greeting follows the clock: checked every few minutes, so a Home left open through noon turns over by itself.
+  const [greeting, setGreeting] = useState(() => greetingFor(new Date()));
+  useEffect(() => {
+    const id = window.setInterval(() => setGreeting(greetingFor(new Date())), 300_000);
+    return () => window.clearInterval(id);
+  }, []);
   // A refresh (the TopBar button) swaps the songs under the same rows and lets them settle in with one soft fade of the
   // whole page — nothing is torn down and rebuilt, so it stays smooth. The fade plays when the press happens and
   // again once the new songs have arrived.
@@ -218,10 +185,8 @@ export function HomeView() {
 
   return (
     <div ref={rootRef} className="relative">
-      {/* No greeting: Home opens straight on your music. The heading stays for screen readers. */}
-      <h1 className="sr-only">Home</h1>
+      <h1 className="font-display text-[30px] font-extrabold tracking-tight text-ink-hi leading-none mb-5">{greeting}</h1>
       <div className="relative space-y-7">
-
         {sections.map((section) => (
           // A press inside a row counts for its kind: the rows you play from rise on your next visit.
           <div

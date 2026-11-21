@@ -874,7 +874,7 @@ function aquaFrame(now){
   // The pool drifts slowly: at rest it is drawn every other frame (its motion is time-based, so it looks the same);
   // the moment the pointer is on the bar or it has focus, every frame.
   // (about 20 fps at rest; paused outright while the window is unfocused or hidden, and picked up again on focus)
-  if(document.hidden||!document.hasFocus()){aqLast=0;requestAnimationFrame(aquaFrame);return}
+  if(document.hidden||!document.hasFocus()||document.documentElement.classList.contains("intro-wait")){aqLast=0;requestAnimationFrame(aquaFrame);return}
   if(!hovering&&focusAmt<.02&&now-aqDrawn<48){requestAnimationFrame(aquaFrame);return}
   aqDrawn=now;
   const dt=aqLast?Math.min((now-aqLast)/16.667,3):1;aqLast=now;

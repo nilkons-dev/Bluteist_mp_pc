@@ -34,7 +34,7 @@ test("home: song rows lead, artists come later, refresh reshuffles", () => {
   const s = read("src/lib/recs/sections.ts");
   assert.match(s, /laneOf/);
   assert.match(s, /variant/);
-  assert.match(s, /songs-searched/);
+  assert.match(s, /songs-love/);
   const f = read("src/lib/recs/feed.ts");
   assert.match(f, /reloadHomeFeed/);
   assert.match(f, /markQueriesStale/);

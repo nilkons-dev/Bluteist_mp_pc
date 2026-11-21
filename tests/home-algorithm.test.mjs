@@ -151,7 +151,7 @@ const feedBundles = () =>
 test("the feed: your mixes are one per side, then the song rows and heavy rotation; every mix three parts familiar to one part new", () => {
   const sections = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW });
   const ids = sections.map((s) => s.id);
-  assert.deepEqual(ids.slice(0, 2), ["jump-back-in", "songs-for-you"], ids.join(" → "));
+  assert.equal(ids[0], "songs-love", ids.join(" → "));
   assert.equal(ids.some((id) => /^(browse|because)/.test(id)), false, "no Browse chips, no Because rows");
   assert.equal(ids.at(-1), "favorite-artists", "artists come last");
   assert.ok(ids.indexOf("heavy-rotation") > ids.indexOf("songs-for-you"), "the song rows come before heavy rotation");
@@ -174,7 +174,7 @@ test("the feed: rows you play from rise within their place, never above the pinn
   const tapped = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW, taps: { "favorite-artists": 20 } }).map((s) => s.id);
   assert.equal(tapped.at(-1), "favorite-artists", "an artist row never climbs, however much it is played: " + tapped.join(" → "));
   const eager = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW, taps: { "dust-off": 500 } }).map((s) => s.id);
-  assert.equal(eager[0], "jump-back-in", "what you just played stays first");
+  assert.equal(eager[0], "songs-love", "the four song rows stay first");
   assert.ok(eager.indexOf("dust-off") > eager.indexOf("songs-for-you"), "the song rows stay ahead");
 });
 
@@ -189,4 +189,21 @@ test("the feed: the artist rows lean on who you're into lately", () => {
   const sections = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW });
   const firstMoreLike = sections.find((s) => s.kind === "more-like");
   assert.equal(firstMoreLike.anchorKey, "sid sriram", "lately beats the long-term top artist (Arijit Singh)");
+});
+
+test("songs you'll love: stacked song rows, no song twice, each row long; a first launch gets them from the market", () => {
+  const sections = buildHomeSections({ profile: feedProfile(), bundles: feedBundles(), ytShelves: null, now: NOW });
+  const love = sections.find((s) => s.id === "songs-love");
+  assert.equal(love.layout, "songrows");
+  assert.ok(love.rows.length >= 1 && love.rows.length <= 4, `rows: ${love.rows.length}`);
+  const ids = love.rows.flat().map((t) => t.id);
+  assert.equal(new Set(ids).size, ids.length, "no song repeats across the rows");
+  assert.equal(love.items.length, ids.length);
+  assert.equal(sections.some((s) => s.id === "jump-back-in"), false, "no Jump back in");
+  const cold = { artists: [], lately: [], heavyRotation: [], dustOff: [], pairs: new Map(), searches: [], playedTrackIds: new Set(), daySeed: 1, recent: [] };
+  const shelf = (n) => ({ title: `S${n}`, items: Array.from({ length: 20 }, (_, i) => ({ kind: "track", track: song(`m${n}-${i}`, `A${(i % 9) + n * 3}`) })) });
+  const market = [0, 1, 2, 3, 4, 5].map(shelf);
+  const first = buildHomeSections({ profile: cold, bundles: new Map(), ytShelves: market, market, now: NOW }).find((s) => s.id === "songs-love");
+  assert.equal(first.rows.length, 4);
+  assert.ok(first.rows.every((r) => r.length >= 8));
 });

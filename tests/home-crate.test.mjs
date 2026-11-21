@@ -33,11 +33,11 @@ const market = [
   { title: "Romance Right Now", items: [pl("VLRDCLAK5uy_1"), pl("VLRDCLAK5uy_2"), pl("VLPLa"), pl("VLRDCLAK5uy_3"), pl("VLRDCLAK5uy_4")] },
 ];
 
-test("the crate sits right under Jump back in, YouTube's own playlists first, each once", async () => {
+test("the crate leads the page, YouTube's own playlists first, each once", async () => {
   const { buildHomeSections } = await loadSections();
   const sections = buildHomeSections({ profile: profile("strong", ["a", "b", "c", "d", "e"]), bundles: new Map(), ytShelves: null, market });
-  assert.deepEqual(sections.slice(0, 2).map((s) => s.id), ["jump-back-in", "playlists-for-you"]);
-  const crate = sections[1];
+  assert.equal(sections[0].id, "playlists-for-you");
+  const crate = sections[0];
   assert.equal(crate.layout, "crate");
   assert.equal(crate.title, "Playlists for you");
   assert.deepEqual(crate.playlists.map((p) => p.id), ["VLRDCLAK5uy_1", "VLRDCLAK5uy_2", "VLRDCLAK5uy_3", "VLRDCLAK5uy_4", "VLPLa", "VLPLb", "VLPLc"]);
