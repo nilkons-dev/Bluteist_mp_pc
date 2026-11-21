@@ -29,7 +29,6 @@ import {
   Download,
   Droplets,
   ExternalLink,
-  Gamepad2,
   KeyRound,
   FileDown,
   FileMusic,
@@ -916,12 +915,6 @@ function PlaybackPane() {
           title="Don't repeat suggestions"
           note="Keep recently played tracks out of the home feed"
           toggle={{ checked: s.dontRepeatSuggestions, onChange: s.setDontRepeatSuggestions }}
-        />
-        <Row
-          icon={Gamepad2}
-          title="Gaming mode"
-          note="While a game or another app is in front, Blutheist pauses its animations and uses less CPU. Music keeps playing"
-          toggle={{ checked: s.sleepWhenUnfocused, onChange: s.setSleepWhenUnfocused }}
         />
       </Group>
       <Group title="Speed">

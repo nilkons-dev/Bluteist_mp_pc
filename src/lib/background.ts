@@ -10,10 +10,10 @@
  *  - CSS animations are paused (html.is-bg, see index.css) and carry on the same way.
  * Timers are untouched, so playback, fades and the media keys behave exactly as before.
  *
- * Gaming mode (Settings › Playback): the same sleep also starts when the window has lost focus for a couple of seconds
- * (a game or another app is in front), and ends the moment the window is focused again. While asleep the clock that
- * drives the progress bar slows to once a second (lib/audio.ts), and the main process lowers its own and the GPU
- * process's priority (electron/main.ts, perf:setBackground), so a game keeps the CPU. The song keeps playing.
+ * While asleep the clock that drives the progress bar slows to once a second (lib/audio.ts), and the main process lowers
+ * its own and the GPU process's priority (electron/main.ts, perf:setBackground). Waking is done BEFORE the window is
+ * shown (showMainWindow), so the first frame the user sees already has everything moving. A window that is merely
+ * covered by another one is NOT asleep: its animations keep running.
  */
 const HELD_FROM = 1 << 30;
 
@@ -39,10 +39,9 @@ window.cancelAnimationFrame = (id: number): void => {
 };
 
 let hiddenByMain = false;
-let unfocusedSleep = false;
 
 function apply(): void {
-  const next = hiddenByMain || unfocusedSleep;
+  const next = hiddenByMain;
   if (next === bg) return;
   bg = next;
   document.documentElement.classList.toggle("is-bg", next);
@@ -58,38 +57,6 @@ function apply(): void {
 export function setBackground(next: boolean): void {
   hiddenByMain = next;
   apply();
-}
-
-/** Gaming mode on or off. Safe to call again with the same value. */
-const FOCUS_SLEEP_DELAY_MS = 2000;
-let focusSleepOn = false;
-let focusTimer: number | null = null;
-const onBlur = (): void => {
-  if (focusTimer !== null) window.clearTimeout(focusTimer);
-  focusTimer = window.setTimeout(() => {
-    focusTimer = null;
-    unfocusedSleep = !document.hasFocus();
-    apply();
-  }, FOCUS_SLEEP_DELAY_MS);
-};
-const onFocus = (): void => {
-  if (focusTimer !== null) window.clearTimeout(focusTimer);
-  focusTimer = null;
-  unfocusedSleep = false;
-  apply();
-};
-export function setSleepWhenUnfocused(on: boolean): void {
-  if (on === focusSleepOn) return;
-  focusSleepOn = on;
-  if (on) {
-    window.addEventListener("blur", onBlur);
-    window.addEventListener("focus", onFocus);
-    if (!document.hasFocus()) onBlur();
-  } else {
-    window.removeEventListener("blur", onBlur);
-    window.removeEventListener("focus", onFocus);
-    onFocus();
-  }
 }
 
 /** True while the page is asleep (hidden, or unfocused in gaming mode). */

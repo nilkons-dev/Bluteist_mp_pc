@@ -101,9 +101,22 @@ function showMainWindow(): void {
     if (app.isReady() && !quitting) createWindow();
     return;
   }
-  if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.show();
-  mainWindow.focus();
+  const w = mainWindow;
+  const reveal = (): void => {
+    if (w.isDestroyed()) return;
+    if (w.isMinimized()) w.restore();
+    w.show();
+    w.focus();
+  };
+  if (w.isVisible() && !w.isMinimized()) {
+    reveal();
+    return;
+  }
+  // Coming back from the tray: wake the page first (its animation loops and CSS animations were asleep, see
+  // src/lib/background.ts), so by the time the window is on screen everything is already moving: no frozen first
+  // frame. Bounded, so a stuck page can never keep the window from appearing.
+  const wake = w.webContents.executeJavaScript("window.__bluSetBg && window.__bluSetBg(false)").catch(() => undefined);
+  void Promise.race([wake, new Promise<void>((r) => setTimeout(r, 150))]).then(reveal);
 }
 
 /**

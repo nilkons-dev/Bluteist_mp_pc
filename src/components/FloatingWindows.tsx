@@ -91,9 +91,6 @@ function AboutWindow() {
         <p className="fw-ver">Version {versions?.app ?? "1.1.1"}</p>
         <AboutBody />
         <div className="fw-foot is-center">
-          <button type="button" className="fw-btn" onClick={() => window.open("https://github.com/nilkons-dev/Bluteist_mp_pc", "_blank", "noopener")}>
-            Project page
-          </button>
           <button type="button" className="fw-btn is-solid" onClick={() => useUI.getState().closeFloating()}>
             Close
           </button>
