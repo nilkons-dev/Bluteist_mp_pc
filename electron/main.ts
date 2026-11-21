@@ -9,6 +9,7 @@ import * as downloaded from "./downloaded-files";
 import { isKnownAudio, isPlayableAudio } from "./audio-types";
 import * as canvas from "./canvas";
 import * as music from "./music-service";
+import { DiscordPresence, type PresenceInput } from "./discord-rpc";
 import { backupExport, backupImport } from "./backup";
 import * as locallib from "./local-library";
 import { remoteArtBytes } from "./remote-art";
@@ -57,6 +58,8 @@ let mainWindow: BrowserWindow | null = null;
  * a REAL quit so the hide-on-close guard stands down.
  */
 let quitting = false;
+const discord = new DiscordPresence();
+
 /** before-quit can fire twice (window close → quit); the drain must run once. */
 let drainStarted = false;
 /**
@@ -592,6 +595,39 @@ function registerIpc(): void {
   ipc.handle("music:searchPage", (_e, query: string, filter: music.SearchFilter) =>
     music.searchPage(String(query ?? ""), filter as music.SearchFilter)
   );
+  // A pasted YouTube link: only a well-formed video id is looked up; the reply is the song or the reason it can't play.
+  ipc.handle("music:resolveVideo", async (_e, videoId: unknown) => {
+    if (typeof videoId !== "string") return { ok: false, error: "That doesn't look like a YouTube video link." };
+    try {
+      return { ok: true, track: await music.resolveVideo(videoId) };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
+  // Discord "Listening to" status. The renderer says what is playing; this process owns the connection.
+  ipc.handle("discord:configure", (_e, config: unknown) => {
+    const c = (config ?? {}) as { enabled?: unknown; appId?: unknown };
+    return discord.configure({ enabled: c.enabled === true, appId: c.appId });
+  });
+  ipc.handle("discord:status", () => discord.getStatus());
+  ipc.handle("discord:setSong", (_e, song: unknown) => {
+    const s = song as Partial<PresenceInput> | null;
+    if (!s || typeof s !== "object" || typeof s.title !== "string") {
+      discord.setSong(null);
+    } else {
+      const num = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0);
+      discord.setSong({
+        title: s.title,
+        artist: typeof s.artist === "string" ? s.artist : "",
+        album: typeof s.album === "string" ? s.album : undefined,
+        durationSec: num(s.durationSec),
+        positionSec: num(s.positionSec),
+        cover: typeof s.cover === "string" ? s.cover : undefined,
+        videoId: typeof s.videoId === "string" ? s.videoId : undefined,
+      });
+    }
+    return true;
+  });
   ipc.handle("music:searchMore", (_e, token: string, filter: music.SearchFilter) =>
     music.searchMore(String(token ?? ""), filter as music.SearchFilter)
   );
@@ -1333,6 +1369,7 @@ if (!gotLock) {
       }
       // The real-quit flag first, then what has to be saved at once.
       startExit();
+      discord.shutdown();
       // Close-time durability: the renderer's last coalesced writes and any
       // queued ownership work may still be in flight when the window dies.
       // Hold quit for a bounded drain — the final player write lands unless

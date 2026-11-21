@@ -20,6 +20,7 @@ import { embeddedLrc, fetchLyrics } from "./lyrics";
 import { largestThumbUrl, upgradeThumb } from "./artwork";
 import { getPoToken, invalidatePoToken } from "./po-token";
 import { resolveMarket, type ResolvedMarket } from "./market";
+import { VIDEO_ID, VideoUnavailableError, trackFromVideoInfo, type VideoInfoLike } from "./yt-video";
 import { SEARCH_FILTER_PARAMS, callBrowse, callBrowseContinuation, callSearch, callSearchContinuation, callSearchSuggestions, parseArtistPage, parseChartsShelves, pageCredit, parseMoodCovers, parseMoodPage, parseMoods, parsePodcastEpisodes, parsePodcastPage, parsePodcastShelves, parsePlaylistContinuation, parsePlaylistShelf, parseQueueCredits, parseRadioPage, parseRemotePlaylistPage, parseReleasePage, parseSearchPage, parseSearchSuggestions } from "./ytm";
 import type { Credits, ParsedSong } from "./ytm";
 import type { MoodEntry } from "./moods";
@@ -1083,6 +1084,39 @@ export async function enrichDurations(ids: string[]): Promise<Record<string, num
     if (cached) result[id] = cached;
   }
   return result;
+}
+
+/* ------------------------------------------------------------------ */
+/* A pasted YouTube link                                               */
+/* ------------------------------------------------------------------ */
+
+const linkCache = new Map<string, Track>();
+
+/**
+ * The song behind a pasted YouTube link: the video's own title, channel, length and picture, shaped as a track so
+ * it plays, likes, queues and joins playlists like any other. Throws a readable message when it can't be played.
+ */
+export async function resolveVideo(videoId: string): Promise<Track> {
+  if (!VIDEO_ID.test(videoId)) throw new VideoUnavailableError("That doesn't look like a YouTube video link.");
+  const hit = linkCache.get(videoId);
+  if (hit) return hit;
+  let lastError: unknown = null;
+  for (const client of ["VISIONOS", "IOS", "WEB", "ANDROID"] as const) {
+    try {
+      const yt = await getYT();
+      const info = (await withRetry(() => yt.getBasicInfo(videoId, { client }), 1, 400)) as VideoInfoLike;
+      const track = trackFromVideoInfo(info, videoId, (t) => upgradeThumb(largestThumbUrl(t)));
+      linkCache.set(videoId, track);
+      evictOldest(linkCache, 200);
+      return track;
+    } catch (err) {
+      lastError = err;
+      // A video that is private, removed or live says so on every client: no point asking the rest.
+      if (err instanceof VideoUnavailableError && /private|removed|terminated|live|started|copyright|country/i.test(err.message)) break;
+    }
+  }
+  if (lastError instanceof VideoUnavailableError) throw lastError;
+  throw new VideoUnavailableError("Couldn't load that video. Check your connection and the link, then try again.");
 }
 
 /* ------------------------------------------------------------------ */

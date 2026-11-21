@@ -29,6 +29,7 @@ import {
   Download,
   Droplets,
   ExternalLink,
+  MessageCircle,
   FileDown,
   FileMusic,
   FileUp,
@@ -595,6 +596,7 @@ function AccountPane() {
         </Group>
       )}
       <ConnectedServices />
+      <DiscordGroup />
       {signedIn && (
         <Group title="Session">
           <Row
@@ -689,6 +691,119 @@ const MATCH_LANGUAGE_LABEL: Record<MatchLanguage | "", string> = {
   malayalam: "Malayalam",
   english: "English",
 };
+
+/**
+ * Discord "Listening to" status. Discord shows the NAME of the application as the activity ("Listening to Blutheist"),
+ * so each listener makes their own application (free, a minute) and pastes its Application ID here.
+ * The id is public and never a secret; it stays on this computer.
+ */
+const DISCORD_PORTAL = "https://discord.com/developers/applications";
+
+function DiscordGroup() {
+  const enabled = useSettings((s) => s.discordEnabled);
+  const appId = useSettings((s) => s.discordAppId);
+  const setEnabled = useSettings((s) => s.setDiscordEnabled);
+  const setAppId = useSettings((s) => s.setDiscordAppId);
+  const [draft, setDraft] = useState(appId);
+  const [status, setStatus] = useState<{ state: string; message?: string; user?: string } | null>(null);
+
+  useEffect(() => setDraft(appId), [appId]);
+  useEffect(() => {
+    const bridge = window.bytune;
+    if (!enabled || !bridge?.discordStatus) {
+      setStatus(null);
+      return;
+    }
+    let dead = false;
+    const poll = (): void => {
+      void Promise.resolve(bridge.discordStatus())
+        .then((st) => {
+          if (!dead) setStatus(st as { state: string; message?: string; user?: string });
+        })
+        .catch(() => undefined);
+    };
+    poll();
+    const timer = window.setInterval(poll, 2000);
+    return () => {
+      dead = true;
+      window.clearInterval(timer);
+    };
+  }, [enabled, appId]);
+
+  const commit = (): void => {
+    const clean = draft.replace(/\D/g, "");
+    if (clean !== appId) setAppId(clean);
+    else setDraft(clean);
+  };
+  const validId = /^\d{15,22}$/.test(appId);
+  const statusText = !enabled
+    ? "Off"
+    : !validId
+      ? "Paste your Application ID below"
+      : status?.state === "connected"
+        ? status.user
+          ? `Connected to Discord as ${status.user}`
+          : "Connected to Discord"
+        : status?.message ?? (status?.state === "invalid" ? "Check the Application ID" : "Connecting to Discord…");
+
+  return (
+    <Group
+      title="Discord"
+      note="Show what you're listening to on your Discord profile, like Spotify does. Discord names the activity after an application you create yourself, so call it Blutheist. Only the song, artist and cover are shared, and only while a song plays."
+    >
+      <Row
+        icon={MessageCircle}
+        title="Connect Discord"
+        note={statusText}
+        toggle={{ checked: enabled, onChange: setEnabled }}
+      />
+      <Row
+        icon={ExternalLink}
+        title="1 · Create your application"
+        note="Open the Discord Developer Portal, press New Application, name it Blutheist, then copy its Application ID from General Information."
+        control={
+          <a className="st-link" href={DISCORD_PORTAL} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+            discord.com/developers/applications
+          </a>
+        }
+      />
+      <Row
+        icon={MessageCircle}
+        title="2 · Application ID"
+        note="Paste the number here (about 18 digits). Discord must be open on this computer."
+        control={
+          <input
+            value={draft}
+            inputMode="numeric"
+            spellCheck={false}
+            autoComplete="off"
+            placeholder="123456789012345678"
+            aria-label="Discord Application ID"
+            maxLength={22}
+            onChange={(e) => setDraft(e.target.value.replace(/\D/g, ""))}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                commit();
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 210,
+              padding: "6px 10px",
+              borderRadius: 8,
+              border: "1px solid var(--line, rgba(255,255,255,.14))",
+              background: "rgba(255,255,255,.06)",
+              color: "inherit",
+              font: "inherit",
+            }}
+          />
+        }
+      />
+    </Group>
+  );
+}
 
 /**
  * Connect Spotify: the listener's own Spotify playlists and Liked Songs in the sidebar, matched to

@@ -38,6 +38,14 @@ const api = {
   search: (query: string, light = false) => ipcRenderer.invoke("music:search", query, light),
   searchPage: (query: string, filter: string) => ipcRenderer.invoke("music:searchPage", query, filter),
   searchMore: (token: string, filter: string) => ipcRenderer.invoke("music:searchMore", token, filter),
+  resolveVideo: (videoId: string): Promise<{ ok: true; track: Track } | { ok: false; error: string }> =>
+    ipcRenderer.invoke("music:resolveVideo", videoId),
+  /** Discord "Listening to" status (electron/discord-rpc.ts). */
+  discordConfigure: (config: { enabled: boolean; appId: string }): Promise<unknown> => ipcRenderer.invoke("discord:configure", config),
+  discordStatus: (): Promise<unknown> => ipcRenderer.invoke("discord:status"),
+  discordSetSong: (
+    song: { title: string; artist: string; album?: string; durationSec: number; positionSec: number; cover?: string; videoId?: string } | null
+  ): Promise<unknown> => ipcRenderer.invoke("discord:setSong", song),
   suggestions: (query: string): Promise<{ items: SearchSuggestion[] }> => ipcRenderer.invoke("music:suggestions", query),
   getAlbum: (id: string) => ipcRenderer.invoke("music:album", id),
   getArtist: (id: string) => ipcRenderer.invoke("music:artist", id),

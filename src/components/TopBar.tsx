@@ -30,6 +30,7 @@ import {
 import { withSearchRows } from "../../electron/ytm";
 import { reloadHomeFeed } from "../lib/recs/feed";
 import { searchPageOnce } from "../lib/searchOnce";
+import { parseYouTubeLink } from "../lib/ytLink";
 import { browseMenuItems, trackMenuItems } from "../lib/trackActions";
 import { shownName, useSession } from "../lib/session";
 import { isMac } from "../lib/platform";
@@ -219,7 +220,8 @@ export function TopBar() {
 
   useEffect(() => {
     const q = query.trim();
-    if (!fieldFocused || q.length < 2) {
+    // A pasted YouTube link needs no suggestions: the Search page opens its song.
+    if (!fieldFocused || q.length < 2 || parseYouTubeLink(q)) {
       // Invalidate any request still in flight, or it reopens the dropdown
       // after Enter, a blur or a cleared field.
       suggestSeq.current++;
@@ -298,7 +300,7 @@ export function TopBar() {
     const t = text.trim();
     if (!t) return;
     setQuery(t);
-    useRecents.getState().pushSearch(t);
+    if (!parseYouTubeLink(t)) useRecents.getState().pushSearch(t); // a link is not a search phrase worth remembering
     closeDropdown();
     setFieldFocused(false);
     inputRef.current?.blur();
@@ -483,7 +485,7 @@ export function TopBar() {
             ref={inputRef}
             type="text"
             value={query}
-            maxLength={200}
+            maxLength={400}
             placeholder="What do you want to play?"
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => {

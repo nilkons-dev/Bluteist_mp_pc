@@ -9,7 +9,7 @@
  * YouTube's continuation token, exactly like the phone.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Disc3, LayoutGrid, ListMusic, ListPlus, ListStart, Mic, MoreVertical, Music2, Play, Search as SearchIcon, SearchX, User, X, type LucideIcon } from "lucide-react";
+import { Disc3, Heart, LayoutGrid, Link2, ListMusic, ListPlus, ListStart, Mic, MoreVertical, Music2, Play, Search as SearchIcon, SearchX, User, X, type LucideIcon } from "lucide-react";
 import { Artwork, EqBars, ErrorState, ExplicitBadge, IconBtn, ListSkeleton, Pills } from "../components/primitives";
 import { browseMenuItems, trackMenuItems } from "../lib/trackActions";
 import { playAlbum } from "../lib/album";
@@ -19,9 +19,11 @@ import { fmtTime, shortTitle } from "../lib/format";
 import { FitText } from "../components/FitText";
 import { isMac } from "../lib/platform";
 import { usePlayer, useTrackPlayback } from "../stores/player";
+import { useLibrary } from "../stores/library";
 import { useRecents } from "../stores/recents";
 import { useRecentItems, type RecentItem } from "../stores/recentItems";
 import { searchPageOnce } from "../lib/searchOnce";
+import { parseYouTubeLink, type YouTubeLink } from "../lib/ytLink";
 import { tintHoverHandlers, useUI, type MenuItem } from "../stores/ui";
 import type { BrowseItem, SearchFilter, SearchPageResult, SearchRow, Track } from "../types";
 
@@ -470,7 +472,188 @@ function RecentSearches() {
   );
 }
 
+/**
+ * A YouTube link pasted into the search box: the song behind it, ready to play, like, queue or put in a playlist,
+ * exactly like a search result. A playlist link opens that playlist.
+ */
+function LinkResult({ link }: { link: YouTubeLink }) {
+  const navigate = useUI((s) => s.navigate);
+  const [state, setState] = useState<{ status: "loading" } | { status: "error"; message: string } | { status: "ready"; track: Track }>({ status: "loading" });
+  const [retryNonce, setRetryNonce] = useState(0);
+  const key = link.kind === "video" ? link.videoId : link.listId;
+
+  useEffect(() => {
+    if (link.kind !== "video") return;
+    const api = window.bytune;
+    if (!api) {
+      setState({ status: "error", message: "Blutheist's connection to YouTube isn't available." });
+      return;
+    }
+    let cancelled = false;
+    setState({ status: "loading" });
+    api
+      .resolveVideo(link.videoId)
+      .then((res) => {
+        if (cancelled) return;
+        setState(res.ok ? { status: "ready", track: res.track } : { status: "error", message: res.error });
+      })
+      .catch(() => {
+        if (!cancelled) setState({ status: "error", message: "Couldn't load that video. Check your connection and try again." });
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, retryNonce]);
+
+  if (link.kind === "playlist") {
+    const browseId = `VL${link.listId}`;
+    const open = (): void => navigate({ name: "ytplaylist", param: browseId });
+    return (
+      <section className="animate-slide-up">
+        <h2 className="section-title text-[21px] mb-4">YouTube playlist</h2>
+        <div className="flex items-center gap-4 p-4 rounded-xl bg-ink-hi/[0.04]">
+          <span className="w-[72px] h-[72px] rounded-[10px] shrink-0 grid place-items-center bg-ink-hi/[0.06]">
+            <Link2 className="w-6 h-6 text-ink-faint" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-[20px] font-bold tracking-[-0.02em] text-ink-hi leading-tight">Playlist from your link</div>
+            <div className="text-[13px] text-ink-dim mt-1">Open it to see every song, then play or save it.</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 mt-3">
+          <button
+            onClick={open}
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-full border border-ink-hi/25 text-[13.5px] font-semibold text-ink-hi hover:border-ink-hi/50 hover:bg-ink-hi/[0.06] transition-all active:scale-[0.98]"
+          >
+            <ListMusic className="w-4 h-4" />
+            Open playlist
+          </button>
+          <button
+            onClick={() => void playPlaylist(browseId)}
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-full border border-ink-hi/25 text-[13.5px] font-semibold text-ink-hi hover:border-ink-hi/50 hover:bg-ink-hi/[0.06] transition-all active:scale-[0.98]"
+          >
+            <Play className="w-4 h-4 fill-current" />
+            Play
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (state.status === "loading") {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <div className="flex items-center gap-2 text-[13px] text-ink-dim">
+          <span className="w-4 h-4 shrink-0 rounded-full border-2 border-ink-hi/15 border-t-accent animate-spin" aria-label="Loading" />
+          Finding the song from your YouTube link…
+        </div>
+        <ListSkeleton rows={1} />
+      </div>
+    );
+  }
+  if (state.status === "error") {
+    return <ErrorState title="Couldn't open that link" body={state.message} onRetry={() => setRetryNonce((n) => n + 1)} />;
+  }
+
+  return <LinkSong song={state.track} />;
+}
+
+/** The song a YouTube link resolved to, with everything a search result offers. */
+function LinkSong({ song }: { song: Track }) {
+  const playQueue = usePlayer((s) => s.playQueue);
+  const openContextMenu = useUI((s) => s.openContextMenu);
+  const liked = useLibrary((s) => s.liked.some((t) => t.id === song.id));
+  const drag = useDrag({ track: song });
+  const playing = useTrackPlayback(song.id);
+  const play = (): void => {
+    useRecentItems.getState().add(songItemOf(song));
+    playQueue([song], 0);
+  };
+  const pill =
+    "inline-flex items-center gap-2 h-9 px-4 rounded-full border border-ink-hi/25 text-[13.5px] font-semibold text-ink-hi hover:border-ink-hi/50 hover:bg-ink-hi/[0.06] transition-all active:scale-[0.98]";
+  return (
+    <section className="animate-slide-up">
+      <h2 className="section-title text-[21px] mb-4">From your YouTube link</h2>
+      <div
+        {...tintHoverHandlers(song.thumb)}
+        {...drag.props}
+        onClick={play}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          openContextMenu(e.clientX, e.clientY, trackMenuItems(song));
+        }}
+        className={`fit-host group flex items-center gap-4 p-4 rounded-xl bg-ink-hi/[0.04] hover:bg-ink-hi/[0.07] transition-colors cursor-pointer select-none ${
+          drag.dragging ? "opacity-40" : ""
+        }`}
+      >
+        <span className="relative shrink-0">
+          <Artwork src={song.thumb} className="w-[72px] h-[72px] rounded-[10px]" iconClassName="w-6 h-6" alt="" />
+          {playing === "playing" && (
+            <span className="absolute inset-0 grid place-items-center rounded-[10px] bg-black/50">
+              <EqBars />
+            </span>
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <FitText lines={2} text={song.title} className="font-display text-[20px] font-bold tracking-[-0.02em] text-ink-hi leading-tight" />
+          <FitText text={song.artist} className="text-[13.5px] text-ink-dim mt-1" />
+        </div>
+        {song.duration > 0 && <div className="shrink-0 text-[13px] text-ink-faint tabular-nums">{fmtTime(song.duration)}</div>}
+        <button
+          title="More options"
+          aria-label="More options"
+          onClick={(e) => {
+            e.stopPropagation();
+            openContextMenu(e.clientX, e.clientY, trackMenuItems(song));
+          }}
+          className="p-2 rounded-full text-ink-faint hover:text-ink-hi hover:bg-ink-hi/[0.08] transition-colors"
+        >
+          <MoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="flex flex-wrap items-center gap-2.5 mt-3">
+        <button onClick={play} className={pill}>
+          <Play className="w-4 h-4 fill-current" />
+          Play
+        </button>
+        <button
+          onClick={() => useLibrary.getState().toggleLike(song)}
+          aria-pressed={liked}
+          className={pill}
+        >
+          <Heart className={`w-4 h-4 ${liked ? "fill-current text-accent" : ""}`} />
+          {liked ? "Liked" : "Like"}
+        </button>
+        <button onClick={() => useUI.getState().openPlaylistPicker([song])} className={pill}>
+          <ListPlus className="w-4 h-4" />
+          Add to playlist
+        </button>
+        <button
+          onClick={() => {
+            const added = usePlayer.getState().addToQueue([song]);
+            useUI.getState().toast(added ? "Added to queue" : "Already in your queue");
+          }}
+          className={pill}
+        >
+          <ListStart className="w-4 h-4" />
+          Add to queue
+        </button>
+      </div>
+    </section>
+  );
+}
+
+const songItemOf = (t: Track): RecentItem => ({ kind: "song", id: t.id, title: t.title, subtitle: t.artist, thumb: t.thumb, track: t });
+
+/** The Search page: a pasted YouTube link opens its song, anything else is a search. */
 export function SearchView() {
+  const query = useUI((s) => s.searchQuery);
+  const link = useMemo(() => parseYouTubeLink(query), [query]);
+  return link ? <LinkResult key={link.kind === "video" ? link.videoId : link.listId} link={link} /> : <SearchResults />;
+}
+
+function SearchResults() {
   const query = useUI((s) => s.searchQuery);
   const filter = useUI((s) => s.searchFilter);
   const setFilter = useUI((s) => s.setSearchFilter);

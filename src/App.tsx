@@ -17,6 +17,7 @@ import { setAmbientFromArtwork } from "./lib/ambient";
 import { listenForDownloadProgress } from "./lib/downloads";
 import { listenForOpenedFiles } from "./lib/openedFiles";
 import { watchSpotify } from "./lib/spotify";
+import { watchDiscord } from "./lib/discordPresence";
 import { listenForRooms } from "./lib/rooms";
 import { FileDropOverlay } from "./components/FileDropOverlay";
 import { LYRICS_NUDGE_STEP, useLyricsNudge } from "./lib/lyricsOffset";
@@ -361,6 +362,7 @@ export default function App() {
   // Audio files opened with Blutheist or dropped on the window play at once.
   useEffect(() => listenForOpenedFiles(), []);
   useEffect(() => watchSpotify(), []);
+  useEffect(() => watchDiscord(), []);
   useEffect(() => listenForRooms(), []);
 
   // Native miniplayer bridge: push playback snapshots to the PiP window and

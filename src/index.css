@@ -5505,3 +5505,13 @@ html.is-bg *, html.is-bg *::before, html.is-bg *::after { animation-play-state: 
 .song-row + .song-row { margin-top: -6px; }
 .song-row .shelf-scroll { padding-bottom: 0; gap: 6px; }
 .song-row .shelf-scroll > * { content-visibility: auto; contain-intrinsic-size: auto 184px auto 252px; }
+
+/* Settings → Discord: the Developer Portal link */
+.st-link {
+  color: var(--accent, #8ab4ff);
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+  cursor: pointer;
+}

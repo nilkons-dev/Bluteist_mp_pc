@@ -15,7 +15,7 @@
 import { MATCH_LANGUAGES } from "./track-match";
 
 /** Device-local settings a backup must never carry or overwrite. */
-export const DEVICE_LOCAL_SETTINGS = new Set(["downloadDir", "localMusicFolder", "audioSinkId", "lyricsOffset", "closeToTray"]);
+export const DEVICE_LOCAL_SETTINGS = new Set(["downloadDir", "localMusicFolder", "audioSinkId", "lyricsOffset", "closeToTray", "discordEnabled", "discordAppId"]);
 
 /** Known settings keys — junk in, junk never out. */
 export const SETTINGS_KEYS = new Set([
@@ -43,6 +43,8 @@ export const SETTINGS_KEYS = new Set([
   "dontRepeatSuggestions",
   "hideVolumeBar",
   "closeToTray",
+  "discordEnabled",
+  "discordAppId",
   "eqEnabled",
   "eqGains",
   "eqPresets",

@@ -49,6 +49,10 @@ interface SettingsState {
   smartFade: boolean;
   skipSilence: boolean;
   autoplay: boolean;
+  /** Discord "Listening to" status (device-local) */
+  discordEnabled: boolean;
+  /** the user's own Discord application id */
+  discordAppId: string;
   /** 0.5..2 — persisted playback speed (pitch-preserving) */
   playbackSpeed: number;
   /** Audio output device (setSinkId). "" follows the system default. */
@@ -102,6 +106,8 @@ interface SettingsState {
   setSmartFade(v: boolean): void;
   setSkipSilence(v: boolean): void;
   setAutoplay(v: boolean): void;
+  setDiscordEnabled(v: boolean): void;
+  setDiscordAppId(v: string): void;
   setPlaybackSpeed(v: number): void;
   setAudioSinkId(sinkId: string): void;
   setEqEnabled(v: boolean): void;
@@ -144,6 +150,8 @@ export const useSettings = create<SettingsState>()(
       // On for new installs. Existing installs keep their stored value and
       // get a one-time offer when their queue first runs out (lib/autoplay).
       autoplay: true,
+      discordEnabled: false,
+      discordAppId: "",
       playbackSpeed: 1,
       audioSinkId: "",
       eqEnabled: false,
@@ -181,6 +189,8 @@ export const useSettings = create<SettingsState>()(
       setSmartFade: (smartFade) => set({ smartFade }),
       setSkipSilence: (skipSilence) => set({ skipSilence }),
       setAutoplay: (autoplay) => set({ autoplay }),
+      setDiscordEnabled: (discordEnabled) => set({ discordEnabled }),
+      setDiscordAppId: (discordAppId) => set({ discordAppId: discordAppId.replace(/\D/g, "").slice(0, 22) }),
       setPlaybackSpeed: (playbackSpeed) => set({ playbackSpeed: Math.min(2, Math.max(0.5, playbackSpeed)) }),
       setAudioSinkId: (audioSinkId) => set({ audioSinkId }),
       setEqEnabled: (eqEnabled) => set({ eqEnabled }),
