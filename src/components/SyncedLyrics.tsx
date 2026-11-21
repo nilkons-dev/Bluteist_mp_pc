@@ -462,7 +462,7 @@ export function LyricsView({
               </button>
             );
           })}
-          {lyrics?.source && <p className="pt-4 text-[12px] font-medium text-ink-hi/45">Lyrics from {lyrics.source}</p>}
+          {lyrics?.source && <p className="pt-4 text-[12px] font-medium text-ink-hi/45">Lyrics from {lyrics.source.replace(/YouTube Captions/i, "Captions").replace(/YouTube Music/i, "Blutheist")}</p>}
         </div>
         <div aria-hidden="true" style={{ height: bottomSpacer, flexShrink: 0 }} />
         </div>

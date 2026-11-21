@@ -20,7 +20,6 @@ import { downloadAll, startDownload } from "./downloads";
 import { plural } from "./format";
 import { playAlbum } from "./album";
 import { playPlaylist } from "./playlist";
-import { copyLink, youtubeAlbumLink, youtubePlaylistLink } from "./playlistShare";
 import { requireBridge } from "./bridge";
 import { useLibrary, type Playlist } from "../stores/library";
 import { addSongsToPlaylists, newPlaylistWith } from "./devicePlaylists";
@@ -155,19 +154,6 @@ export function trackMenuItems(track: Track): MenuItem[] {
       label: "Go to album",
       icon: Disc3,
       action: () => useUI.getState().navigate({ name: "album", param: track.albumId }),
-    });
-  }
-
-  if (!local) {
-    items.push({
-      label: "Copy link",
-      icon: Link2,
-      action: () => {
-        void navigator.clipboard
-          .writeText(`https://music.youtube.com/watch?v=${track.id}`)
-          .then(() => useUI.getState().toast("Link copied"))
-          .catch(() => useUI.getState().toast("Couldn't copy link", "error"));
-      },
     });
   }
 
@@ -348,11 +334,6 @@ export function browseMenuItems(item: BrowseItem): MenuItem[] {
   if (item.type === "artist") {
     return [
       { label: "Open artist", icon: User, action: () => ui.navigate({ name: "artist", param: item.browseId }) },
-      {
-        label: "Copy link",
-        icon: Link2,
-        action: () => copyLink(`https://music.youtube.com/channel/${encodeURIComponent(item.browseId)}`),
-      },
       { subject: { title: item.title, subtitle: "Artist", thumb: item.thumb, round: true } },
     ];
   }
@@ -380,11 +361,6 @@ export function browseMenuItems(item: BrowseItem): MenuItem[] {
       icon: Download,
       separatorBefore: true,
       action: () => void tracksOf().then((t) => downloadAll(t, `"${item.title}"`)).catch(failed),
-    },
-    {
-      label: "Copy link",
-      icon: Link2,
-      action: () => copyLink(album ? youtubeAlbumLink(item.browseId) : youtubePlaylistLink(item.browseId)),
     },
   ];
 }

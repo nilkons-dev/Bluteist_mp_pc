@@ -40,11 +40,13 @@ const api = {
   searchMore: (token: string, filter: string) => ipcRenderer.invoke("music:searchMore", token, filter),
   resolveVideo: (videoId: string): Promise<{ ok: true; track: Track } | { ok: false; error: string }> =>
     ipcRenderer.invoke("music:resolveVideo", videoId),
+  /** The page is asleep (hidden, or unfocused in gaming mode): main lowers its processes' priority. */
+  setBackgroundMode: (sleeping: boolean): void => ipcRenderer.send("perf:setBackground", sleeping === true),
   /** Discord "Listening to" status (electron/discord-rpc.ts). */
   discordConfigure: (config: { enabled: boolean; appId: string }): Promise<unknown> => ipcRenderer.invoke("discord:configure", config),
   discordStatus: (): Promise<unknown> => ipcRenderer.invoke("discord:status"),
   discordSetSong: (
-    song: { title: string; artist: string; album?: string; durationSec: number; positionSec: number; cover?: string; videoId?: string } | null
+    song: { title: string; artist: string; album?: string; durationSec: number; positionSec: number; cover?: string } | null
   ): Promise<unknown> => ipcRenderer.invoke("discord:setSong", song),
   suggestions: (query: string): Promise<{ items: SearchSuggestion[] }> => ipcRenderer.invoke("music:suggestions", query),
   getAlbum: (id: string) => ipcRenderer.invoke("music:album", id),

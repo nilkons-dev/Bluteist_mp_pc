@@ -18,6 +18,7 @@ import { listenForDownloadProgress } from "./lib/downloads";
 import { listenForOpenedFiles } from "./lib/openedFiles";
 import { watchSpotify } from "./lib/spotify";
 import { watchDiscord } from "./lib/discordPresence";
+import { setSleepWhenUnfocused } from "./lib/background";
 import { listenForRooms } from "./lib/rooms";
 import { FileDropOverlay } from "./components/FileDropOverlay";
 import { LYRICS_NUDGE_STEP, useLyricsNudge } from "./lib/lyricsOffset";
@@ -363,6 +364,12 @@ export default function App() {
   useEffect(() => listenForOpenedFiles(), []);
   useEffect(() => watchSpotify(), []);
   useEffect(() => watchDiscord(), []);
+  // Gaming mode: sleep while another app or game is in front (src/lib/background.ts).
+  const sleepWhenUnfocused = useSettings((s) => s.sleepWhenUnfocused);
+  useEffect(() => {
+    setSleepWhenUnfocused(sleepWhenUnfocused);
+    return () => setSleepWhenUnfocused(false);
+  }, [sleepWhenUnfocused]);
   useEffect(() => listenForRooms(), []);
 
   // Native miniplayer bridge: push playback snapshots to the PiP window and

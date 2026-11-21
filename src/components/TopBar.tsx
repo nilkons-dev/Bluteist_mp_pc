@@ -487,7 +487,12 @@ export function TopBar() {
             value={query}
             maxLength={400}
             placeholder="What do you want to play?"
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              // A pasted (or typed-out) song link needs no Enter: it searches the moment it is complete.
+              if (value !== query && parseYouTubeLink(value)?.kind === "video") submitSearch(value);
+              else setQuery(value);
+            }}
             onFocus={() => {
               setFieldFocused(true);
               if (suggests.length > 0) setSuggestOpen(true);

@@ -54,7 +54,7 @@ export function trackFromVideoInfo(info: VideoInfoLike | null | undefined, id: s
   }
   if (basic.is_live || basic.is_post_live_dvr) throw new VideoUnavailableError("Live streams can't be played as songs.");
   if (basic.is_upcoming) throw new VideoUnavailableError("This video hasn't started yet.");
-  const channel = cleanChannelName(basic.author || basic.channel?.name || "") || "YouTube";
+  const channel = cleanChannelName(basic.author || basic.channel?.name || "") || "Unknown artist";
   const duration = Number.isFinite(basic.duration) && (basic.duration as number) > 0 ? Math.round(basic.duration as number) : 0;
   const channelId = basic.channel_id || basic.channel?.id || "";
   return {

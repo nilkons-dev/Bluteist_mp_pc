@@ -114,7 +114,7 @@ export function askToDisconnectSpotify(): void {
 export function askToConnectSpotify(): void {
   useUI.getState().openDialog({
     title: "Connect Spotify",
-    body: "Sign in to Spotify in a window of its own, and your playlists and Liked Songs show up here, played from YouTube Music. Blutheist reads them the way Spotify's web player does, which isn't an official Spotify feature, so it may stop working.",
+    body: "Sign in to Spotify in a window of its own, and your playlists and Liked Songs show up here, played in Blutheist. Blutheist reads them the way Spotify's web player does, which isn't an official Spotify feature, so it may stop working.",
     confirmLabel: "Connect",
     onConfirm: () =>
       void connectSpotify().then((ok) => {

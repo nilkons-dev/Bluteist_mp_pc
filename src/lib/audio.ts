@@ -53,6 +53,7 @@ import { upgradeArtwork } from "./artwork";
 import { shortTitle } from "./format";
 import { createMediaKeyTap } from "./media-key-tap";
 import { useSleepTimer } from "./sleepTimer";
+import { isBackground } from "./background";
 import { inRoom, stopHere, useRoom } from "../stores/room";
 import {
   deviceChoices,
@@ -714,11 +715,17 @@ function updateBuffered(): void {
   }
 }
 
+/** While the page sleeps (hidden, or a game is in front) the progress state updates once a second, not ~4 times. */
+let lastUiTick = 0;
 function onTimeUpdate(): void {
   const a = el();
   if (!a) return;
-  usePlayer.getState()._setTime(a.currentTime, a.duration);
-  updateBuffered();
+  const nowMs = performance.now();
+  if (!isBackground() || nowMs - lastUiTick >= 1000) {
+    lastUiTick = nowMs;
+    usePlayer.getState()._setTime(a.currentTime, a.duration);
+    updateBuffered();
+  }
   const cur = usePlayer.getState().queue[usePlayer.getState().index];
   if (cur) accumulate(cur.id, a.currentTime);
   maybeArmTransition();

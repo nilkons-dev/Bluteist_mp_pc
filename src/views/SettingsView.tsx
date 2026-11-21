@@ -29,7 +29,8 @@ import {
   Download,
   Droplets,
   ExternalLink,
-  MessageCircle,
+  Gamepad2,
+  KeyRound,
   FileDown,
   FileMusic,
   FileUp,
@@ -73,6 +74,7 @@ import { displayNameProblem, normalizeDisplayName } from "../lib/account-validat
 import { askToDisconnectSpotify, connectSpotify, useSpotify } from "../lib/spotify";
 import { useUpdates } from "../lib/updates";
 import { SpotifyIcon } from "../components/SpotifyIcon";
+import { DiscordIcon } from "../components/DiscordIcon";
 import { MATCH_LANGUAGES, type MatchLanguage } from "../../electron/track-match";
 import { LYRICS_NUDGE_STEP, describeLyricsShift } from "../lib/lyricsOffset";
 import { setOnboardingIntent } from "../lib/onboardingIntent";
@@ -697,6 +699,10 @@ const MATCH_LANGUAGE_LABEL: Record<MatchLanguage | "", string> = {
  * so each listener makes their own application (free, a minute) and pastes its Application ID here.
  * The id is public and never a secret; it stays on this computer.
  */
+function DiscordLiveIcon({ className }: { className?: string }) {
+  return <DiscordIcon live className={className} />;
+}
+
 const DISCORD_PORTAL = "https://discord.com/developers/applications";
 
 function DiscordGroup() {
@@ -752,7 +758,7 @@ function DiscordGroup() {
       note="Show what you're listening to on your Discord profile, like Spotify does. Discord names the activity after an application you create yourself, so call it Blutheist. Only the song, artist and cover are shared, and only while a song plays."
     >
       <Row
-        icon={MessageCircle}
+        icon={status?.state === "connected" ? DiscordLiveIcon : DiscordIcon}
         title="Connect Discord"
         note={statusText}
         toggle={{ checked: enabled, onChange: setEnabled }}
@@ -762,13 +768,13 @@ function DiscordGroup() {
         title="1 · Create your application"
         note="Open the Discord Developer Portal, press New Application, name it Blutheist, then copy its Application ID from General Information."
         control={
-          <a className="st-link" href={DISCORD_PORTAL} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-            discord.com/developers/applications
-          </a>
+          <Button kind="primary" onClick={() => window.open(DISCORD_PORTAL, "_blank", "noopener")}>
+            Open Developer Portal
+          </Button>
         }
       />
       <Row
-        icon={MessageCircle}
+        icon={KeyRound}
         title="2 · Application ID"
         note="Paste the number here (about 18 digits). Discord must be open on this computer."
         control={
@@ -818,7 +824,7 @@ function ConnectedServices() {
   return (
     <Group
       title="Connected services"
-      note="Connecting signs in to Spotify in a window of its own. Blutheist keeps that session on this computer for this Blutheist account, encrypted, and never uploads it. It reads your playlists the way Spotify's web player does, which isn't an official Spotify feature: it may stop working, and it isn't allowed by Spotify's terms. Songs are found on YouTube Music to play."
+      note="Connecting signs in to Spotify in a window of its own. Blutheist keeps that session on this computer for this Blutheist account, encrypted, and never uploads it. It reads your playlists the way Spotify's web player does, which isn't an official Spotify feature: it may stop working, and it isn't allowed by Spotify's terms. Songs are found to play."
     >
       <Row
         icon={SpotifyIcon}
@@ -910,6 +916,12 @@ function PlaybackPane() {
           title="Don't repeat suggestions"
           note="Keep recently played tracks out of the home feed"
           toggle={{ checked: s.dontRepeatSuggestions, onChange: s.setDontRepeatSuggestions }}
+        />
+        <Row
+          icon={Gamepad2}
+          title="Gaming mode"
+          note="While a game or another app is in front, Blutheist pauses its animations and uses less CPU. Music keeps playing"
+          toggle={{ checked: s.sleepWhenUnfocused, onChange: s.setSleepWhenUnfocused }}
         />
       </Group>
       <Group title="Speed">
@@ -1496,16 +1508,9 @@ function AboutPane() {
           <AboutBody />
         </div>
       </section>
-      <UpdatesGroup />
-      <Group title="Links">
-        <Row
-          icon={Globe}
-          title="Blutheist website"
-          note="GitHub: downloads, news and help"
-          control={<ExternalLink className="st-go" />}
-          onClick={() => window.open("https://github.com/nilkons-dev/Bluteist_mp_pc", "_blank", "noopener")}
-        />
-      </Group>
+      {/* The Updates and Links groups are switched off for now: to bring Updates back,
+          render <UpdatesGroup /> (still defined above) here. Links was one Row: Globe icon, "Blutheist website",
+          opening the project's GitHub page. */}
     </>
   );
 }

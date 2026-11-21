@@ -152,16 +152,16 @@ export async function importPlaylistFile(): Promise<void> {
   try {
     const file = await window.bytune?.playlistImport();
     if (!file) return;
-    // A CSV export or a list of song names goes to the import page, to be matched to YouTube Music.
+    // A CSV export or a list of song names goes to the import page, to be matched to songs.
     if (file.ext === "csv" || file.ext === "txt") return importFromText(file.text, file.name);
     const { name, tracks, skipped } = parsePlaylistFile(file.text, file.name);
     if (!tracks.length) {
-      ui.toast("No YouTube Music songs found in that file", "error");
+      ui.toast("No songs found in that file", "error");
       return;
     }
     const playlist = useLibrary.getState().importPlaylist(name, tracks);
     ui.toast(
-      skipped ? `Imported ${tracks.length} songs (${skipped} without a YouTube link were skipped)` : `Imported ${tracks.length} songs`,
+      skipped ? `Imported ${tracks.length} songs (${skipped} without a usable link were skipped)` : `Imported ${tracks.length} songs`,
       "success",
     );
     if (playlist) ui.navigate({ name: "playlist", param: playlist.id });

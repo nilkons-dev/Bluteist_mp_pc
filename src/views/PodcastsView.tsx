@@ -97,7 +97,7 @@ export function PodcastsView() {
         <Mic className="w-7 h-7 text-ink-hi/80" />
         Podcasts
       </h1>
-      <p className="text-[13px] text-ink-dim mt-1 mb-7">Popular in your region on YouTube Music</p>
+      <p className="text-[13px] text-ink-dim mt-1 mb-7">Popular in your region</p>
 
       {shelves === null ? (
         <div className="space-y-8">

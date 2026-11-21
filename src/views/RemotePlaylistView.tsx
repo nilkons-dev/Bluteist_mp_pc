@@ -10,7 +10,6 @@ import { Artwork, EqBars, ErrorState, ExplicitBadge, HeroSkeleton, ListSkeleton 
 import { HERO_PILL, HERO_ROUND, PlaylistHero } from "../components/PlaylistHero";
 import { trackMenuItems } from "../lib/trackActions";
 import { downloadAll } from "../lib/downloads";
-import { copyLink, youtubePlaylistLink } from "../lib/playlistShare";
 import { useDrag } from "../lib/dnd";
 import { fmtTime, shortTitle } from "../lib/format";
 import { FitText } from "../components/FitText";
@@ -173,7 +172,6 @@ export function RemotePlaylistView({ playlistId }: { playlistId: string }) {
                 },
               },
               { label: "Download all", action: () => downloadAll(tracks, "this playlist") },
-              { label: "Copy link", action: () => copyLink(youtubePlaylistLink(playlistId)) },
             ])
           }
           title="More options"

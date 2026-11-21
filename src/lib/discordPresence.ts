@@ -50,7 +50,6 @@ export function watchDiscord(): () => void {
         durationSec: track.duration,
         positionSec: p.position,
         cover: /^https:\/\//i.test(track.thumb) ? track.thumb : undefined,
-        videoId: /^[A-Za-z0-9_-]{11}$/.test(track.id) ? track.id : undefined,
       })
       .catch(() => undefined);
   };

@@ -10,7 +10,6 @@ import { Disc3, ListPlus, MoreHorizontal, Play, Shuffle, User } from "lucide-rea
 import { Artwork, EqBars, ErrorState, ExplicitBadge, HeroSkeleton, ListSkeleton } from "../components/primitives";
 import { trackMenuItems } from "../lib/trackActions";
 import { downloadAll } from "../lib/downloads";
-import { copyLink, youtubeAlbumLink } from "../lib/playlistShare";
 import { useDrag } from "../lib/dnd";
 import { fmtTime, PAGE_TITLE_SIZE, shortTitle, titleSource, titleStep } from "../lib/format";
 import { FitText } from "../components/FitText";
@@ -187,7 +186,6 @@ export function AlbumView({ albumId }: { albumId: string }) {
                     disabled: !tracks.length,
                     action: () => downloadAll(tracks, `"${album.title}"`),
                   },
-                  { label: "Copy link", action: () => copyLink(youtubeAlbumLink(albumId)) },
                 ])
               }
               title="More options"

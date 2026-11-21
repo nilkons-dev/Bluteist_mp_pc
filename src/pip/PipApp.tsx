@@ -432,33 +432,6 @@ export function PipApp() {
     }, 180);
   };
 
-  /* copy the song link (clipboard API with a textarea fallback); the button
-     shows a check and "Link copied" for a moment once it worked */
-  const copyShareLink = async (): Promise<void> => {
-    if (!track || !canShare) return;
-    const url = `https://music.youtube.com/watch?v=${track.id}`;
-    let ok = true;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      try {
-        const ta = document.createElement("textarea");
-        ta.value = url;
-        ta.setAttribute("readonly", "");
-        ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
-        document.body.appendChild(ta);
-        ta.select();
-        ok = document.execCommand("copy");
-        ta.remove();
-      } catch {
-        ok = false; // clipboard unavailable
-      }
-    }
-    if (!ok) return;
-    setCopied(true);
-    if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current);
-    copiedTimer.current = window.setTimeout(() => setCopied(false), 1500);
-  };
 
   /* Title → its album, artist → their page, in the main window (brought
      forward); with nothing playing, a click just brings Blutheist forward. */
@@ -843,17 +816,6 @@ export function PipApp() {
                     disabled={!track}
                   >
                     {snap?.repeat === "one" ? <SpRepeatOne /> : <SpRepeat />}
-                  </IconBtn>
-                  <IconBtn onClick={() => void copyShareLink()} disabled={!canShare} title={copied ? "Link copied" : "Copy link to Song"}>
-                    <span key={copied ? "copied" : "copy"} className="icon-swap">
-                      {copied ? (
-                        <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M3 8.5l3.2 3.2L13 4.8" />
-                        </svg>
-                      ) : (
-                        <SpCopyLink className="h-4 w-4" />
-                      )}
-                    </span>
                   </IconBtn>
                 </div>
               </div>

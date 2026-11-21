@@ -1097,7 +1097,7 @@ const linkCache = new Map<string, Track>();
  * it plays, likes, queues and joins playlists like any other. Throws a readable message when it can't be played.
  */
 export async function resolveVideo(videoId: string): Promise<Track> {
-  if (!VIDEO_ID.test(videoId)) throw new VideoUnavailableError("That doesn't look like a YouTube video link.");
+  if (!VIDEO_ID.test(videoId)) throw new VideoUnavailableError("That doesn't look like a valid song link.");
   const hit = linkCache.get(videoId);
   if (hit) return hit;
   let lastError: unknown = null;

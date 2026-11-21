@@ -294,7 +294,7 @@ const EVERY_SETTING = [
   "Synced lyrics", "Blur unfocused lyrics", "Romanized lyrics", "Lyrics timing",
   "Reduce animation", "Reduce dynamic blur", "Liquid glass", "Full-screen cover art", "Animated cover art", "Legacy mesh gradient", "Hide volume bar",
   "Local music folders", "Add a folder", "Rescan library", "Filter non-music audio", "Download folder", "Download quality", "Export compatible downloads",
-  "Replay", "Export data", "Import data", "Reset app data", "Blutheist website",
+  "Replay", "Export data", "Import data", "Reset app data", "Gaming mode", "Connect Discord",
 ];
 
 test("the search finds every setting by its name, in whichever category it lives", async () => {

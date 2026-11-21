@@ -63,7 +63,7 @@ function MatchRow({
     if (track) useUI.getState().openContextMenu(x, y, trackMenuItems(track));
   };
   const status =
-    !state || state.state === "matching" ? "Finding…" : state.state === "missing" ? "Not on YouTube Music" : state.state === "failed" ? "Couldn't check" : null;
+    !state || state.state === "matching" ? "Finding…" : state.state === "missing" ? "Not available" : state.state === "failed" ? "Couldn't check" : null;
   const dim = state?.state === "missing" || state?.state === "failed";
   return (
     <div
@@ -255,8 +255,8 @@ export function MatchedPlaylistView({ spotifyId, importId = "" }: { spotifyId: s
     loading || !songs.length
       ? null
       : !done
-        ? `Finding ${songs.length - finding} of ${songs.length} songs on YouTube Music…`
-        : `${matched.length} of ${songs.length} songs found on YouTube Music${missing ? `. ${missing === 1 ? "1 isn't" : `${missing} aren't`} there` : ""}${
+        ? `Finding ${songs.length - finding} of ${songs.length} songs…`
+        : `${matched.length} of ${songs.length} songs found${missing ? `. ${missing === 1 ? "1 isn't" : `${missing} aren't`} there` : ""}${
             failed ? `. ${failed} couldn't be checked` : ""
           }.`;
   const cut = playlist && playlist.total > songs.length ? `The playlist has ${playlist.total} songs; Blutheist could read the first ${songs.length}.` : null;
@@ -331,7 +331,7 @@ export function MatchedPlaylistView({ spotifyId, importId = "" }: { spotifyId: s
           <p className="px-3 text-[14px] text-ink-dim">This playlist has no songs yet.</p>
         )}
         <p className="px-3 pt-6 text-[12px] text-ink-faint leading-relaxed max-w-2xl">
-          {prefer ? `Prefers ${LANGUAGE_LABEL[prefer] ?? prefer} versions of a song where YouTube Music has several (Settings › Connected services). ` : ""}
+          {prefer ? `Prefers ${LANGUAGE_LABEL[prefer] ?? prefer} versions of a song where there are several (Settings › Connected services). ` : ""}
           {fromSpotify ? "Read from Spotify's own pages. That isn't an official Spotify feature, so it may stop working." : ""}
         </p>
       </div>

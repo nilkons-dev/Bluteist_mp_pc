@@ -32,8 +32,6 @@ export interface PresenceInput {
   positionSec: number;
   /** https cover picture, if any */
   cover?: string;
-  /** YouTube video id: gives the "Listen on YouTube Music" button */
-  videoId?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -115,9 +113,6 @@ export function buildActivity(song: PresenceInput, now: number): Record<string, 
   };
   const cover = song.cover && /^https:\/\//i.test(song.cover) && song.cover.length <= 256 ? song.cover : undefined;
   if (cover) activity.assets = { large_image: cover, large_text: clip((song.album || song.title || "").trim() || "Blutheist", 128) };
-  if (song.videoId && /^[A-Za-z0-9_-]{11}$/.test(song.videoId)) {
-    activity.buttons = [{ label: "Listen on YouTube Music", url: `https://music.youtube.com/watch?v=${song.videoId}` }];
-  }
   return activity;
 }
 

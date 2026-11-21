@@ -182,7 +182,7 @@ export function mergeRecentSearches(localPayload: Envelope, remotePayload: Envel
 /** Settings that belong to this machine: paths, and the output device id
  *  (another computer's audio device id means nothing here), and what closing
  *  this computer's window does, and the Discord this computer shows its music on. */
-export const DEVICE_SETTINGS_FIELDS = ["downloadDir", "localMusicFolder", "audioSinkId", "lyricsOffset", "closeToTray", "discordEnabled", "discordAppId"] as const;
+export const DEVICE_SETTINGS_FIELDS = ["downloadDir", "localMusicFolder", "audioSinkId", "lyricsOffset", "closeToTray", "discordEnabled", "discordAppId", "sleepWhenUnfocused"] as const;
 
 export function stripDeviceSettings(payload: Envelope): { state: Record<string, unknown>; version: number } {
   const state = stateOf(payload);

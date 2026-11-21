@@ -39,9 +39,9 @@ test("paths: pipes on Windows, sockets elsewhere", () => {
   assert.ok(p.includes("/run/user/1000/app/com.discordapp.Discord/discord-ipc-0"));
 });
 
-test("activity: listening, song, artist, cover, time bar, button", () => {
+test("activity: listening, song, artist, cover, time bar, no link button", () => {
   const a = buildActivity(
-    { title: "Tum Hi Ho", artist: "Arijit Singh", album: "Aashiqui 2", durationSec: 240, positionSec: 30, cover: "https://x.test/c.jpg", videoId: "dQw4w9WgXcQ" },
+    { title: "Tum Hi Ho", artist: "Arijit Singh", album: "Aashiqui 2", durationSec: 240, positionSec: 30, cover: "https://x.test/c.jpg" },
     1_000_000
   );
   assert.equal(a.type, 2);
@@ -49,11 +49,11 @@ test("activity: listening, song, artist, cover, time bar, button", () => {
   assert.equal(a.state, "Arijit Singh");
   assert.deepEqual(a.timestamps, { start: 970_000, end: 1_210_000 });
   assert.equal(a.assets.large_image, "https://x.test/c.jpg");
-  assert.equal(a.buttons[0].url, "https://music.youtube.com/watch?v=dQw4w9WgXcQ");
+  assert.equal(a.buttons, undefined);
 });
 
 test("activity: short text padded, no cover over http, unknown length has no end", () => {
-  const a = buildActivity({ title: "X", artist: "", durationSec: 0, positionSec: 0, cover: "http://x.test/c.jpg", videoId: "bad" }, 5000);
+  const a = buildActivity({ title: "X", artist: "", durationSec: 0, positionSec: 0, cover: "http://x.test/c.jpg" }, 5000);
   assert.ok(a.details.length >= 2 && a.state.length >= 2);
   assert.equal(a.assets, undefined);
   assert.equal(a.buttons, undefined);

@@ -74,7 +74,7 @@ export function SpotifyView() {
   const mark = <SpotifyIcon className="w-6 h-6 shrink-0" />;
   const note = (
     <p className="pt-10 text-[12px] text-ink-faint leading-relaxed max-w-2xl">
-      Songs play from YouTube Music, matched by title, artist and length. Blutheist reads your playlists the way Spotify's web player does,
+      Songs play in Blutheist, matched by title, artist and length. Blutheist reads your playlists the way Spotify's web player does,
       which isn't an official Spotify feature, so it may stop working.
     </p>
   );
@@ -90,7 +90,7 @@ export function SpotifyView() {
           covers={[]}
           facts={
             <span className="block max-w-[56ch]">
-              {status.problem ?? "Sign in to Spotify in a window of its own, and your playlists and Liked Songs show up here, played from YouTube Music."}
+              {status.problem ?? "Sign in to Spotify in a window of its own, and your playlists and Liked Songs show up here, played in Blutheist."}
             </span>
           }
         >

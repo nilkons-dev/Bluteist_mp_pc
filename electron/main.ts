@@ -3,6 +3,7 @@ import { app, BrowserWindow, clipboard, ClipboardItem, dialog, ipcMain, Menu, na
 import type { NativeImage } from "electron";
 import { pathToFileURL } from "url";
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import * as downloads from "./downloads";
 import * as downloaded from "./downloaded-files";
@@ -59,6 +60,23 @@ let mainWindow: BrowserWindow | null = null;
  */
 let quitting = false;
 const discord = new DiscordPresence();
+
+/** Lowers (or restores) the priority of the browser and GPU processes. Never throws: some systems refuse. */
+function setBackgroundPriority(sleeping: boolean): void {
+  const level = sleeping ? os.constants.priority.PRIORITY_BELOW_NORMAL : os.constants.priority.PRIORITY_NORMAL;
+  try {
+    for (const m of app.getAppMetrics()) {
+      if (m.type !== "Browser" && m.type !== "GPU") continue;
+      try {
+        os.setPriority(m.pid, level);
+      } catch {
+        /* not allowed for this process: leave it */
+      }
+    }
+  } catch {
+    /* metrics unavailable */
+  }
+}
 
 /** before-quit can fire twice (window close → quit); the drain must run once. */
 let drainStarted = false;
@@ -597,7 +615,7 @@ function registerIpc(): void {
   );
   // A pasted YouTube link: only a well-formed video id is looked up; the reply is the song or the reason it can't play.
   ipc.handle("music:resolveVideo", async (_e, videoId: unknown) => {
-    if (typeof videoId !== "string") return { ok: false, error: "That doesn't look like a YouTube video link." };
+    if (typeof videoId !== "string") return { ok: false, error: "That doesn't look like a valid song link." };
     try {
       return { ok: true, track: await music.resolveVideo(videoId) };
     } catch (err) {
@@ -623,7 +641,6 @@ function registerIpc(): void {
         durationSec: num(s.durationSec),
         positionSec: num(s.positionSec),
         cover: typeof s.cover === "string" ? s.cover : undefined,
-        videoId: typeof s.videoId === "string" ? s.videoId : undefined,
       });
     }
     return true;
@@ -861,6 +878,10 @@ function registerIpc(): void {
     else mainWindow.maximize();
   });
   ipc.on("window:close", () => mainWindow?.close());
+  // Gaming mode: while the page sleeps (a game or another app is in front, or the window is in the tray) the main
+  // process and the GPU process step down to below-normal priority, so a game keeps the CPU. The page's own process and
+  // Chromium's audio service stay as they are: they carry the song, and starving them would make it stutter.
+  ipc.on("perf:setBackground", (_e, sleeping: unknown) => setBackgroundPriority(sleeping === true));
   ipc.on("window:introDone", (e) => {
     if (e.sender === mainWindow?.webContents) setGlass(false);
   });

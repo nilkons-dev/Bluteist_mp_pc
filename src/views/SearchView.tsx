@@ -9,7 +9,7 @@
  * YouTube's continuation token, exactly like the phone.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Disc3, Heart, LayoutGrid, Link2, ListMusic, ListPlus, ListStart, Mic, MoreVertical, Music2, Play, Search as SearchIcon, SearchX, User, X, type LucideIcon } from "lucide-react";
+import { Disc3, Heart, LayoutGrid, Link2, ListMusic, ListPlus, ListStart, MoreVertical, Music2, Play, Search as SearchIcon, SearchX, User, X, type LucideIcon } from "lucide-react";
 import { Artwork, EqBars, ErrorState, ExplicitBadge, IconBtn, ListSkeleton, Pills } from "../components/primitives";
 import { browseMenuItems, trackMenuItems } from "../lib/trackActions";
 import { playAlbum } from "../lib/album";
@@ -30,11 +30,9 @@ import type { BrowseItem, SearchFilter, SearchPageResult, SearchRow, Track } fro
 const FILTERS: { key: SearchFilter; label: string; icon: LucideIcon }[] = [
   { key: "all", label: "All", icon: LayoutGrid },
   { key: "songs", label: "Songs", icon: Music2 },
-  { key: "videos", label: "Videos", icon: Play },
   { key: "albums", label: "Albums", icon: Disc3 },
   { key: "artists", label: "Artists", icon: User },
   { key: "playlists", label: "Playlists", icon: ListMusic },
-  { key: "podcasts", label: "Podcasts", icon: Mic },
 ];
 
 /** The All tab's mixed page, grouped the way the mobile app groups it. */
@@ -50,7 +48,6 @@ function searchSections(rows: SearchRow[], filter: SearchFilter): SearchSection[
     { title: "Artists", rows: rows.filter((r) => r.kind === "browse" && r.item.type === "artist") },
     { title: "Albums", rows: rows.filter((r) => r.kind === "browse" && r.item.type === "album") },
     { title: "Playlists", rows: rows.filter((r) => r.kind === "browse" && r.item.type === "playlist") },
-    { title: "Podcasts", rows: rows.filter((r) => r.kind === "browse" && r.item.type === "podcast") },
     { title: "More", rows: rows.filter((r) => r.kind === "browse" && r.item.type === "other") },
   ];
   return sections.filter((section) => section.rows.length > 0);
@@ -486,7 +483,7 @@ function LinkResult({ link }: { link: YouTubeLink }) {
     if (link.kind !== "video") return;
     const api = window.bytune;
     if (!api) {
-      setState({ status: "error", message: "Blutheist's connection to YouTube isn't available." });
+      setState({ status: "error", message: "Blutheist's connection isn't available." });
       return;
     }
     let cancelled = false;
@@ -511,7 +508,7 @@ function LinkResult({ link }: { link: YouTubeLink }) {
     const open = (): void => navigate({ name: "ytplaylist", param: browseId });
     return (
       <section className="animate-slide-up">
-        <h2 className="section-title text-[21px] mb-4">YouTube playlist</h2>
+        <h2 className="section-title text-[21px] mb-4">Playlist</h2>
         <div className="flex items-center gap-4 p-4 rounded-xl bg-ink-hi/[0.04]">
           <span className="w-[72px] h-[72px] rounded-[10px] shrink-0 grid place-items-center bg-ink-hi/[0.06]">
             <Link2 className="w-6 h-6 text-ink-faint" />
@@ -546,7 +543,7 @@ function LinkResult({ link }: { link: YouTubeLink }) {
       <div className="space-y-4 animate-fade-in">
         <div className="flex items-center gap-2 text-[13px] text-ink-dim">
           <span className="w-4 h-4 shrink-0 rounded-full border-2 border-ink-hi/15 border-t-accent animate-spin" aria-label="Loading" />
-          Finding the song from your YouTube link…
+          Finding the song from your link…
         </div>
         <ListSkeleton rows={1} />
       </div>
@@ -574,7 +571,7 @@ function LinkSong({ song }: { song: Track }) {
     "inline-flex items-center gap-2 h-9 px-4 rounded-full border border-ink-hi/25 text-[13.5px] font-semibold text-ink-hi hover:border-ink-hi/50 hover:bg-ink-hi/[0.06] transition-all active:scale-[0.98]";
   return (
     <section className="animate-slide-up">
-      <h2 className="section-title text-[21px] mb-4">From your YouTube link</h2>
+      <h2 className="section-title text-[21px] mb-4">From your link</h2>
       <div
         {...tintHoverHandlers(song.thumb)}
         {...drag.props}
@@ -655,7 +652,9 @@ export function SearchView() {
 
 function SearchResults() {
   const query = useUI((s) => s.searchQuery);
-  const filter = useUI((s) => s.searchFilter);
+  const storedFilter = useUI((s) => s.searchFilter);
+  // A filter saved by an earlier version (videos, podcasts) is no longer offered: show All.
+  const filter: SearchFilter = FILTERS.some((f) => f.key === storedFilter) ? storedFilter : "all";
   const setFilter = useUI((s) => s.setSearchFilter);
   const pushSearch = useRecents((s) => s.pushSearch);
   const playQueue = usePlayer((s) => s.playQueue);
@@ -788,7 +787,7 @@ function SearchResults() {
           <SearchX className="w-10 h-10 text-ink-ghost mb-4" />
           <div className="text-[15px] font-semibold text-ink-hi">Search Blutheist</div>
           <p className="text-[13px] text-ink-dim mt-1.5 max-w-sm leading-relaxed">
-            Find songs, albums, artists and playlists from YouTube Music. Press {isMac ? "⌘F" : "Ctrl+F"} anywhere to jump into search.
+            Find songs, albums, artists and playlists from Blutheist. Press {isMac ? "⌘F" : "Ctrl+F"} anywhere to jump into search.
           </p>
         </div>
       </div>

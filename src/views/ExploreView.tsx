@@ -149,7 +149,7 @@ export function ExploreView() {
         <Sparkles className="w-7 h-7 text-ink-hi/80" />
         Explore
       </h1>
-      <p className="text-[13px] text-ink-dim mt-1 mb-6">Picked for your region by YouTube Music</p>
+      <p className="text-[13px] text-ink-dim mt-1 mb-6">Picked for your region</p>
 
       <PodcastsCard />
 
