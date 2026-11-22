@@ -299,7 +299,7 @@ export function historyMenuItems(track: Track): MenuItem[] {
 export function confirmClearHistory(): void {
   useUI.getState().openDialog({
     title: "Clear Recently played?",
-    body: "Your recently played songs will be removed. Replay keeps its stats.",
+    body: "Your recently played songs will be removed. Encore keeps its stats.",
     confirmLabel: "Clear",
     danger: true,
     onConfirm: () => useLibrary.getState().clearHistory(),

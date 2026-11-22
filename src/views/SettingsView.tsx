@@ -1387,8 +1387,8 @@ function DataPane() {
       <Group title="Listening">
         <Row
           icon={BarChart3}
-          title="Replay"
-          note="Your listening wrapped over time"
+          title="Encore"
+          note="Your listening, replayed over time"
           control={<ChevronRight className="st-go" />}
           onClick={() => useUI.getState().navigate({ name: "replay" })}
         />

@@ -1,7 +1,7 @@
 /**
  * Your listening streak, in the top bar: a cartoon flame and how many days
  * in a row you've played music — "0 days" beside a cold grey flame when
- * there's no streak. It counts what Replay counts (this device's stats), and
+ * there's no streak. It counts what Encore counts (this device's stats), and
  * music playing now counts today straight away. Clicking it opens Replay.
  */
 import { useEffect, useState, type CSSProperties } from "react";
@@ -102,7 +102,7 @@ export function StreakChip() {
     <button
       onClick={() => useUI.getState().navigate({ name: "replay" })}
       title={n ? `${n}-day listening streak${streak.best > n ? ` · your longest is ${streak.best} days` : ""}` : "No streak right now — play something today to start one"}
-      aria-label={`Listening streak: ${n} ${n === 1 ? "day" : "days"}. Open Replay`}
+      aria-label={`Listening streak: ${n} ${n === 1 ? "day" : "days"}. Open Encore`}
       className={`streak-chip ${n ? "" : "is-cold"}`}
     >
       <FireMark lit={n > 0} />

@@ -12,6 +12,7 @@
  * your listening waveform with your biggest day. Share draws a story-sized
  * card (lib/replayCard).
  */
+import { FireMark } from "../components/Streak";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Clock3, Copy, Download, Play, Share2, X } from "lucide-react";
@@ -357,20 +358,26 @@ export function ReplayView() {
   const label = periodLabel(period, data);
 
   if (error) {
-    return <ErrorState title="Replay didn't load" body="Give it another try." onRetry={() => setNonce((n) => n + 1)} />;
+    return <ErrorState title="Encore didn't load" body="Give it another try." onRetry={() => setNonce((n) => n + 1)} />;
   }
 
   const hasData = !!data && data.totalMs > 0;
 
   return (
     <div className="rp-page space-y-10 pb-6">
-      <div className="flex items-end justify-between gap-6 flex-wrap animate-slide-up">
-        <div>
-          <h1 className="font-display text-[44px] font-extrabold tracking-[-0.035em] text-ink-hi leading-none">Replay</h1>
-          <p className="text-[14px] text-ink-dim mt-2">{label}</p>
+      <header className="rp-head animate-slide-up">
+        <div className="rp-title">
+          <span className="rp-mark" aria-hidden>
+            <FireMark lit />
+          </span>
+          <div className="min-w-0">
+            <p className="rp-kicker">Your listening, replayed</p>
+            <h1 className="rp-h1">Encore</h1>
+            <p className="rp-sub">{label}</p>
+          </div>
         </div>
         <PeriodSwitch value={period} onChange={setPeriod} />
-      </div>
+      </header>
 
       {loading && <div className="skeleton h-[340px] rounded-[26px]" />}
 
@@ -381,7 +388,7 @@ export function ReplayView() {
           body={
             period === "week"
               ? "Your week fills in as you listen — every song you play from now on counts here."
-              : "Play something first — Replay fills in as Blutheist counts what you actually listen to."
+              : "Play something first — Encore fills in as Blutheist counts what you actually listen to."
           }
         />
       )}
@@ -409,7 +416,7 @@ export function ReplayView() {
       {sharing && hasData && data && (
         <ShareSheet
           onClose={() => setSharing(false)}
-          fileName={`Blutheist Replay — ${label}`}
+          fileName={`Blutheist Encore — ${label}`}
           make={() => {
             const days = activityDays(period, data.days);
             const run = streaks(period === "all" || period === "year" ? data.days : days);
@@ -442,7 +449,7 @@ function PeriodSwitch({ value, onChange }: { value: ReplayPeriod; onChange: (k: 
     if (el) setThumb({ x: el.offsetLeft, w: el.offsetWidth });
   }, [value]);
   return (
-    <div className="rp-seg" role="tablist" aria-label="Replay period">
+    <div className="rp-seg" role="tablist" aria-label="Encore period">
       {thumb && <span className="rp-seg-thumb" style={{ transform: `translateX(${thumb.x}px)`, width: thumb.w }} aria-hidden />}
       {PERIODS.map((p) => (
         <button
@@ -1033,7 +1040,7 @@ function ShareSheet({ make, fileName, onClose }: { make: () => Promise<Blob>; fi
     if (!card) return;
     try {
       const res = await window.bytune?.saveReplayImage(card.bytes, fileName);
-      if (res?.path) toast("Saved your Replay card");
+      if (res?.path) toast("Saved your Encore card");
     } catch {
       toast("Couldn't save the card", "error");
     }
@@ -1041,14 +1048,14 @@ function ShareSheet({ make, fileName, onClose }: { make: () => Promise<Blob>; fi
 
   // On the page root, like the app's other overlays: inside the page, the window frame would offset it.
   return createPortal(
-    <div className="rp-share-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()} role="dialog" aria-modal="true" aria-label="Share your Replay">
+    <div className="rp-share-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()} role="dialog" aria-modal="true" aria-label="Share your Encore">
       <div className="rp-share">
         <div className="rp-share-preview">
-          {card ? <img src={card.url} alt="Your Replay card" /> : failed ? null : <div className="skeleton h-full w-full" />}
+          {card ? <img src={card.url} alt="Your Encore card" /> : failed ? null : <div className="skeleton h-full w-full" />}
         </div>
         <div className="flex min-w-0 flex-col">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="font-display text-[26px] font-extrabold tracking-[-0.02em] text-ink-hi leading-tight">Share your Replay</h2>
+            <h2 className="font-display text-[26px] font-extrabold tracking-[-0.02em] text-ink-hi leading-tight">Share your Encore</h2>
             <button onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-dim hover:bg-ink-hi/[0.08] hover:text-ink-hi" aria-label="Close">
               <X className="h-5 w-5" />
             </button>

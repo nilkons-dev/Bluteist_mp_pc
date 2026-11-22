@@ -446,9 +446,10 @@ export function TopBar() {
       </div>
 
       {/* Centre cluster — home button beside the search field, Spotify-style:
-          pinned to the true window centre (not balanced between the side
-          clusters), centred on the bar's vertical midline. */}
-      <div className="absolute left-1/2 top-0 h-full -translate-x-1/2 flex items-center gap-3">
+          it takes whatever room the side clusters leave and shrinks
+          the search field first, so the buttons beside it can never run into the
+          history / refresh controls at a small window. */}
+      <div className="tb-centre">
         <button
           ref={homeRef}
           onClick={() => {

@@ -27,7 +27,9 @@
 @keyframes sx-hpop{0%{transform:scale(.86)}55%{transform:scale(1.07)}100%{transform:scale(1)}}
 @keyframes sx-ripple{from{transform:scale(1);opacity:.7}to{transform:scale(1.5);opacity:0}}
 
-.sx-search{position:relative;width:min(474px,36vw);flex:none}
+/* The centre takes the room the side clusters leave; the field shrinks, the home button never does. */
+.tb-centre{flex:1 1 0;min-width:0;height:100%;display:flex;align-items:center;justify-content:center;gap:12px}
+.sx-search{position:relative;flex:1 1 0;min-width:120px;max-width:474px}
 .sx-field{
   position:relative;height:56px;display:flex;align-items:center;gap:12px;padding:0 8px 0 20px;
   border-radius:18px;isolation:isolate;

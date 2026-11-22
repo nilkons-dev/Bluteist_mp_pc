@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type SyntheticEvent } from "react";
-import { Sparkles } from "lucide-react";
+import { Compass } from "lucide-react";
 import { requireBridge } from "../lib/bridge";
 import { useCovers } from "../lib/exploreCovers";
 import { useUI } from "../stores/ui";
@@ -54,8 +54,8 @@ function bySection(moods: MoodEntry[]): Array<[string, MoodEntry[]]> {
   return [...groups];
 }
 
-/** Podcasts' own color: the theme accent can be a grey, which leaves the card flat. */
-const PODCASTS_COLOR = "#6d5dfc";
+/** Podcasts' own color: a cool graphite, in step with the black-and-white theme. */
+const PODCASTS_COLOR = "#8d8d96";
 
 /** The color a card's gradients and record grooves mix from. */
 export const tone = (color: string): CSSProperties => ({ ["--xc" as string]: color });
@@ -145,19 +145,24 @@ export function ExploreView() {
 
   return (
     <div className="pt-2">
-      <h1 className="font-display text-[34px] font-extrabold tracking-[-0.03em] text-ink-hi flex items-center gap-3">
-        <Sparkles className="w-7 h-7 text-ink-hi/80" />
-        Explore
-      </h1>
-      <p className="text-[13px] text-ink-dim mt-1 mb-6">Picked for your region</p>
+      <header className="xp-head">
+        <span className="xp-mark" aria-hidden>
+          <Compass className="w-7 h-7" strokeWidth={1.6} />
+        </span>
+        <div className="min-w-0">
+          <p className="rp-kicker">Picked for your region</p>
+          <h1 className="rp-h1">Explore</h1>
+        </div>
+      </header>
 
       <PodcastsCard />
 
       {sections.map(([title, list]) => (
         <section key={title} className="tile-host mt-9">
-          <h2 className="section-title text-[21px] mb-4 flex items-baseline gap-2">
-            {title}
-            <span className="text-[14px] font-medium text-ink-faint tabular-nums">{list.length}</span>
+          <h2 className="xp-section">
+            <span>{title}</span>
+            <i aria-hidden />
+            <b className="tabular-nums">{list.length}</b>
           </h2>
           <div className="mood-grid">
             {list.map((m) => (

@@ -59,7 +59,7 @@ export function setBackground(next: boolean): void {
   apply();
 }
 
-/** True while the page is asleep (hidden, or unfocused in gaming mode). */
+/** True while the page is asleep (the window is hidden: closed to the tray, or minimized). */
 export const isBackground = (): boolean => bg;
 
 declare global {

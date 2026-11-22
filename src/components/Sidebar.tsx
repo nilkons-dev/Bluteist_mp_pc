@@ -180,7 +180,7 @@ function LibraryPill({ compact }: { compact: boolean }) {
   // Replay: listening stats, otherwise only reachable from Settings.
   const replayRow: LibRow = {
     id: "__replay__",
-    title: "Replay",
+    title: "Encore",
     subtitle: "Your listening stats",
     kind: "replay",
     pinned: singlePinned("replay"),

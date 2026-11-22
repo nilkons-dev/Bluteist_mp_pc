@@ -248,7 +248,7 @@ export async function renderReplayCard(input: ReplayCardInput): Promise<Blob> {
     ctx.fillStyle = "#fff";
     ctx.font = `800 30px ${display}`;
     ctx.letterSpacing = "8px";
-    ctx.fillText("REPLAY", W - PAD + 8, 118);
+    ctx.fillText("ENCORE", W - PAD + 8, 118);
     ctx.letterSpacing = "0px";
     ctx.font = `500 30px ${body}`;
     ctx.fillStyle = "rgb(255 255 255 / 0.72)";
