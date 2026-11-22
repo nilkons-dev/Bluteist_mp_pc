@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { storage } from "../lib/persist";
+import { EIGHT_D_PRESETS, isTuning, type EightDPresetId, type EightDTuning } from "../lib/eightD";
 import type { MatchLanguage } from "../../electron/track-match";
 
 export type StreamQuality = "low" | "medium" | "high" | "lossless";
@@ -64,6 +65,19 @@ interface SettingsState {
   eqPresets: EqPreset[];
   /** lower the level only when EQ boosts would clip at the current volume */
   eqAutoHeadroom: boolean;
+  /** 8D audio (lib/eightD): on/off, plus Motion, Speed, Space, Separation, Clarity, Bass and Punch, each 0..1 */
+  eightD: boolean;
+  eightDMotion: number;
+  eightDSpeed: number;
+  eightDSpace: number;
+  eightDSeparation: number;
+  eightDClarity: number;
+  eightDBass: number;
+  eightDPunch: number;
+  /** micro-detail (air shelf + sparkle), treble smoothing (de-esser) and the IEM tuning curve */
+  eightDDetail: number;
+  eightDTame: number;
+  eightDTuning: EightDTuning;
   /** volume leveling target (lib/audio LOUDNESS_TARGETS) */
   loudnessLevel: LoudnessLevel;
 
@@ -134,6 +148,19 @@ interface SettingsState {
   setDontRepeatSuggestions(v: boolean): void;
   setHideVolumeBar(v: boolean): void;
   setCloseToTray(v: boolean): void;
+  setEightD(v: boolean): void;
+  setEightDMotion(v: number): void;
+  setEightDSpeed(v: number): void;
+  setEightDSpace(v: number): void;
+  setEightDSeparation(v: number): void;
+  setEightDClarity(v: number): void;
+  setEightDBass(v: number): void;
+  setEightDPunch(v: number): void;
+  setEightDDetail(v: number): void;
+  setEightDTame(v: number): void;
+  setEightDTuning(v: EightDTuning): void;
+  /** set every 8D slider and the tuning at once from a named voicing */
+  applyEightDPreset(id: EightDPresetId): void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -180,6 +207,17 @@ export const useSettings = create<SettingsState>()(
       hideVolumeBar: false,
       // On by default: the main process reads it from this store's file when the window closes.
       closeToTray: true,
+      eightD: false,
+      eightDMotion: 0.5,
+      eightDSpeed: 0.5,
+      eightDSpace: 0.3,
+      eightDSeparation: 0.8,
+      eightDClarity: 0.65,
+      eightDBass: 0.7,
+      eightDPunch: 0.7,
+      eightDDetail: 0.5,
+      eightDTame: 0.5,
+      eightDTuning: "reference",
 
       setDownloadDir: (downloadDir) => set({ downloadDir }),
       setDownloadQuality: (downloadQuality) => set({ downloadQuality }),
@@ -231,6 +269,33 @@ export const useSettings = create<SettingsState>()(
       setDontRepeatSuggestions: (dontRepeatSuggestions) => set({ dontRepeatSuggestions }),
       setHideVolumeBar: (hideVolumeBar) => set({ hideVolumeBar }),
       setCloseToTray: (closeToTray) => set({ closeToTray }),
+      setEightD: (eightD) => set({ eightD }),
+      setEightDMotion: (v) => set({ eightDMotion: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5)) }),
+      setEightDSpeed: (v) => set({ eightDSpeed: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5)) }),
+      setEightDSpace: (v) => set({ eightDSpace: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.3)) }),
+      setEightDSeparation: (v) => set({ eightDSeparation: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.8)) }),
+      setEightDClarity: (v) => set({ eightDClarity: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.65)) }),
+      setEightDPunch: (v) => set({ eightDPunch: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.7)) }),
+      setEightDBass: (v) => set({ eightDBass: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.7)) }),
+      setEightDDetail: (v) => set({ eightDDetail: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5)) }),
+      setEightDTame: (v) => set({ eightDTame: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5)) }),
+      setEightDTuning: (v) => set({ eightDTuning: isTuning(v) ? v : "reference" }),
+      applyEightDPreset: (id) => {
+        const p = EIGHT_D_PRESETS[id];
+        if (!p) return;
+        set({
+          eightDMotion: p.motion,
+          eightDSpeed: p.speed,
+          eightDSpace: p.space,
+          eightDSeparation: p.separation,
+          eightDClarity: p.clarity,
+          eightDBass: p.bass,
+          eightDPunch: p.punch,
+          eightDDetail: p.detail,
+          eightDTame: p.tame,
+          eightDTuning: p.tuning,
+        });
+      },
     }),
     {
       name: "settings",

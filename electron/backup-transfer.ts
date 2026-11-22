@@ -49,6 +49,17 @@ export const SETTINGS_KEYS = new Set([
   "eqGains",
   "eqPresets",
   "eqAutoHeadroom",
+  "eightD",
+  "eightDMotion",
+  "eightDSpeed",
+  "eightDSpace",
+  "eightDSeparation",
+  "eightDClarity",
+  "eightDBass",
+  "eightDPunch",
+  "eightDDetail",
+  "eightDTame",
+  "eightDTuning",
   "audioSinkId",
   "lyricsOffset",
   "loudnessLevel",
@@ -110,6 +121,15 @@ export function storeEnvelopeFromBackup(raw: unknown, name: string): { state: Re
   return { state: env.state as Record<string, unknown>, version: env.version };
 }
 
+const EIGHT_D_TUNINGS = ["reference", "harman", "warm", "bright", "vocal", "vshape"];
+/** 8D values from another device or a hand-edited file: a switch is a boolean, a slider a number in 0..1, a tuning one of the known ids. */
+function eightDOk(key: string, v: unknown): boolean {
+  if (!key.startsWith("eightD")) return true;
+  if (key === "eightD") return typeof v === "boolean";
+  if (key === "eightDTuning") return typeof v === "string" && EIGHT_D_TUNINGS.includes(v);
+  return typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1;
+}
+
 /** Store → backup document: whitelisted settings keys, device-local paths dropped. */
 export function settingsToBackup(envelopeOrState: unknown): Record<string, unknown> {
   const state = stateOf(envelopeOrState);
@@ -135,7 +155,7 @@ export function settingsFromBackup(incoming: unknown, currentEnvelope: unknown):
       continue;
     }
     // A malformed gains list would break the equalizer and the Settings page.
-    if (k in inc && (k !== "eqGains" || eqGainsOk(inc[k])) && (k !== "eqPresets" || eqPresetsOk(inc[k])) && (k !== "loudnessLevel" || ["off", "quiet", "normal", "loud"].includes(inc[k] as string)) && (k !== "matchLanguage" || matchLanguageOk(inc[k]))) next[k] = inc[k];
+    if (k in inc && (k !== "eqGains" || eqGainsOk(inc[k])) && (k !== "eqPresets" || eqPresetsOk(inc[k])) && (k !== "loudnessLevel" || ["off", "quiet", "normal", "loud"].includes(inc[k] as string)) && (k !== "matchLanguage" || matchLanguageOk(inc[k])) && eightDOk(k, inc[k])) next[k] = inc[k];
   }
   return next;
 }

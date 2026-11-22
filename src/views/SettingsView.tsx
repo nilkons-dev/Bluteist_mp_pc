@@ -14,6 +14,7 @@
  * left, and a fresh open lands on Account.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { EIGHT_D_PRESET_IDS, TUNINGS, type EightDPresetId, type EightDTuning } from "../lib/eightD";
 import {
   Activity,
   AppWindow,
@@ -39,6 +40,7 @@ import {
   FolderPlus,
   Gauge,
   Globe,
+  Headphones,
   Image,
   Infinity as InfinityIcon,
   Info,
@@ -988,9 +990,87 @@ function SoundPane() {
       <Group title="Equalizer">
         <Equalizer />
       </Group>
+      <EightDAudio />
     </>
   );
 }
+
+/**
+ * 8D audio: a spatial stage for headphones, fully offline (lib/eightD). The centre of the mix (vocal, bass, kick)
+ * stays dead ahead inside the head; instruments are pulled out to the left and right and drift around you.
+ */
+function EightDAudio() {
+  const s = useSettings();
+  const off = !s.eightD;
+  const pct = (v: number): string => `${Math.round(v * 100)}%`;
+  return (
+    <Group title="8D audio · IEM Studio" note={off ? undefined : "Made for headphones. On speakers it just sounds wide and odd. 8D never plays louder than the original: its level is matched automatically."}>
+      <Row
+        icon={Headphones}
+        title="8D audio"
+        note="In-ear-monitor style: voice clear in the middle, every instrument held in its own place in your left and right ear, drifting slowly around you"
+        toggle={{ checked: s.eightD, onChange: s.setEightD }}
+      />
+      <Row icon={Sparkles} title="Voicing" note="One tap sets every control below, modelled on in-ear monitor styles" disabled={off}>
+        <div className="flex flex-wrap gap-2">
+          {EIGHT_D_PRESET_IDS.map((id) => (
+            <Button key={id} disabled={off} onClick={() => s.applyEightDPreset(id)}>
+              {EIGHT_D_PRESET_LABEL[id]}
+            </Button>
+          ))}
+        </div>
+      </Row>
+      <Row icon={SlidersVertical} title="Tuning" note="The overall tonal balance, like the tuning of an in-ear monitor" disabled={off}>
+        <Choice label="8D tuning" value={s.eightDTuning} options={TUNINGS} labels={EIGHT_D_TUNING_LABEL} onChange={s.setEightDTuning} />
+      </Row>
+      <Row icon={Activity} title="Motion" note="How far the instruments drift along their own ear. 0 holds them still" control={<Reading text={pct(s.eightDMotion)} widest={["100%"]} />} disabled={off}>
+        <Range label="8D motion" valueText={pct(s.eightDMotion)} min={0} max={1} step={0.01} value={s.eightDMotion} onChange={s.setEightDMotion} ends={["Still", "All around"]} disabled={off} major={0.25} />
+      </Row>
+      <Row icon={Gauge} title="Speed" note="How quickly they drift" control={<Reading text={pct(s.eightDSpeed)} widest={["100%"]} />} disabled={off}>
+        <Range label="8D speed" valueText={pct(s.eightDSpeed)} min={0} max={1} step={0.01} value={s.eightDSpeed} onChange={s.setEightDSpeed} ends={["Slow", "Fast"]} disabled={off} origin={0.5} major={0.25} />
+      </Row>
+      <Row icon={Headphones} title="Separation" note="How widely the instruments are set apart, without blurring where each one sits" control={<Reading text={pct(s.eightDSeparation)} widest={["100%"]} />} disabled={off}>
+        <Range label="8D separation" valueText={pct(s.eightDSeparation)} min={0} max={1} step={0.01} value={s.eightDSeparation} onChange={s.setEightDSeparation} ends={["Natural", "Wide"]} disabled={off} major={0.25} />
+      </Row>
+      <Row icon={Activity} title="Voice clarity" note="Polishes the voice and clears the instruments out of its way" control={<Reading text={pct(s.eightDClarity)} widest={["100%"]} />} disabled={off}>
+        <Range label="8D voice clarity" valueText={pct(s.eightDClarity)} min={0} max={1} step={0.01} value={s.eightDClarity} onChange={s.setEightDClarity} ends={["Natural", "Crystal"]} disabled={off} major={0.25} />
+      </Row>
+      <Row icon={Sparkles} title="Detail" note="Micro-detail and air: fine texture, cymbals and breath" control={<Reading text={pct(s.eightDDetail)} widest={["100%"]} />} disabled={off}>
+        <Range label="8D detail" valueText={pct(s.eightDDetail)} min={0} max={1} step={0.01} value={s.eightDDetail} onChange={s.setEightDDetail} ends={["Smooth", "Analytical"]} disabled={off} major={0.25} />
+      </Row>
+      <Row icon={Gauge} title="Smooth treble" note="Holds back sharp s-sounds and hi-hat spikes, only while they are sharp" control={<Reading text={pct(s.eightDTame)} widest={["100%"]} />} disabled={off}>
+        <Range label="8D smooth treble" valueText={pct(s.eightDTame)} min={0} max={1} step={0.01} value={s.eightDTame} onChange={s.setEightDTame} ends={["Off", "Silky"]} disabled={off} major={0.25} />
+      </Row>
+      <Row icon={Gauge} title="Punch" note="Sharper attack and fuller body on every note" control={<Reading text={pct(s.eightDPunch)} widest={["100%"]} />} disabled={off}>
+        <Range label="8D punch" valueText={pct(s.eightDPunch)} min={0} max={1} step={0.01} value={s.eightDPunch} onChange={s.setEightDPunch} ends={["Soft", "Hard-hitting"]} disabled={off} major={0.25} />
+      </Row>
+      <Row icon={Volume2} title="Bass boost" note="Extra low end while 8D is on" control={<Reading text={pct(s.eightDBass)} widest={["100%"]} />} disabled={off}>
+        <Range label="8D bass boost" valueText={pct(s.eightDBass)} min={0} max={1} step={0.01} value={s.eightDBass} onChange={s.setEightDBass} ends={["None", "Deep"]} disabled={off} major={0.25} />
+      </Row>
+      <Row icon={Volume2} title="Space" note="How big the room around you feels" control={<Reading text={pct(s.eightDSpace)} widest={["100%"]} />} disabled={off}>
+        <Range label="8D space" valueText={pct(s.eightDSpace)} min={0} max={1} step={0.01} value={s.eightDSpace} onChange={s.setEightDSpace} ends={["Dry", "Roomy"]} disabled={off} major={0.25} />
+      </Row>
+    </Group>
+  );
+}
+
+const EIGHT_D_PRESET_LABEL: Record<EightDPresetId, string> = {
+  reference: "Reference",
+  harman: "Harman",
+  vocal: "Vocal",
+  bass: "Bass",
+  detail: "Detail",
+  stage: "Stage",
+};
+
+const EIGHT_D_TUNING_LABEL: Record<EightDTuning, string> = {
+  reference: "Flat",
+  harman: "Harman",
+  warm: "Warm",
+  bright: "Bright",
+  vocal: "Vocal",
+  vshape: "Bassy",
+};
 
 /**
  * Output device: routes playback to a specific speaker or headset via setSinkId. Chromium hides device

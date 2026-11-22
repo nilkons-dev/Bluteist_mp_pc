@@ -32,6 +32,7 @@ export function Turntable({ track }: { track: Track }) {
   const toggle = usePlayer((s) => s.toggle);
   const liked = useLibrary((s) => s.liked.some((t) => t.id === track.id));
   const eqEnabled = useSettings((s) => s.eqEnabled);
+  const eightD = useSettings((s) => s.eightD);
 
   const [disc, setDisc] = useState(currentDisc);
   const discRef = useRef<SVGGElement>(null);
@@ -259,6 +260,11 @@ export function Turntable({ track }: { track: Track }) {
     useUI.getState().openFloating("eq");
   };
 
+  /** 8D audio (lib/eightD) on or off. The audio graph is built by lib/audio the first time it is switched on. */
+  const on8D = (): void => {
+    useSettings.getState().setEightD(!useSettings.getState().eightD);
+  };
+
   const id = (n: string): string => `np${uid}${n}`;
 
   return (
@@ -293,6 +299,11 @@ export function Turntable({ track }: { track: Track }) {
         </div>
       </div>
 
+      <div className="np-stage">
+      <button type="button" className={`np-8d${eightD ? " on" : ""}`} aria-pressed={eightD} aria-label={eightD ? "8D audio, on" : "8D audio, off"} title={eightD ? "8D audio · On (best on headphones)" : "8D audio · Off (best on headphones)"} onClick={on8D}>
+        <span className="np-8d-orbit" aria-hidden />
+        <span className="np-8d-tx">8D</span>
+      </button>
       <svg ref={deckRef} className="np-deck" viewBox="0 0 300 270" role="button" tabIndex={0} aria-label={playing ? "Turntable — tap to pause" : "Turntable — tap to play"} onClick={onDeck} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onDeck(); } }}>
         <defs>
           <radialGradient id={id("vg")} cx="125" cy="152" r="110" gradientUnits="userSpaceOnUse"><stop offset=".32" stopColor="#101010" /><stop offset=".75" stopColor="#070707" /><stop offset="1" stopColor="#030303" /></radialGradient>
@@ -325,6 +336,7 @@ export function Turntable({ track }: { track: Track }) {
           <g transform="translate(264 36) scale(1.1)"><path d={STAR} fill="#fff" /></g>
         </g>
       </svg>
+      </div>
 
       <h2 ref={titleBox} className={`np-title${slide > 0 ? " is-slide" : ""}`} title={track.title}>
         <span ref={titleTx} className="np-title-tx" style={slide > 0 ? ({ "--np-slide": `${slide}px`, "--np-dur": `${Math.round(7 + slide / 16)}s` } as CSSProperties) : undefined}>{shown}</span>

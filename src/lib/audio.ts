@@ -54,6 +54,7 @@ import { shortTitle } from "./format";
 import { createMediaKeyTap } from "./media-key-tap";
 import { useSleepTimer } from "./sleepTimer";
 import { isBackground } from "./background";
+import { createEightD, isTuning, type EightD } from "./eightD";
 import { inRoom, stopHere, useRoom } from "../stores/room";
 import {
   deviceChoices,
@@ -534,6 +535,8 @@ let eqCtx: AudioContext | null = null;
 let eqFilters: BiquadFilterNode[] = [];
 let eqLimiter: DynamicsCompressorNode | null = null;
 let eqPreGain: GainNode | null = null;
+/** The 8D stage (lib/eightD), sitting between the headroom pre-gain and the limiter. Built with the graph, idle until switched on. */
+let eightDStage: EightD | null = null;
 /** A read-only tap on the final signal for the now-playing spectrum; it feeds nothing, so playback is untouched. */
 let spectrumAnalyser: AnalyserNode | null = null;
 /** The spectrum wants the Web Audio graph even with the equalizer off (the bands then sit flat at 0 dB). */
@@ -606,9 +609,9 @@ function applyHeadroom(level: number): void {
  */
 function applyEq(): void {
   if (!elements) return;
-  const { eqEnabled, eqGains } = useSettings.getState();
+  const { eqEnabled, eqGains, eightD: eightDOn } = useSettings.getState();
   if (!eqCtx) {
-    if (!eqEnabled && !spectrumWanted) return;
+    if (!eqEnabled && !spectrumWanted && !eightDOn) return;
     const ctx = new AudioContext();
     eqCtx = ctx;
     // A limiter instead of a fixed preamp: a preamp pulled the whole signal
@@ -633,7 +636,9 @@ function applyEq(): void {
     for (const e of elements) ctx.createMediaElementSource(e).connect(eqFilters[0]);
     for (let i = 1; i < eqFilters.length; i++) eqFilters[i - 1].connect(eqFilters[i]);
     eqFilters[eqFilters.length - 1].connect(eqPreGain);
-    eqPreGain.connect(eqLimiter);
+    eightDStage = createEightD(ctx);
+    eqPreGain.connect(eightDStage.input);
+    eightDStage.output.connect(eqLimiter);
     eqLimiter.connect(makeup);
     makeup.connect(ctx.destination);
     // Spectrum tap: reads the same signal the speakers get (local files and streams alike, both come through the
@@ -651,7 +656,17 @@ function applyEq(): void {
   eqFilters.forEach((f, i) => f.gain.setTargetAtTime(gains[i] ?? 0, t, 0.02));
   eqPeakDb = eqResponsePeakDb(eqCtx, gains);
   refreshVolumes();
+  applyEightD();
   if (eqCtx.state === "suspended") void eqCtx.resume();
+}
+
+/** Push the 8D settings into the stage: parameters first, then the switch (a fade, never a click). */
+function applyEightD(): void {
+  if (!eightDStage) return;
+  const s = useSettings.getState();
+  eightDStage.setParams({ motion: s.eightDMotion, speed: s.eightDSpeed, space: s.eightDSpace, separation: s.eightDSeparation, clarity: s.eightDClarity, bass: s.eightDBass, punch: s.eightDPunch, detail: s.eightDDetail, tame: s.eightDTame, tuning: isTuning(s.eightDTuning) ? s.eightDTuning : "reference" });
+  eightDStage.setEnabled(s.eightD);
+  if (s.eightD && eqCtx && eqCtx.state === "suspended") void eqCtx.resume();
 }
 
 /**
@@ -1381,6 +1396,11 @@ export function initAudioEngine(): void {
   applyEq();
   useSettings.subscribe((st, prev) => {
     if (st.eqEnabled !== prev.eqEnabled || st.eqGains !== prev.eqGains || st.eqAutoHeadroom !== prev.eqAutoHeadroom) applyEq();
+  });
+  // 8D: the switch may have to build the graph first (applyEq does that); the sliders only retune a running stage.
+  useSettings.subscribe((st, prev) => {
+    if (st.eightD !== prev.eightD) applyEq();
+    else if (st.eightDMotion !== prev.eightDMotion || st.eightDSpeed !== prev.eightDSpeed || st.eightDSpace !== prev.eightDSpace || st.eightDSeparation !== prev.eightDSeparation || st.eightDClarity !== prev.eightDClarity || st.eightDBass !== prev.eightDBass || st.eightDPunch !== prev.eightDPunch || st.eightDDetail !== prev.eightDDetail || st.eightDTame !== prev.eightDTame || st.eightDTuning !== prev.eightDTuning) applyEightD();
   });
   // Volume leveling level changes apply at once, a glide in progress included (the user's own change).
   useSettings.subscribe((st, prev) => {
