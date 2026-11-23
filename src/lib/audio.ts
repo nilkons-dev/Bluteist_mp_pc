@@ -664,7 +664,7 @@ function applyEq(): void {
 function applyEightD(): void {
   if (!eightDStage) return;
   const s = useSettings.getState();
-  eightDStage.setParams({ motion: s.eightDMotion, speed: s.eightDSpeed, space: s.eightDSpace, separation: s.eightDSeparation, clarity: s.eightDClarity, bass: s.eightDBass, punch: s.eightDPunch, detail: s.eightDDetail, tame: s.eightDTame, tuning: isTuning(s.eightDTuning) ? s.eightDTuning : "reference" });
+  eightDStage.setParams({ motion: s.eightDMotion, speed: s.eightDSpeed, space: s.eightDSpace, separation: s.eightDSeparation, clarity: s.eightDClarity, bass: s.eightDBass, punch: s.eightDPunch, detail: s.eightDDetail, tame: s.eightDTame, tuning: isTuning(s.eightDTuning) ? s.eightDTuning : "reference", orbit: s.eightDOrbit });
   eightDStage.setEnabled(s.eightD);
   if (s.eightD && eqCtx && eqCtx.state === "suspended") void eqCtx.resume();
 }
@@ -1400,7 +1400,7 @@ export function initAudioEngine(): void {
   // 8D: the switch may have to build the graph first (applyEq does that); the sliders only retune a running stage.
   useSettings.subscribe((st, prev) => {
     if (st.eightD !== prev.eightD) applyEq();
-    else if (st.eightDMotion !== prev.eightDMotion || st.eightDSpeed !== prev.eightDSpeed || st.eightDSpace !== prev.eightDSpace || st.eightDSeparation !== prev.eightDSeparation || st.eightDClarity !== prev.eightDClarity || st.eightDBass !== prev.eightDBass || st.eightDPunch !== prev.eightDPunch || st.eightDDetail !== prev.eightDDetail || st.eightDTame !== prev.eightDTame || st.eightDTuning !== prev.eightDTuning) applyEightD();
+    else if (st.eightDMotion !== prev.eightDMotion || st.eightDSpeed !== prev.eightDSpeed || st.eightDSpace !== prev.eightDSpace || st.eightDSeparation !== prev.eightDSeparation || st.eightDClarity !== prev.eightDClarity || st.eightDBass !== prev.eightDBass || st.eightDPunch !== prev.eightDPunch || st.eightDDetail !== prev.eightDDetail || st.eightDTame !== prev.eightDTame || st.eightDTuning !== prev.eightDTuning || st.eightDOrbit !== prev.eightDOrbit) applyEightD();
   });
   // Volume leveling level changes apply at once, a glide in progress included (the user's own change).
   useSettings.subscribe((st, prev) => {

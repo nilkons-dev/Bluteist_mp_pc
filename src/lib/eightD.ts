@@ -67,13 +67,15 @@ export interface EightDParams {
   tame: number;
   /** the overall tonal balance, an IEM-style target curve (see TUNINGS) */
   tuning: EightDTuning;
+  /** 0..1 — "around you": how much of the finished sound travels in a full circle around the head (0 = none, 1 = all of it) */
+  orbit: number;
 }
 
 /** IEM-style tonal balances, applied to the finished signal. "reference" leaves the tone alone. */
 export const TUNINGS = ["reference", "harman", "warm", "bright", "vocal", "vshape"] as const;
 export type EightDTuning = (typeof TUNINGS)[number];
 
-export const DEFAULT_EIGHT_D: EightDParams = { motion: 0.5, speed: 0.5, space: 0.3, separation: 0.8, clarity: 0.65, bass: 0.7, punch: 0.7, detail: 0.5, tame: 0.5, tuning: "reference" };
+export const DEFAULT_EIGHT_D: EightDParams = { motion: 0.5, speed: 0.5, space: 0.3, separation: 0.8, clarity: 0.65, bass: 0.7, punch: 0.7, detail: 0.5, tame: 0.5, tuning: "reference", orbit: 0.65 };
 
 /** Is this one of the tuning ids? (Settings written by another build may hold anything.) */
 export function isTuning(v: unknown): v is EightDTuning {
@@ -140,6 +142,38 @@ export function airPosition(i: number): { x: number; y: number; z: number } {
   const s = AIR_STAGE[i];
   const a = (s.az * Math.PI) / 180;
   return { x: STAGE_RADIUS * Math.sin(a), y: s.y, z: -STAGE_RADIUS * Math.cos(a) };
+}
+
+
+/* ------------------------------------------------------------------ orbit: the sound travelling around the head */
+
+/** Below this the sound is not circled: bass stays dead centre (a rotating low end only makes the level pulse). */
+export const ORBIT_SPLIT_HZ = 200;
+/** One full turn around the head at speed 0.5, in seconds: a classic 8D rate (the speed slider makes it 0.5×–2×). */
+export const ORBIT_PERIOD_S = 12;
+/** The left and right channels are two virtual speakers this far (degrees) either side of the point that circles. */
+export const ORBIT_SPREAD_DEG = 35;
+/** Distance of the circling sources: panner roll-off is 0, so this only sets direction, never loudness. */
+export const ORBIT_RADIUS = 1.5;
+
+/** Turns per second at a speed slider value. */
+export function orbitTurnHz(speed: number): number {
+  return speedFactor(speed) / ORBIT_PERIOD_S;
+}
+
+/** Equal-power mix of the still signal and the circling one for an orbit amount (0..1): dry² + circling² = 1. */
+export function orbitMix(orbit: number): { dry: number; circling: number } {
+  const o = Math.min(1, Math.max(0, Number.isFinite(orbit) ? orbit : 0));
+  return { dry: Math.cos((o * Math.PI) / 2), circling: Math.sin((o * Math.PI) / 2) };
+}
+
+/**
+ * Where a virtual speaker is at phase φ (rad, 0 = straight ahead, growing clockwise seen from above): x right, y up,
+ * z behind (the listener faces −z). side −1 is the left channel's speaker, +1 the right channel's.
+ */
+export function orbitPosition(side: -1 | 1, phi: number): { x: number; y: number; z: number } {
+  const a = phi + (side * ORBIT_SPREAD_DEG * Math.PI) / 180;
+  return { x: ORBIT_RADIUS * Math.sin(a), y: 0, z: -ORBIT_RADIUS * Math.cos(a) };
 }
 
 /** Bass shelf and punch gains (dB) for a bass amount (0..1). */
@@ -274,23 +308,25 @@ export function compMakeupDb(thresholdDb: number, ratio: number): number {
 
 /* ------------------------------------------------------------------ presets */
 
-export const EIGHT_D_PRESET_IDS = ["reference", "harman", "vocal", "bass", "detail", "stage"] as const;
+export const EIGHT_D_PRESET_IDS = ["orbit", "reference", "harman", "vocal", "bass", "detail", "stage"] as const;
 export type EightDPresetId = (typeof EIGHT_D_PRESET_IDS)[number];
 
 /** Whole-engine voicings, named after the in-ear monitor styles they are modelled on. Every value is a slider position. */
 export const EIGHT_D_PRESETS: Record<EightDPresetId, EightDParams> = {
+  // The classic 8D feel: the whole song travels around your head, with a roomy stage and the bass kept in the middle.
+  orbit: { motion: 0.5, speed: 0.5, space: 0.4, separation: 0.8, clarity: 0.6, bass: 0.7, punch: 0.65, detail: 0.5, tame: 0.55, tuning: "warm", orbit: 1 },
   // Studio-monitor honesty: flat tone, wide but calm stage, nothing added.
-  reference: { motion: 0.35, speed: 0.4, space: 0.2, separation: 0.7, clarity: 0.5, bass: 0.35, punch: 0.5, detail: 0.5, tame: 0.5, tuning: "reference" },
+  reference: { motion: 0.35, speed: 0.4, space: 0.2, separation: 0.7, clarity: 0.5, bass: 0.35, punch: 0.5, detail: 0.5, tame: 0.5, tuning: "reference", orbit: 0.45 },
   // The consumer-favourite in-ear balance: strong, controlled bass and a lifted but smooth upper mid.
-  harman: { motion: 0.4, speed: 0.45, space: 0.25, separation: 0.75, clarity: 0.45, bass: 0.55, punch: 0.6, detail: 0.55, tame: 0.55, tuning: "harman" },
+  harman: { motion: 0.4, speed: 0.45, space: 0.25, separation: 0.75, clarity: 0.45, bass: 0.55, punch: 0.6, detail: 0.55, tame: 0.55, tuning: "harman", orbit: 0.5 },
   // Voice-first: lead vocal forward and clean, calm sibilance, instruments tucked to the sides.
-  vocal: { motion: 0.3, speed: 0.4, space: 0.2, separation: 0.7, clarity: 0.85, bass: 0.3, punch: 0.55, detail: 0.6, tame: 0.65, tuning: "vocal" },
+  vocal: { motion: 0.3, speed: 0.4, space: 0.2, separation: 0.7, clarity: 0.85, bass: 0.3, punch: 0.55, detail: 0.6, tame: 0.65, tuning: "vocal", orbit: 0.3 },
   // Bass-forward V-shape: deep, tight low end with sparkle on top.
-  bass: { motion: 0.55, speed: 0.5, space: 0.3, separation: 0.8, clarity: 0.5, bass: 0.95, punch: 0.85, detail: 0.45, tame: 0.5, tuning: "vshape" },
+  bass: { motion: 0.55, speed: 0.5, space: 0.3, separation: 0.8, clarity: 0.5, bass: 0.95, punch: 0.85, detail: 0.45, tame: 0.5, tuning: "vshape", orbit: 0.65 },
   // Analytical: maximum separation and micro-detail, little room, bright but controlled.
-  detail: { motion: 0.25, speed: 0.35, space: 0.1, separation: 0.9, clarity: 0.7, bass: 0.3, punch: 0.75, detail: 0.9, tame: 0.7, tuning: "bright" },
+  detail: { motion: 0.25, speed: 0.35, space: 0.1, separation: 0.9, clarity: 0.7, bass: 0.3, punch: 0.75, detail: 0.9, tame: 0.7, tuning: "bright", orbit: 0.35 },
   // Cinematic stage: a big, warm room with plenty of drift.
-  stage: { motion: 0.75, speed: 0.55, space: 0.6, separation: 0.85, clarity: 0.6, bass: 0.5, punch: 0.6, detail: 0.6, tame: 0.55, tuning: "warm" },
+  stage: { motion: 0.75, speed: 0.55, space: 0.6, separation: 0.85, clarity: 0.6, bass: 0.5, punch: 0.6, detail: 0.6, tame: 0.55, tuning: "warm", orbit: 0.8 },
 };
 
 /** The reverb tail: decaying, slightly dark noise, different in each ear, after a short pre-delay. */
@@ -505,8 +541,55 @@ export function createEightD(ctx: AudioContext): EightD {
   tuneFilters[tuneFilters.length - 1].connect(detailShelf);
   const match = ctx.createGain();
   match.gain.value = 0.7; // until the first reading: a little under unity
-  detailShelf.connect(match);
   match.connect(wet);
+
+  /* ---- around you: the finished sound split at ORBIT_SPLIT_HZ (Linkwitz-Riley, so the halves sum back flat). The low
+          part stays dead centre. The rest is crossfaded (equal power) with a copy in which the left and right channels
+          are two virtual speakers, 35° either side, that circle the head on HRTF panners. The motion is driven by
+          oscillators wired into the panners' position parameters, so it runs on the audio thread, never the UI. ---- */
+  const turn = lr4(ctx, detailShelf, ORBIT_SPLIT_HZ);
+  const turned = gain2(ctx, 1); // everything that goes on to the level match
+  turn.low.connect(turned);
+  const turnDry = gain2(ctx, 1);
+  turn.high.connect(turnDry);
+  turnDry.connect(turned);
+  const turnSplit = ctx.createChannelSplitter(2);
+  turn.high.connect(turnSplit);
+  const turnCircling = gain2(ctx, 0);
+  const orbitOscs: OscillatorNode[] = [];
+  const orbitOsc = (phase: number): OscillatorNode => {
+    const o = ctx.createOscillator();
+    const w = sinWithPhase(phase);
+    o.setPeriodicWave(ctx.createPeriodicWave(w.real, w.imag, { disableNormalization: true }));
+    o.frequency.value = orbitTurnHz(DEFAULT_EIGHT_D.speed);
+    orbitOscs.push(o);
+    return o;
+  };
+  ([-1, 1] as const).forEach((side, ch) => {
+    const p = ctx.createPanner();
+    p.panningModel = "HRTF";
+    p.distanceModel = "inverse";
+    p.refDistance = 1;
+    p.rolloffFactor = 0;
+    const at = orbitPosition(side, 0);
+    p.positionX.value = 0;
+    p.positionY.value = at.y;
+    p.positionZ.value = 0;
+    const delta = (side * ORBIT_SPREAD_DEG * Math.PI) / 180;
+    // x = R·sin(φ+δ); z = −R·cos(φ+δ) = −R·sin(φ+δ+π/2). The parameters start at 0 and the oscillators add the motion.
+    const driveX = gain(ctx, ORBIT_RADIUS);
+    const driveZ = gain(ctx, -ORBIT_RADIUS);
+    orbitOsc(delta).connect(driveX);
+    orbitOsc(delta + Math.PI / 2).connect(driveZ);
+    driveX.connect(p.positionX);
+    driveZ.connect(p.positionZ);
+    const mono = gain(ctx, 1);
+    turnSplit.connect(mono, ch);
+    mono.connect(p);
+    p.connect(turnCircling);
+  });
+  turnCircling.connect(turned);
+  turned.connect(match);
 
   const stage = gain2(ctx, 1); // the stage's own entry: connected to the input only while the effect is on
 
@@ -552,7 +635,7 @@ export function createEightD(ctx: AudioContext): EightD {
   midAll.connect(midTap);
   sideAll.connect(sideTap);
   const readIn = stereoMeter(ctx, stage);
-  const readOut = stereoMeter(ctx, detailShelf);
+  const readOut = stereoMeter(ctx, turned); // after the circling, so the level match covers it too
 
   /* ---- seven bands of the stereo signal, then mid and side inside each ---- */
   const rawBands = ladder(ctx, punched, CROSSOVERS_HZ);
@@ -760,6 +843,11 @@ export function createEightD(ctx: AudioContext): EightD {
     const t = ctx.currentTime;
     const hz = orbitHz(params.speed);
     for (const o of oscs) o.frequency.setTargetAtTime(hz, t, 0.6);
+    const turnHz = orbitTurnHz(params.speed);
+    for (const o of orbitOscs) o.frequency.setTargetAtTime(turnHz, t, 0.6);
+    const om = orbitMix(params.orbit);
+    turnDry.gain.setTargetAtTime(om.dry, t, 0.15);
+    turnCircling.gain.setTargetAtTime(om.circling, t, 0.15);
     const { mid: m, amp } = panPlan(params.motion, params.separation);
     const motion = Math.min(1, Math.max(0, params.motion));
     for (const v of voices) {
@@ -835,6 +923,7 @@ export function createEightD(ctx: AudioContext): EightD {
         if (!started) {
           started = true;
           for (const o of oscs) o.start(t);
+          for (const o of orbitOscs) o.start(t);
         }
         apply();
         input.connect(stage);

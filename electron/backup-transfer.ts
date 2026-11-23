@@ -60,6 +60,7 @@ export const SETTINGS_KEYS = new Set([
   "eightDDetail",
   "eightDTame",
   "eightDTuning",
+  "eightDOrbit",
   "audioSinkId",
   "lyricsOffset",
   "loudnessLevel",

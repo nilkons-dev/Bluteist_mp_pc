@@ -272,6 +272,13 @@ export function Turntable({ track }: { track: Track }) {
       <div className="np-top">
         <small>NOW PLAYING</small>
         <div className="np-acts">
+          <button className={`np-ib np-8db${eightD ? " on" : ""}`} aria-pressed={eightD} aria-label={eightD ? "8D audio, on" : "8D audio, off"} title={eightD ? "8D audio · On (best on headphones)" : "8D audio · Off (best on headphones)"} onClick={on8D}>
+            <svg className="np-ico" viewBox="0 0 48 48">
+              <circle className="np-8d-ring" cx="24" cy="24" r="17" />
+              <g transform="translate(24 24) scale(1.55)"><path d={STAR} className="np-st np-tb np-8d-core" /></g>
+              <g className="np-8d-orb np-tb"><g transform="translate(24 6.5) scale(.62)"><path d={STAR} className="np-st" /></g></g>
+            </svg>
+          </button>
           <button ref={eqRef} className={`np-ib np-eqb${eqEnabled ? " on" : ""}`} aria-haspopup="dialog" aria-pressed={eqEnabled} aria-label={eqEnabled ? "Equalizer, on" : "Equalizer, off"} title={eqEnabled ? "Equalizer · On" : "Equalizer · Off"} onClick={onEq}>
             <svg className="np-ico" viewBox="0 0 48 48">
               <path d="M10 8V40" /><path d="M24 8V40" /><path d="M38 8V40" />
@@ -299,11 +306,6 @@ export function Turntable({ track }: { track: Track }) {
         </div>
       </div>
 
-      <div className="np-stage">
-      <button type="button" className={`np-8d${eightD ? " on" : ""}`} aria-pressed={eightD} aria-label={eightD ? "8D audio, on" : "8D audio, off"} title={eightD ? "8D audio · On (best on headphones)" : "8D audio · Off (best on headphones)"} onClick={on8D}>
-        <span className="np-8d-orbit" aria-hidden />
-        <span className="np-8d-tx">8D</span>
-      </button>
       <svg ref={deckRef} className="np-deck" viewBox="0 0 300 270" role="button" tabIndex={0} aria-label={playing ? "Turntable — tap to pause" : "Turntable — tap to play"} onClick={onDeck} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onDeck(); } }}>
         <defs>
           <radialGradient id={id("vg")} cx="125" cy="152" r="110" gradientUnits="userSpaceOnUse"><stop offset=".32" stopColor="#101010" /><stop offset=".75" stopColor="#070707" /><stop offset="1" stopColor="#030303" /></radialGradient>
@@ -336,7 +338,6 @@ export function Turntable({ track }: { track: Track }) {
           <g transform="translate(264 36) scale(1.1)"><path d={STAR} fill="#fff" /></g>
         </g>
       </svg>
-      </div>
 
       <h2 ref={titleBox} className={`np-title${slide > 0 ? " is-slide" : ""}`} title={track.title}>
         <span ref={titleTx} className="np-title-tx" style={slide > 0 ? ({ "--np-slide": `${slide}px`, "--np-dur": `${Math.round(7 + slide / 16)}s` } as CSSProperties) : undefined}>{shown}</span>

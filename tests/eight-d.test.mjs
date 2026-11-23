@@ -16,7 +16,7 @@ const { outputFiles } = await build({
 });
 const module = { exports: {} };
 new Function("require", "module", "exports", outputFiles[0].text)(require, module, module.exports);
-const { AIR_STAGE, SWAY_PERIOD_S, STAGE_RADIUS, BAND_PHASES, CUE_BASE_HZ, speedFactor, orbitHz, panPlan, groupPan, cueHz, sinWithPhase, airPosition, bassDb, punchLevels, shaperCurve, autoWidthGain, COMP_LATENCY_S, clarityDb, separationGain, reverbImpulse, DEFAULT_EIGHT_D, TUNINGS, tuningCurve, isTuning, detailLevels, tameMix, levelMatchGain, smoothPower, compMakeupDb, EIGHT_D_PRESETS, EIGHT_D_PRESET_IDS, SIDE_BANDS, SIDE_SPLITS_HZ, CROSSOVERS_HZ, MATCH_MIN_DB, MATCH_MAX_DB, STAGE_LATENCY_S } = module.exports;
+const { AIR_STAGE, SWAY_PERIOD_S, STAGE_RADIUS, BAND_PHASES, CUE_BASE_HZ, speedFactor, orbitHz, panPlan, groupPan, cueHz, sinWithPhase, airPosition, bassDb, punchLevels, shaperCurve, autoWidthGain, COMP_LATENCY_S, clarityDb, separationGain, reverbImpulse, DEFAULT_EIGHT_D, TUNINGS, tuningCurve, isTuning, detailLevels, tameMix, levelMatchGain, smoothPower, compMakeupDb, EIGHT_D_PRESETS, EIGHT_D_PRESET_IDS, SIDE_BANDS, SIDE_SPLITS_HZ, CROSSOVERS_HZ, MATCH_MIN_DB, MATCH_MAX_DB, STAGE_LATENCY_S, ORBIT_SPLIT_HZ, ORBIT_PERIOD_S, ORBIT_SPREAD_DEG, ORBIT_RADIUS, orbitTurnHz, orbitMix, orbitPosition } = module.exports;
 
 const sweep = (f) => Array.from({ length: 720 }, (_, i) => f((i / 720) * 2 * Math.PI));
 
@@ -239,4 +239,49 @@ test("presets: every id has a full, in-range parameter set with a known tuning",
 
 test("voice path latency is one compressor stage after the band split", () => {
   assert.equal(STAGE_LATENCY_S, COMP_LATENCY_S);
+});
+
+test("orbit: the mix is equal-power at every amount and goes from all-still to all-circling", () => {
+  for (let i = 0; i <= 20; i++) {
+    const { dry, circling } = orbitMix(i / 20);
+    assert.ok(Math.abs(dry * dry + circling * circling - 1) < 1e-9, `${i}`);
+  }
+  assert.deepEqual(orbitMix(0), { dry: 1, circling: 0 });
+  assert.ok(orbitMix(1).dry < 1e-9 && Math.abs(orbitMix(1).circling - 1) < 1e-9);
+  assert.deepEqual(orbitMix(NaN), orbitMix(0));
+  assert.deepEqual(orbitMix(7), orbitMix(1));
+});
+
+test("orbit: a turn takes 12 s at the middle speed, half that at the top, double at the bottom", () => {
+  assert.ok(Math.abs(1 / orbitTurnHz(0.5) - ORBIT_PERIOD_S) < 1e-9);
+  assert.ok(Math.abs(1 / orbitTurnHz(1) - ORBIT_PERIOD_S / 2) < 1e-9);
+  assert.ok(Math.abs(1 / orbitTurnHz(0) - ORBIT_PERIOD_S * 2) < 1e-9);
+});
+
+test("orbit: the two virtual speakers keep a constant distance, stay level with the ears, and make a full circle", () => {
+  let behindLeft = false, behindRight = false, ahead = false;
+  for (const phi of sweep((p) => p)) {
+    for (const side of [-1, 1]) {
+      const { x, y, z } = orbitPosition(side, phi);
+      assert.ok(Math.abs(Math.hypot(x, z) - ORBIT_RADIUS) < 1e-9);
+      assert.equal(y, 0);
+      if (z > ORBIT_RADIUS * 0.99) { if (x < 0) behindLeft = true; else behindRight = true; }
+      if (z < -ORBIT_RADIUS * 0.99) ahead = true;
+    }
+  }
+  assert.ok(behindLeft && behindRight && ahead, "passes straight ahead and directly behind");
+  // at phase 0 the left channel's speaker is on the left, the right channel's on the right, both in front
+  const l = orbitPosition(-1, 0), r = orbitPosition(1, 0);
+  assert.ok(l.x < 0 && r.x > 0 && l.z < 0 && r.z < 0);
+  assert.ok(Math.abs(Math.atan2(r.x, -r.z) * 180 / Math.PI - ORBIT_SPREAD_DEG) < 1e-9);
+  // half a turn later the pair has swapped sides: that is what makes the sound pass behind you
+  const l2 = orbitPosition(-1, Math.PI);
+  assert.ok(l2.x > 0 && l2.z > 0);
+});
+
+test("orbit: bass is split off below 200 Hz so it never travels, and the Orbit preset sends everything round", () => {
+  assert.equal(ORBIT_SPLIT_HZ, 200);
+  assert.equal(EIGHT_D_PRESETS.orbit.orbit, 1);
+  assert.ok(DEFAULT_EIGHT_D.orbit > 0, "a first tap is audibly 8D");
+  for (const id of EIGHT_D_PRESET_IDS) assert.ok(EIGHT_D_PRESETS[id].orbit >= 0 && EIGHT_D_PRESETS[id].orbit <= 1, id);
 });

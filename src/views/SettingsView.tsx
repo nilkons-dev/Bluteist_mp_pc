@@ -1011,7 +1011,7 @@ function EightDAudio() {
         note="In-ear-monitor style: voice clear in the middle, every instrument held in its own place in your left and right ear, drifting slowly around you"
         toggle={{ checked: s.eightD, onChange: s.setEightD }}
       />
-      <Row icon={Sparkles} title="Voicing" note="One tap sets every control below, modelled on in-ear monitor styles" disabled={off}>
+      <Row icon={Sparkles} title="Voicing" note="One tap sets every control below; Orbit is the classic 8D, circling around your head, modelled on in-ear monitor styles" disabled={off}>
         <div className="flex flex-wrap gap-2">
           {EIGHT_D_PRESET_IDS.map((id) => (
             <Button key={id} disabled={off} onClick={() => s.applyEightDPreset(id)}>
@@ -1022,6 +1022,9 @@ function EightDAudio() {
       </Row>
       <Row icon={SlidersVertical} title="Tuning" note="The overall tonal balance, like the tuning of an in-ear monitor" disabled={off}>
         <Choice label="8D tuning" value={s.eightDTuning} options={TUNINGS} labels={EIGHT_D_TUNING_LABEL} onChange={s.setEightDTuning} />
+      </Row>
+      <Row icon={Headphones} title="Around you" note="How much of the song travels in a full circle around your head. 0 keeps everything in front" control={<Reading text={pct(s.eightDOrbit)} widest={["100%"]} />} disabled={off}>
+        <Range label="8D around you" valueText={pct(s.eightDOrbit)} min={0} max={1} step={0.01} value={s.eightDOrbit} onChange={s.setEightDOrbit} ends={["In front", "All around"]} disabled={off} major={0.25} />
       </Row>
       <Row icon={Activity} title="Motion" note="How far the instruments drift along their own ear. 0 holds them still" control={<Reading text={pct(s.eightDMotion)} widest={["100%"]} />} disabled={off}>
         <Range label="8D motion" valueText={pct(s.eightDMotion)} min={0} max={1} step={0.01} value={s.eightDMotion} onChange={s.setEightDMotion} ends={["Still", "All around"]} disabled={off} major={0.25} />
@@ -1055,6 +1058,7 @@ function EightDAudio() {
 }
 
 const EIGHT_D_PRESET_LABEL: Record<EightDPresetId, string> = {
+  orbit: "Orbit",
   reference: "Reference",
   harman: "Harman",
   vocal: "Vocal",

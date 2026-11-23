@@ -38,17 +38,15 @@
 .np-poster { border-radius: 16px; overflow: hidden; background: #151515; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .08); }
 .np-poster img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
 
-/* 8D audio switch, sitting on the corner of the record. Off: a quiet outline. On: filled white, a dot orbiting the label. */
-.np-stage { position: relative; }
-.np .np-8d { position: absolute; z-index: 2; left: 2px; top: 6px; min-width: 50px; height: 30px; padding: 0 12px; display: grid; place-items: center; border-radius: 999px; background: rgba(8, 8, 8, .72); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .28); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: background .25s ease, box-shadow .25s ease, transform .25s cubic-bezier(.34, 1.45, .64, 1); }
-.np .np-8d:hover { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6); transform: translateY(-1px); }
-.np .np-8d:active { transform: scale(.94); }
-.np .np-8d-tx { position: relative; font: 700 14px/1 var(--np-font); letter-spacing: .08em; color: #fff; transition: color .25s ease; }
-.np .np-8d.on { background: #fff; box-shadow: inset 0 0 0 1px #fff, 0 6px 18px rgba(255, 255, 255, .18); }
-.np .np-8d.on .np-8d-tx { color: #000; }
-.np-8d-orbit { position: absolute; inset: -5px; border-radius: 999px; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
-.np-8d-orbit::before { content: ""; position: absolute; left: 50%; top: -1px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, .9); }
-.np-8d.on .np-8d-orbit { opacity: 1; animation: np-8d-spin 3.2s linear infinite; }
+/* 8D audio switch, in the row with the equalizer and the heart: a ring with a star at its heart. Off: quiet. On: the ring brightens and a small star circles the head. */
+.np-8db .np-ico { opacity: .6; transition: opacity .25s, scale .16s cubic-bezier(.3, 1.4, .5, 1); }
+.np-8db:hover .np-ico, .np-8db.on .np-ico { opacity: 1; }
+.np-8d-ring { opacity: .55; stroke-dasharray: 2 5.2; transition: opacity .3s ease; }
+.np-8db.on .np-8d-ring { opacity: .9; }
+.np-8d-orb { opacity: .55; transform-box: view-box; transform-origin: 24px 24px; }
+.np-8db.on .np-8d-orb { opacity: 1; animation: np-8d-spin 3.4s linear infinite; will-change: transform; }
+.np-8db.on .np-8d-core { animation: np-8d-beat 3.4s ease-in-out infinite; }
 @keyframes np-8d-spin { to { transform: rotate(360deg); } }
-html.is-bg .np-8d-orbit { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) { .np-8d.on .np-8d-orbit { animation: none; } }
+@keyframes np-8d-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+html.is-bg .np-8d-orb, html.is-bg .np-8d-core { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .np-8db.on .np-8d-orb, .np-8db.on .np-8d-core { animation: none; } }

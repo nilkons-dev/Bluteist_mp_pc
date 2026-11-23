@@ -78,6 +78,8 @@ interface SettingsState {
   eightDDetail: number;
   eightDTame: number;
   eightDTuning: EightDTuning;
+  /** "around you": how much of the sound circles the head (0..1) */
+  eightDOrbit: number;
   /** volume leveling target (lib/audio LOUDNESS_TARGETS) */
   loudnessLevel: LoudnessLevel;
 
@@ -159,6 +161,7 @@ interface SettingsState {
   setEightDDetail(v: number): void;
   setEightDTame(v: number): void;
   setEightDTuning(v: EightDTuning): void;
+  setEightDOrbit(v: number): void;
   /** set every 8D slider and the tuning at once from a named voicing */
   applyEightDPreset(id: EightDPresetId): void;
 }
@@ -218,6 +221,7 @@ export const useSettings = create<SettingsState>()(
       eightDDetail: 0.5,
       eightDTame: 0.5,
       eightDTuning: "reference",
+      eightDOrbit: 0.65,
 
       setDownloadDir: (downloadDir) => set({ downloadDir }),
       setDownloadQuality: (downloadQuality) => set({ downloadQuality }),
@@ -280,6 +284,7 @@ export const useSettings = create<SettingsState>()(
       setEightDDetail: (v) => set({ eightDDetail: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5)) }),
       setEightDTame: (v) => set({ eightDTame: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5)) }),
       setEightDTuning: (v) => set({ eightDTuning: isTuning(v) ? v : "reference" }),
+      setEightDOrbit: (v) => set({ eightDOrbit: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.65)) }),
       applyEightDPreset: (id) => {
         const p = EIGHT_D_PRESETS[id];
         if (!p) return;
@@ -294,6 +299,7 @@ export const useSettings = create<SettingsState>()(
           eightDDetail: p.detail,
           eightDTame: p.tame,
           eightDTuning: p.tuning,
+          eightDOrbit: p.orbit,
         });
       },
     }),
