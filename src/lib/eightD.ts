@@ -75,7 +75,7 @@ export interface EightDParams {
 export const TUNINGS = ["reference", "harman", "warm", "bright", "vocal", "vshape"] as const;
 export type EightDTuning = (typeof TUNINGS)[number];
 
-export const DEFAULT_EIGHT_D: EightDParams = { motion: 0.5, speed: 0.5, space: 0.3, separation: 0.8, clarity: 0.65, bass: 0.7, punch: 0.7, detail: 0.5, tame: 0.5, tuning: "reference", orbit: 0.65 };
+export const DEFAULT_EIGHT_D: EightDParams = { motion: 0.5, speed: 0.5, space: 0, separation: 0.8, clarity: 0.8, bass: 0.85, punch: 0.7, detail: 0.6, tame: 0.55, tuning: "reference", orbit: 0.65 };
 
 /** Is this one of the tuning ids? (Settings written by another build may hold anything.) */
 export function isTuning(v: unknown): v is EightDTuning {
@@ -149,6 +149,8 @@ export function airPosition(i: number): { x: number; y: number; z: number } {
 
 /** Below this the sound is not circled: bass stays dead centre (a rotating low end only makes the level pulse). */
 export const ORBIT_SPLIT_HZ = 200;
+/** The low end of the instruments goes up by this much (dB) at full bass, on top of the centre bass boost. */
+export const INSTRUMENT_BASS_DB = 2.5;
 /** One full turn around the head at speed 0.5, in seconds: a classic 8D rate (the speed slider makes it 0.5×–2×). */
 export const ORBIT_PERIOD_S = 12;
 /** The left and right channels are two virtual speakers this far (degrees) either side of the point that circles. */
@@ -314,19 +316,19 @@ export type EightDPresetId = (typeof EIGHT_D_PRESET_IDS)[number];
 /** Whole-engine voicings, named after the in-ear monitor styles they are modelled on. Every value is a slider position. */
 export const EIGHT_D_PRESETS: Record<EightDPresetId, EightDParams> = {
   // The classic 8D feel: the whole song travels around your head, with a roomy stage and the bass kept in the middle.
-  orbit: { motion: 0.5, speed: 0.5, space: 0.4, separation: 0.8, clarity: 0.6, bass: 0.7, punch: 0.65, detail: 0.5, tame: 0.55, tuning: "warm", orbit: 1 },
+  orbit: { motion: 0.5, speed: 0.5, space: 0, separation: 0.8, clarity: 0.8, bass: 0.85, punch: 0.7, detail: 0.6, tame: 0.55, tuning: "reference", orbit: 1 },
   // Studio-monitor honesty: flat tone, wide but calm stage, nothing added.
-  reference: { motion: 0.35, speed: 0.4, space: 0.2, separation: 0.7, clarity: 0.5, bass: 0.35, punch: 0.5, detail: 0.5, tame: 0.5, tuning: "reference", orbit: 0.45 },
+  reference: { motion: 0.35, speed: 0.4, space: 0.12, separation: 0.7, clarity: 0.5, bass: 0.35, punch: 0.5, detail: 0.5, tame: 0.5, tuning: "reference", orbit: 0.45 },
   // The consumer-favourite in-ear balance: strong, controlled bass and a lifted but smooth upper mid.
-  harman: { motion: 0.4, speed: 0.45, space: 0.25, separation: 0.75, clarity: 0.45, bass: 0.55, punch: 0.6, detail: 0.55, tame: 0.55, tuning: "harman", orbit: 0.5 },
+  harman: { motion: 0.4, speed: 0.45, space: 0.12, separation: 0.75, clarity: 0.45, bass: 0.55, punch: 0.6, detail: 0.55, tame: 0.55, tuning: "harman", orbit: 0.5 },
   // Voice-first: lead vocal forward and clean, calm sibilance, instruments tucked to the sides.
-  vocal: { motion: 0.3, speed: 0.4, space: 0.2, separation: 0.7, clarity: 0.85, bass: 0.3, punch: 0.55, detail: 0.6, tame: 0.65, tuning: "vocal", orbit: 0.3 },
+  vocal: { motion: 0.3, speed: 0.4, space: 0.12, separation: 0.7, clarity: 0.85, bass: 0.3, punch: 0.55, detail: 0.6, tame: 0.65, tuning: "vocal", orbit: 0.3 },
   // Bass-forward V-shape: deep, tight low end with sparkle on top.
-  bass: { motion: 0.55, speed: 0.5, space: 0.3, separation: 0.8, clarity: 0.5, bass: 0.95, punch: 0.85, detail: 0.45, tame: 0.5, tuning: "vshape", orbit: 0.65 },
+  bass: { motion: 0.55, speed: 0.5, space: 0.12, separation: 0.8, clarity: 0.5, bass: 0.95, punch: 0.85, detail: 0.45, tame: 0.5, tuning: "vshape", orbit: 0.65 },
   // Analytical: maximum separation and micro-detail, little room, bright but controlled.
   detail: { motion: 0.25, speed: 0.35, space: 0.1, separation: 0.9, clarity: 0.7, bass: 0.3, punch: 0.75, detail: 0.9, tame: 0.7, tuning: "bright", orbit: 0.35 },
   // Cinematic stage: a big, warm room with plenty of drift.
-  stage: { motion: 0.75, speed: 0.55, space: 0.6, separation: 0.85, clarity: 0.6, bass: 0.5, punch: 0.6, detail: 0.6, tame: 0.55, tuning: "warm", orbit: 0.8 },
+  stage: { motion: 0.75, speed: 0.55, space: 0.12, separation: 0.85, clarity: 0.6, bass: 0.5, punch: 0.6, detail: 0.6, tame: 0.55, tuning: "warm", orbit: 0.8 },
 };
 
 /** The reverb tail: decaying, slightly dark noise, different in each ear, after a short pre-delay. */
@@ -539,6 +541,10 @@ export function createEightD(ctx: AudioContext): EightD {
   for (let i = 1; i < tuneFilters.length; i++) tuneFilters[i - 1].connect(tuneFilters[i]);
   const detailShelf = peaking(ctx, 10500, 0.7, 0, "highshelf");
   tuneFilters[tuneFilters.length - 1].connect(detailShelf);
+  // Body of the instruments (bass guitar, kick, low piano and strings, 60-250 Hz): the centre bass band has its own boost,
+  // this one lifts the same range in everything else, so a louder low end is never only the centre.
+  const bodyShelf = peaking(ctx, 200, 0.7, 0, "lowshelf");
+  detailShelf.connect(bodyShelf);
   const match = ctx.createGain();
   match.gain.value = 0.7; // until the first reading: a little under unity
   match.connect(wet);
@@ -547,7 +553,7 @@ export function createEightD(ctx: AudioContext): EightD {
           part stays dead centre. The rest is crossfaded (equal power) with a copy in which the left and right channels
           are two virtual speakers, 35° either side, that circle the head on HRTF panners. The motion is driven by
           oscillators wired into the panners' position parameters, so it runs on the audio thread, never the UI. ---- */
-  const turn = lr4(ctx, detailShelf, ORBIT_SPLIT_HZ);
+  const turn = lr4(ctx, bodyShelf, ORBIT_SPLIT_HZ);
   const turned = gain2(ctx, 1); // everything that goes on to the level match
   turn.low.connect(turned);
   const turnDry = gain2(ctx, 1);
@@ -874,6 +880,7 @@ export function createEightD(ctx: AudioContext): EightD {
     punchParallel.gain.setTargetAtTime(pl.parallel, t, 0.1);
     punchExcite.gain.setTargetAtTime(pl.excite * dl.excite, t, 0.1);
     detailShelf.gain.setTargetAtTime(dl.air, t, 0.15);
+    bodyShelf.gain.setTargetAtTime(INSTRUMENT_BASS_DB * Math.min(1, Math.max(0, params.bass)), t, 0.15);
     tuningCurve(isTuning(params.tuning) ? params.tuning : "reference").forEach((band, i) => tuneFilters[i].gain.setTargetAtTime(band.db, t, 0.15));
     const tm = tameMix(params.tame);
     for (const tm2 of [voiceTame, airTame]) {

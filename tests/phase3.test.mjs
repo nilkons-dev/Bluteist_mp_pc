@@ -39,7 +39,7 @@ test("the spectrum analyser is a silent side branch of the existing graph", () =
   assert.match(a, /export function getSpectrumAnalyser/);
   assert.match(a, /makeup\.connect\(spectrumAnalyser\)/);
   assert.doesNotMatch(a, /spectrumAnalyser\.connect\(/, "the analyser feeds nothing");
-  assert.match(a, /if \(!eqEnabled && !spectrumWanted\) return;/);
+  assert.match(a, /if \(!eqEnabled && !spectrumWanted && !eightDOn\) return;/);
 });
 
 test("the turntable reads real audio and is still when nothing plays", () => {

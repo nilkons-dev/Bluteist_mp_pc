@@ -38,15 +38,13 @@
 .np-poster { border-radius: 16px; overflow: hidden; background: #151515; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .08); }
 .np-poster img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
 
-/* 8D audio switch, in the row with the equalizer and the heart: a ring with a star at its heart. Off: quiet. On: the ring brightens and a small star circles the head. */
+/* 8D audio switch, in the row with the equalizer and the heart: a headphone with "8D" between the ear cups. Off: quiet outline. On: bright, cups filled, and they pulse in turn, left then right, like the sound moving around you. */
 .np-8db .np-ico { opacity: .6; transition: opacity .25s, scale .16s cubic-bezier(.3, 1.4, .5, 1); }
 .np-8db:hover .np-ico, .np-8db.on .np-ico { opacity: 1; }
-.np-8d-ring { opacity: .55; stroke-dasharray: 2 5.2; transition: opacity .3s ease; }
-.np-8db.on .np-8d-ring { opacity: .9; }
-.np-8d-orb { opacity: .55; transform-box: view-box; transform-origin: 24px 24px; }
-.np-8db.on .np-8d-orb { opacity: 1; animation: np-8d-spin 3.4s linear infinite; will-change: transform; }
-.np-8db.on .np-8d-core { animation: np-8d-beat 3.4s ease-in-out infinite; }
-@keyframes np-8d-spin { to { transform: rotate(360deg); } }
-@keyframes np-8d-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
-html.is-bg .np-8d-orb, html.is-bg .np-8d-core { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) { .np-8db.on .np-8d-orb, .np-8db.on .np-8d-core { animation: none; } }
+.np-8d-cup { fill: none; transition: fill .3s ease; }
+.np-8db.on .np-8d-cup { fill: currentColor; }
+.np-8d-tx { fill: currentColor; stroke: none; font: 700 11.5px var(--np-font); letter-spacing: .02em; }
+.np-8db.on .np-8d-cl { animation: np-8d-beat 2.4s ease-in-out infinite; }
+.np-8db.on .np-8d-cr { animation: np-8d-beat 2.4s ease-in-out -1.2s infinite; }
+@keyframes np-8d-beat { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.14, 1.08); opacity: .62; } }
+@media (prefers-reduced-motion: reduce) { .np-8db.on .np-8d-cup { animation: none; } }

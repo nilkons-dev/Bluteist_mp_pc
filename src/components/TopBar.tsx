@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { withSearchRows } from "../../electron/ytm";
 import { reloadHomeFeed } from "../lib/recs/feed";
+import { libFx } from "./libraryFx";
 import { searchPageOnce } from "../lib/searchOnce";
 import { parseYouTubeLink } from "../lib/ytLink";
 import { browseMenuItems, trackMenuItems } from "../lib/trackActions";
@@ -454,6 +455,8 @@ export function TopBar() {
           ref={homeRef}
           onClick={() => {
             playOnce(homeRef.current, "go", 1000);
+            // the house does exactly what the Home row's icon in Your Library does
+            if (homeRef.current) libFx.overview(homeRef.current);
             goHome();
           }}
           title="Home"
@@ -467,7 +470,7 @@ export function TopBar() {
               <circle className="g1" cx="28" cy="28" r="23.2" />
               <circle className="g2" cx="28" cy="28" r="19.6" />
             </g>
-            <g className="hg" fill="none">
+            <g className="hg lb-ho" fill="none">
               <path d="M19 28.5 28 20.5l9 8" />
               <path d="M21.5 27v9.5h13V27" />
               <path d="M26 36.5V31h4v5.5" />

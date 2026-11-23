@@ -274,9 +274,10 @@ export function Turntable({ track }: { track: Track }) {
         <div className="np-acts">
           <button className={`np-ib np-8db${eightD ? " on" : ""}`} aria-pressed={eightD} aria-label={eightD ? "8D audio, on" : "8D audio, off"} title={eightD ? "8D audio · On (best on headphones)" : "8D audio · Off (best on headphones)"} onClick={on8D}>
             <svg className="np-ico" viewBox="0 0 48 48">
-              <circle className="np-8d-ring" cx="24" cy="24" r="17" />
-              <g transform="translate(24 24) scale(1.55)"><path d={STAR} className="np-st np-tb np-8d-core" /></g>
-              <g className="np-8d-orb np-tb"><g transform="translate(24 6.5) scale(.62)"><path d={STAR} className="np-st" /></g></g>
+              <path className="np-8d-band" d="M8.5 31V24.5A15.5 15.5 0 0 1 39.5 24.5V31" />
+              <rect className="np-8d-cup np-8d-cl np-tb" x="4.5" y="28" width="8" height="14" rx="3.6" />
+              <rect className="np-8d-cup np-8d-cr np-tb" x="35.5" y="28" width="8" height="14" rx="3.6" />
+              <text className="np-8d-tx" x="24" y="38.2" textAnchor="middle">8D</text>
             </svg>
           </button>
           <button ref={eqRef} className={`np-ib np-eqb${eqEnabled ? " on" : ""}`} aria-haspopup="dialog" aria-pressed={eqEnabled} aria-label={eqEnabled ? "Equalizer, on" : "Equalizer, off"} title={eqEnabled ? "Equalizer · On" : "Equalizer · Off"} onClick={onEq}>

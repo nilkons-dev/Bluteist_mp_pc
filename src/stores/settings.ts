@@ -213,13 +213,13 @@ export const useSettings = create<SettingsState>()(
       eightD: false,
       eightDMotion: 0.5,
       eightDSpeed: 0.5,
-      eightDSpace: 0.3,
+      eightDSpace: 0,
       eightDSeparation: 0.8,
-      eightDClarity: 0.65,
-      eightDBass: 0.7,
+      eightDClarity: 0.8,
+      eightDBass: 0.85,
       eightDPunch: 0.7,
-      eightDDetail: 0.5,
-      eightDTame: 0.5,
+      eightDDetail: 0.6,
+      eightDTame: 0.55,
       eightDTuning: "reference",
       eightDOrbit: 0.65,
 
@@ -276,13 +276,13 @@ export const useSettings = create<SettingsState>()(
       setEightD: (eightD) => set({ eightD }),
       setEightDMotion: (v) => set({ eightDMotion: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5)) }),
       setEightDSpeed: (v) => set({ eightDSpeed: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5)) }),
-      setEightDSpace: (v) => set({ eightDSpace: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.3)) }),
+      setEightDSpace: (v) => set({ eightDSpace: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0)) }),
       setEightDSeparation: (v) => set({ eightDSeparation: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.8)) }),
-      setEightDClarity: (v) => set({ eightDClarity: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.65)) }),
+      setEightDClarity: (v) => set({ eightDClarity: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.8)) }),
       setEightDPunch: (v) => set({ eightDPunch: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.7)) }),
-      setEightDBass: (v) => set({ eightDBass: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.7)) }),
-      setEightDDetail: (v) => set({ eightDDetail: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5)) }),
-      setEightDTame: (v) => set({ eightDTame: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5)) }),
+      setEightDBass: (v) => set({ eightDBass: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.85)) }),
+      setEightDDetail: (v) => set({ eightDDetail: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.6)) }),
+      setEightDTame: (v) => set({ eightDTame: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.55)) }),
       setEightDTuning: (v) => set({ eightDTuning: isTuning(v) ? v : "reference" }),
       setEightDOrbit: (v) => set({ eightDOrbit: Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.65)) }),
       applyEightDPreset: (id) => {
@@ -305,6 +305,20 @@ export const useSettings = create<SettingsState>()(
     }),
     {
       name: "settings",
+      // Version 1: 8D was retuned for a clean, echo-free sound with more bass. A saved 8D voicing from before that
+      // (room on, less clarity) is replaced once by the new one; the on/off switch and the orbit amount are kept.
+      version: 1,
+      migrate: (persisted, from) => {
+        const st = (persisted ?? {}) as Record<string, unknown>;
+        if (from < 1) {
+          st.eightDSpace = 0;
+          st.eightDClarity = 0.8;
+          st.eightDBass = 0.85;
+          st.eightDDetail = 0.6;
+          st.eightDTame = 0.55;
+        }
+        return st as unknown as SettingsState;
+      },
       storage: createJSONStorage(() => storage),
     }
   )
