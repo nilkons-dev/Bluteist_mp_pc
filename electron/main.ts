@@ -27,6 +27,7 @@ import { proxyUrlFor, proxyUrlForLocalTrack, setDownloadedFileLookup, startStrea
 import * as auth from "./supabase";
 import * as sync from "./sync";
 import * as updates from "./updater";
+import * as trial from "./trial";
 import * as transition from "./data-transition";
 import { buildAppMenu, type MenuCommand, type MenuPlaybackState, type MenuWiring } from "./mac-menu";
 import { buildTrayMenu, closeAction } from "./close-to-tray";
@@ -97,6 +98,11 @@ let pendingRoomInvite: string | null = null;
  * while quitting or before the app is ready.
  */
 function showMainWindow(): void {
+  // A finished trial has no main window to come back to, from any entry point.
+  if (trial.isLocked()) {
+    trial.showLockedWindow();
+    return;
+  }
   if (!mainWindow || mainWindow.isDestroyed()) {
     if (app.isReady() && !quitting) createWindow();
     return;
@@ -611,13 +617,13 @@ function registerIpc(): void {
   const ipc = {
     handle(channel: string, listener: Parameters<typeof ipcMain.handle>[1]): void {
       ipcMain.handle(channel, (event, ...args) => {
-        if (!pip.isTrustedSender(event, mainWindow)) throw new Error("Untrusted IPC sender");
+        if (trial.isLocked() || !pip.isTrustedSender(event, mainWindow)) throw new Error("Untrusted IPC sender");
         return listener(event, ...args);
       });
     },
     on(channel: string, listener: (event: Electron.IpcMainEvent, ...args: any[]) => void): void {
       ipcMain.on(channel, (event, ...args) => {
-        if (pip.isTrustedSender(event, mainWindow)) listener(event, ...args);
+        if (!trial.isLocked() && pip.isTrustedSender(event, mainWindow)) listener(event, ...args);
       });
     },
   };
@@ -1303,6 +1309,10 @@ if (!gotLock) {
     queueOpen([file]);
   });
   app.on("second-instance", (_event, argv) => {
+    if (trial.isLocked()) {
+      trial.showLockedWindow();
+      return;
+    }
     // Opening Blutheist again (Start, a shortcut, an audio file, a link) brings
     // back the running window, from the tray too.
     showMainWindow();
@@ -1312,6 +1322,11 @@ if (!gotLock) {
   });
 
   void app.whenReady().then(() => {
+    // The trial gate comes first: when it is over, nothing else starts (no stores, no audio, no windows but the notice).
+    if (trial.bootLocked()) {
+      trial.showLockedWindow();
+      return;
+    }
     if (isMac) {
       applyMenu();
       app.setAboutPanelOptions({
@@ -1454,6 +1469,13 @@ if (!gotLock) {
     void startStreamProxy().catch((err) => console.warn("[blutheist] stream proxy failed:", err));
     createWindow();
     createTray();
+    // The trial can end while the app is open (also from the tray): put up the notice, then close everything else.
+    trial.watch(() => {
+      trial.showLockedWindow();
+      startExit();
+      discord.shutdown();
+      trial.destroyOtherWindows();
+    });
     updates.startUpdates(
       (s) => {
         if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("updates:changed", s);
